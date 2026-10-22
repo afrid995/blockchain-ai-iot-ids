@@ -165,7 +165,7 @@ tests/test_provenance.py  (10 tests) ..........                           [100%]
 ## 10. Research Limitations
 
 The project explicitly documents the following boundaries:
-1. **Local EVM Environment:** All blockchain measurements were obtained using `EthereumTesterProvider`/`py-evm`. Production public testnets (e.g., Sepolia) or enterprise consortium ledgers introduce network latency, gas fee volatility, and consensus block finality times (12–15s for PoS).
+1. **Local EVM Environment:** The measured blockchain latency reflects the local `EthereumTesterProvider`/`py-evm` experimental environment. Production public or consortium blockchain deployments may introduce additional network communication, transaction-confirmation, consensus, and infrastructure overhead that was not evaluated in this study.
 2. **Dataset Domain:** UNSW-NB15 is an established network intrusion detection benchmark generated in a cyber range. It evaluates network flow classification capabilities, but does not by itself model hardware constraints of battery-powered microcontrollers.
 3. **Integrity vs. Quality:** Cryptographic hash matching proves binary equivalence to a registered artifact. It does not certify that the model is unpoisoned, unbiased, or robust against adversarial feature perturbations.
 
@@ -175,7 +175,7 @@ The project explicitly documents the following boundaries:
 
 ### **Verdict:** APPROVED WITH CORRECTIONS
 
-All identified phrasing overstatements, latency characterizations, and documentation inaccuracies have been corrected. The underlying code, smart contract, and test suite are robust and reproducible.
+All identified phrasing overstatements, latency characterizations, and documentation inaccuracies have been corrected. The underlying code, smart contract, and test suite are internally consistent, tested, and reproducible within the evaluated experimental environment.
 
 ---
 
@@ -190,3 +190,11 @@ The repository is **technically ready** to begin **Phase 4 (Security Auditing & 
 - SHA-256 verification gate operational.
 - Test suite (30/30) green.
 - Git repository synchronized with remote.
+
+---
+
+## 13. Post-Audit Documentation Correction
+
+Following final review, an unsupported numerical blockchain finality statement was removed from the limitations section. The report now describes production blockchain latency and confirmation overhead qualitatively because public/production blockchain behavior was not evaluated experimentally in this study.
+
+The Phase 3.1 experimental conclusions and implementation are unchanged.
