@@ -201,16 +201,25 @@ An audit of the frontend user interface text confirmed that zero overstrong or u
 | **Phase 4 Baseline Commit** | `ed6e1cf94b7a94e3fdfda5e2dc19aad69dc1f141` | Historical baseline |
 | **Phase 4.1.2 Starting Baseline** | `1d322f4a1b23e4fba079ffaf5d2d53ebd8deb90e` | Verified starting HEAD |
 | **Phase 5A Implementation Commit** | `5bab3ea44d8100e3efe2b241eec541b710c7bf98` | Verified implementation (`feat(frontend): implement Phase 5A React dashboard for model provenance and inference`) |
-| **Final Phase 5A Reconciliation Commit** | Final repository state verified at the commit containing this report revision | Verified against `origin/master` (`refs/heads/master`) |
+| **Final Phase 5A Reconciliation Commit** | `360053502a28c89da950dc50714511e8179a6076` | Verified against `origin/master` (`refs/heads/master`) |
 | **Final Commit Message** | `docs: reconcile final phase 5a research checkpoint` | Verified |
 | **Target Branch** | `master` | Active branch |
 | **GitHub Remote URL** | `https://github.com/afrid995/blockchain-ai-iot-ids.git` | Verified |
 | **Push Status** | Pushed successfully to `origin/master` | Confirmed |
-| **Final Remote HEAD** | Synchronized with local `HEAD` | Exact match verified |
+| **Final Remote HEAD** | `360053502a28c89da950dc50714511e8179a6076` | Exact match verified |
 | **Working Tree** | Clean (`nothing to commit, working tree clean`) | Verified |
 | **Backend Tests** | 40 passed (0 failures, zero regressions) | Confirmed |
 | **Frontend Tests** | 7 passed (0 failures) | Confirmed |
 | **Build Status** | Successful (Vite production build in 557ms) | Confirmed |
+
+### Reproducibility Checkpoint Summary
+
+| Checkpoint | Commit |
+|---|---|
+| Phase 4.1.2 baseline | `1d322f4a1b23e4fba079ffaf5d2d53ebd8deb90e` |
+| Phase 5A implementation | `5bab3ea44d8100e3efe2b241eec541b710c7bf98` |
+| Final Phase 5A checkpoint | `360053502a28c89da950dc50714511e8179a6076` |
+| Final remote HEAD | `360053502a28c89da950dc50714511e8179a6076` |
 
 ---
 
