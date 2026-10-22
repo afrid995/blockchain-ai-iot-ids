@@ -190,7 +190,7 @@ The project can be reproduced from a clean clone:
 | Finding / Area | Description | Severity | Status |
 | :--- | :--- | :--- | :--- |
 | **Secrets / Keys** | No private keys, passwords, or credentials exist in tracked files. | **CRITICAL** | **PASS (0 secrets)** |
-| **Deserialization Risk** | `joblib.load()` in `ml/predict.py` could execute arbitrary bytecode if an artifact is swapped. | **HIGH** | **MITIGATED:** Integrity gate enforces SHA-256 match before `joblib.load()` executes. |
+| **Deserialization Risk** | Deserialization of untrusted files via `joblib.load()`. | **HIGH** | **MITIGATED:** Pre-load verification gate mitigates unauthorized artifact replacement before deserialization by requiring exact correspondence with the registered digest. It does not establish that the registered artifact itself is benign. |
 | **Registration Access** | Unauthorized accounts could attempt to register fraudulent model digests. | **MEDIUM** | **MITIGATED:** `onlyOwner` modifier in `ModelRegistry.sol` rejects non-owner accounts. |
 | **Fail-Safe Behavior** | Blockchain disconnects could default to insecure bypass. | **HIGH** | **MITIGATED:** Failures return `verified: False` and `BLOCKCHAIN_UNAVAILABLE`. |
 | **Path Traversal** | Artifact path argument in verifier. | **LOW** | **PASS:** File paths are read-only; no filesystem mutations occur. |

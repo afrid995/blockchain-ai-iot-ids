@@ -85,7 +85,7 @@ Key achievements of Phase 4:
 ### Layer Responsibilities
 - **AI/ML Layer (Off-Chain):** Evaluates 42 network flow features against the trained Random Forest pipeline to classify traffic as Benign (0) or Attack (1) with class confidence scores.
 - **Cryptographic Layer (Off-Chain):** Generates streaming SHA-256 digests over binary artifact bytes using 64 KB buffers.
-- **Blockchain Layer (On-Chain):** Provides immutable, decentralized storage of authorized model digests (`bytes32`), versions, algorithms, registrant addresses, and block timestamps.
+- **Blockchain Layer (On-Chain):** Provides an on-chain provenance registry for authorized model digests (`bytes32`), versions, algorithms, registrant addresses, and block timestamps. The evaluated implementation uses a local Ethereum-compatible test environment.
 - **Backend API Layer (FastAPI):** Exposes JSON REST endpoints, enforces the pre-deserialization verification gate, serves low-latency inferences, and logs structured operational events.
 - **Audit Layer (Local SQLite):** Stores append-oriented audit logs of security lifecycle and prediction events.
 
@@ -156,7 +156,7 @@ Application Startup / Explicit POST /model/verify
 ### Decoupling Verification from Inference
 - Steady-state per-flow inference does **not** invoke the blockchain.
 - Model verification occurs once at startup (or via explicit `/model/verify` request).
-- Once `VERIFIED` and loaded, `/predict` executes pure off-chain inference in sub-50 ms without incurring on-chain read latencies or gas costs.
+- Once `VERIFIED` and loaded, `/predict` executes off-chain inference without incurring on-chain read latencies or gas costs. The measured mean end-to-end `/predict` latency was approximately 49.3 ms in the evaluated local environment, with a maximum observed latency of 105.1 ms (median: approximately 48.2 ms).
 
 ---
 
@@ -285,7 +285,7 @@ tests/test_provenance.py (10 tests) ..........                           [100%]
 | **Fail-Closed Gatekeeper** | **SUPPORTED** | Verified across Scenarios B, C, D, and E: `joblib.load()` is never called unless SHA-256 matches the registered hash. |
 | **Cryptographic Integrity Verification** | **QUALIFIED** | Hash verification establishes binary correspondence with the registered digest; it does **not** prove model accuracy, adversarial robustness, or absence of training-data poisoning. |
 | **Audit Log Immutability** | **QUALIFIED** | The local SQLite audit log provides append-oriented tracking; it is **not** by itself blockchain tamper-proof or cryptographically anchored. |
-| **Low-Latency Inference** | **QUALIFIED** | Empirical API latency is ~49.3 ms in the local test environment; performance will vary under multi-client network load. |
+| **Low-Latency Inference** | **QUALIFIED** | The measured mean end-to-end `/predict` latency was approximately 49.3 ms in the evaluated local environment, with a maximum observed latency of 105.1 ms (median: 48.2 ms). Performance under concurrent multi-client network load was not evaluated. |
 | **IoT Deployment Suitability** | **QUALIFIED** | Evaluation uses UNSW-NB15 flow benchmark data on desktop x86_64; performance on resource-constrained embedded microcontrollers remains future work. |
 
 ---
@@ -304,8 +304,8 @@ tests/test_provenance.py (10 tests) ..........                           [100%]
 
 | Threat | Addressed By | Residual Risk |
 | :--- | :--- | :--- |
-| **Artifact Replacement / Trojaning** | Pre-load SHA-256 verification against smart contract reference. | High security against binary replacement prior to load. |
-| **Arbitrary Pickle Execution** | Deserialization (`joblib.load`) is blocked unless artifact hash exactly matches trusted on-chain reference. | Mitigates untrusted deserialization attacks on the local filesystem. |
+| **Artifact Replacement / Trojaning** | Pre-load SHA-256 verification against smart contract reference. | Detects unauthorized binary modification or replacement when the resulting artifact hash differs from the registered digest. |
+| **Unauthorized Deserialization** | Pre-load verification gate mitigates unauthorized artifact replacement before deserialization by requiring exact correspondence with the registered digest. | Does not establish that the registered artifact itself is benign, nor protect against compromised registration credentials or post-deserialization memory manipulation. |
 | **Unregistered Model Deployment** | Smart contract lookup returns `NOT_REGISTERED`, preventing load. | Access control on smart contract (`onlyOwner`) prevents unauthorized registrations. |
 | **EVM / Node Outage** | Fail-closed behavior returns `BLOCKCHAIN_UNAVAILABLE` and refuses to load unverified models. | Denial of Service if blockchain node is down during initialization. |
 | **In-Memory Process Hooking** | Out of scope for static file verification. | Requires OS-level memory integrity protection (e.g. Intel SGX / secure enclaves). |
@@ -319,7 +319,7 @@ tests/test_provenance.py (10 tests) ..........                           [100%]
 Phase 4 has met all research, architectural, testing, and performance requirements:
 - The FastAPI backend is modular, functional, and fully tested.
 - The model verification gate enforces fail-closed security across all negative scenarios.
-- The off-chain inference pipeline achieves sub-50 ms end-to-end API latency decoupled from blockchain overhead.
+- The off-chain inference pipeline achieves a measured mean end-to-end `/predict` API latency of approximately 49.3 ms in the evaluated local environment, with an observed maximum of 105.1 ms (median: ~48.2 ms), decoupled from blockchain overhead.
 - All 40 unit and integration tests pass cleanly.
 - Research claims are strictly qualified and backed by empirical evidence.
 
