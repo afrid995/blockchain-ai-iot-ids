@@ -67,7 +67,7 @@ Consistent with decentralized systems literature (e.g., *BASIS Schema, Kaushik e
 
 ## 3. Implementation Status
 
-### Completed Components (Phases 1–4)
+### Completed Components (Phases 1–5A)
 - **ML Intrusion Detection Baseline:** Random Forest trained on authentic UNSW-NB15 (90.30% accuracy, 98.78% precision, 86.82% recall, 2.29% FPR on untouched test partition).
 - **Cryptographic Model Hashing:** Low-memory streaming SHA-256 calculator operating over 64 KB binary buffers.
 - **Model Provenance Schema:** Structured JSON provenance records linking model ID, version, dataset hash, training hyperparameters, and metrics.
@@ -76,16 +76,16 @@ Consistent with decentralized systems literature (e.g., *BASIS Schema, Kaushik e
 - **FastAPI Backend Integration Layer:** RESTful service orchestrating model verification, fail-closed model loading, off-chain intrusion detection inference, and security event auditing.
 - **Fail-Closed Model Verification Gate:** Prohibits `joblib.load()` and rejects inference requests (HTTP 503) if verification fails (`HASH_MISMATCH`, `NOT_REGISTERED`, `BLOCKCHAIN_UNAVAILABLE`, `FILE_NOT_FOUND`).
 - **Security Event Audit Logging:** Local append-oriented SQLite audit store recording lifecycle and prediction events without persisting sensitive raw network payloads.
+- **React Frontend Dashboard (Phase 5A):** Presentation client layer communicating with FastAPI to display model provenance, trigger on-chain verification, perform off-chain flow inference, and inspect audit logs.
 - **Reproducible Experiments:**
   - Legitimate model verification (`VERIFIED`).
   - Binary tampering experiment using an isolated temporary copy (`HASH_MISMATCH`).
   - Unregistered model query (`NOT_REGISTERED`).
   - Blockchain overhead benchmarking (write latency, gas, read latency statistics over $N=30$ trials).
   - Backend latency benchmarks isolating verification, inference, and end-to-end API durations.
-- **Automated Test Suite:** 40 unit and integration tests passing in 9.05s across all layers.
+- **Automated Test Suite:** 47 automated tests passing (40 backend pytest + 7 frontend vitest).
 
 ### Planned Components (Future Phases — Not Yet Implemented)
-- React-based dashboard UI (Phase 5).
 - Production/testnet blockchain deployment (e.g., Sepolia or private consortium chain).
 - Evaluation on physical IoT hardware.
 
@@ -124,6 +124,25 @@ Measured empirically using `experiments/backend_latency_experiment.py` on local 
 
 ```text
 major_project/
+├── frontend/                            # Phase 5A React Dashboard UI
+│   ├── src/
+│   │   ├── api/
+│   │   │   └── client.js               # REST client communicating with FastAPI
+│   │   ├── components/
+│   │   │   ├── AlertBanner.jsx         # Status & error alerts
+│   │   │   ├── AuditLog.jsx            # Operational event viewer & modal inspector
+│   │   │   ├── Header.jsx              # System health indicators & brand header
+│   │   │   ├── ModelProvenance.jsx     # Model metadata, hashes, verification trigger
+│   │   │   ├── PredictionForm.jsx      # Flow feature input & classification result
+│   │   │   └── StatusBadge.jsx         # Semantic status indicators
+│   │   ├── test/
+│   │   │   ├── setup.js
+│   │   │   └── App.test.jsx            # Vitest component test suite (7 tests)
+│   │   ├── App.jsx                     # Dashboard container
+│   │   ├── index.css                   # Cyber-defense UI stylesheet
+│   │   └── main.jsx                    # Application entry point
+│   ├── package.json
+│   └── vite.config.js
 ├── backend/                             # Phase 4 FastAPI REST Service
 │   ├── __init__.py
 │   ├── config.py                        # App configuration & env fallbacks
@@ -239,6 +258,24 @@ python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
    ```bash
    curl -X GET "http://127.0.0.1:8000/audit/events?limit=10&offset=0"
    ```
+
+### Start React Frontend Dashboard (Phase 5A)
+```bash
+cd frontend
+npm install
+npm run dev
+# Dashboard available at http://localhost:5173
+```
+
+### Run Frontend Automated Tests
+```bash
+cd frontend
+npm test
+```
+
+> [!NOTE]
+> **Client-Side Architectural Boundaries:**
+> The React dashboard acts purely as a presentation client. It communicates strictly with the FastAPI backend. Direct blockchain RPC interaction, smart contract querying, model deserialization, and off-chain ML inference are strictly executed by the backend.
 
 ### Inspect the Raw Dataset
 ```bash
