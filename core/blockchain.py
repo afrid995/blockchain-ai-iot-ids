@@ -228,7 +228,7 @@ class BlockchainRegistryClient:
         model_id: str,
         version: str,
     ) -> Dict[str, Any]:
-        """Perform zero-trust verification of a local artifact against the on-chain registry.
+        """Perform cryptographic integrity verification of a local model artifact against the on-chain registry.
 
         Returns structured verification outcome:
         - VERIFIED: Local hash matches on-chain registered hash

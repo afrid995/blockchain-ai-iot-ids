@@ -41,7 +41,7 @@ class IntrusionDetector:
             )
             if not self.verification_result["verified"]:
                 raise PermissionError(
-                    f"Zero-Trust Violation: Model artifact integrity verification failed with status "
+                    f"Cryptographic Integrity Verification Failure: Model artifact verification failed with status "
                     f"'{self.verification_result['status']}'. Expected {expected_hash}, got "
                     f"{self.verification_result['actual_hash']}. Model loading aborted."
                 )

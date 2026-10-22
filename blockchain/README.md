@@ -1,6 +1,6 @@
 # Blockchain Model Provenance Layer
 
-This package implements the decentralized root of trust for AI model provenance and tamper-evident verification.
+This package implements the decentralized reference registry for AI model provenance and tamper-evident integrity verification.
 
 ## Architecture
 
@@ -13,10 +13,16 @@ This package implements the decentralized root of trust for AI model provenance 
 Consistent with the research design:
 - The ML model weights (`ids_model.joblib`), datasets, and network traffic payloads are kept **off-chain**.
 - Only the 32-byte cryptographic SHA-256 digest is anchored **on-chain**.
-- This guarantees constant transaction costs, minimal storage overhead, and zero data leakage.
+- This guarantees bounded transaction costs, minimal storage overhead, and prevents exposing raw network payloads on-chain.
+
+## Verification & Latency Boundary
+
+- The blockchain verification operation is architecturally separated from steady-state ML inference and is not invoked for every network-flow prediction in the current design.
+- The measured blockchain read latency reflects the local `EthereumTesterProvider`/`py-evm` experimental environment and should not be interpreted as representative of public or production blockchain networks.
+- A successful hash comparison establishes artifact integrity relative to the registered reference. It does not prove that the model is accurate, unbiased, adversarially robust, or free from data poisoning.
 
 ## Scripts
 
 1. **Compile:** `python -m blockchain.scripts.compile`
 2. **Deploy:** `python -m blockchain.scripts.deploy`
-3. **Register Phase 2 Model:** `python -m blockchain.scripts.register_model`
+3. **Register Model:** `python -m blockchain.scripts.register_model`

@@ -203,9 +203,10 @@ def run_blockchain_provenance_experiment(
             },
         },
         "security_conclusion": (
-            "The on-chain ModelRegistry successfully acts as a tamper-evident root of trust. "
-            "Model verification confirms legitimate artifacts in under 1ms on local EVM, "
-            "while binary alterations are deterministically detected and rejected."
+            "The on-chain ModelRegistry successfully acts as a tamper-evident registry for model provenance references. "
+            "In the local EthereumTesterProvider/py-evm environment, on-chain hash lookup required approximately 7.2 ms (mean), "
+            "while binary alterations were deterministically detected and rejected. "
+            "The verification operation is architecturally separated from steady-state per-flow ML inference."
         ),
     }
 

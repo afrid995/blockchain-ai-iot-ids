@@ -111,8 +111,8 @@ def verify_model_integrity(
 ) -> Dict[str, Any]:
     """Verify that a local model artifact matches its authorized cryptographic digest.
 
-    This function enforces the zero-trust security gate:
-    A model must NEVER be trusted simply due to a matching filename or metadata.
+    This function enforces the pre-deployment cryptographic integrity verification gate:
+    A model is not assumed to be trusted simply due to a matching filename or metadata.
     Verification succeeds strictly when LOCAL_HASH == EXPECTED_HASH.
 
     Args:
