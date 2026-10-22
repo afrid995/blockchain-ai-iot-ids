@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Data and Artifacts (except sample templates if needed)
+data/raw/*.csv
+data/processed/*.csv
+ml/artifacts/*.joblib
+!ml/artifacts/model_metadata.json
+
+# Node & Frontend (for later phases)
+node_modules/
+dist/
+.DS_Store
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db

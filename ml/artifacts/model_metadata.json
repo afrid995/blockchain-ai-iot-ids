@@ -1,0 +1,138 @@
+{
+  "model_id": "iot-ids-rf",
+  "model_version": "v1.0.0",
+  "algorithm": "RandomForestClassifier",
+  "random_seed": 42,
+  "dataset_name": "UNSW-NB15",
+  "dataset_filename": "UNSW_NB15_training-set.csv",
+  "dataset_sha256": "734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559",
+  "model_artifact_filename": "ids_model.joblib",
+  "model_artifact_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+  "target_definition": {
+    "name": "label",
+    "mapping": {
+      "0": "Benign/Normal",
+      "1": "Malicious/Attack"
+    }
+  },
+  "features": {
+    "categorical": [
+      "proto",
+      "service",
+      "state"
+    ],
+    "numerical": [
+      "dur",
+      "spkts",
+      "dpkts",
+      "sbytes",
+      "dbytes",
+      "rate",
+      "sttl",
+      "dttl",
+      "sload",
+      "dload",
+      "sloss",
+      "dloss",
+      "sinpkt",
+      "dinpkt",
+      "sjit",
+      "djit",
+      "swin",
+      "stcpb",
+      "dtcpb",
+      "dwin",
+      "tcprtt",
+      "synack",
+      "ackdat",
+      "smean",
+      "dmean",
+      "trans_depth",
+      "response_body_len",
+      "ct_srv_src",
+      "ct_state_ttl",
+      "ct_dst_ltm",
+      "ct_src_dport_ltm",
+      "ct_dst_sport_ltm",
+      "ct_dst_src_ltm",
+      "is_ftp_login",
+      "ct_ftp_cmd",
+      "ct_flw_http_mthd",
+      "ct_src_ltm",
+      "ct_srv_dst",
+      "is_sm_ips_ports"
+    ],
+    "total_count": 42
+  },
+  "training_hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 20,
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "evaluation_metrics": {
+    "total_test_samples": 175341,
+    "true_negatives": 54718,
+    "false_positives": 1282,
+    "false_negatives": 15730,
+    "true_positives": 103611,
+    "confusion_matrix": [
+      [
+        54718,
+        1282
+      ],
+      [
+        15730,
+        103611
+      ]
+    ],
+    "accuracy": 0.902978,
+    "precision": 0.987778,
+    "recall": 0.868193,
+    "f1_score": 0.924133,
+    "false_positive_rate": 0.022893,
+    "specificity": 0.977107,
+    "roc_auc": 0.985992,
+    "classification_report": {
+      "Benign (0)": {
+        "precision": 0.776714739950034,
+        "recall": 0.9771071428571428,
+        "f1-score": 0.8654624826015437,
+        "support": 56000.0
+      },
+      "Attack (1)": {
+        "precision": 0.9877780214122963,
+        "recall": 0.8681928256005899,
+        "f1-score": 0.9241328255304726,
+        "support": 119341.0
+      },
+      "accuracy": 0.9029776264535961,
+      "macro avg": {
+        "precision": 0.8822463806811651,
+        "recall": 0.9226499842288663,
+        "f1-score": 0.8947976540660081,
+        "support": 175341.0
+      },
+      "weighted avg": {
+        "precision": 0.920369122399021,
+        "recall": 0.9029776264535961,
+        "f1-score": 0.9053948281195989,
+        "support": 175341.0
+      }
+    }
+  },
+  "dataset_inspection": {
+    "total_training_rows": 82332,
+    "total_test_rows": 175341,
+    "training_class_balance": {
+      "1": 45332,
+      "0": 37000
+    },
+    "test_class_balance": {
+      "1": 119341,
+      "0": 56000
+    }
+  },
+  "created_at": "2026-10-22T13:31:43.351565+00:00",
+  "model_artifact_size_bytes": 6319677
+}

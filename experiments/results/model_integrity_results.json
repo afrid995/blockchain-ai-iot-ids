@@ -1,0 +1,30 @@
+{
+  "experiment_name": "model_artifact_tampering_detection",
+  "model_id": "iot-ids-rf",
+  "version": "v1.0.0",
+  "execution_timestamp": "2026-10-22T14:11:46.263919+00:00",
+  "canonical_artifact": {
+    "filename": "ids_model.joblib",
+    "size_bytes": 6319677,
+    "sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5"
+  },
+  "tampered_simulation": {
+    "bytes_injected": 54,
+    "tampered_size_bytes": 6319731,
+    "tampered_sha256": "24e2db67cbe1cf2e90451ba0bf8e9a4e15c3c140d8cc89f680e03f9d3e0db64b"
+  },
+  "trials": {
+    "trial_1_legitimate": {
+      "input_hash": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "verified": true,
+      "status": "VERIFIED"
+    },
+    "trial_2_tampered": {
+      "input_hash": "24e2db67cbe1cf2e90451ba0bf8e9a4e15c3c140d8cc89f680e03f9d3e0db64b",
+      "verified": false,
+      "status": "HASH_MISMATCH",
+      "hash_difference_detected": true
+    }
+  },
+  "security_conclusion": "The cryptographic SHA-256 integrity verification mechanism successfully detected binary byte alteration, rejecting unauthorized model deployment with zero false allowances."
+}
