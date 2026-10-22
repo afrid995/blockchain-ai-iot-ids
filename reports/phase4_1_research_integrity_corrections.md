@@ -21,7 +21,7 @@ No architectural redesign, model replacement, smart contract modification, or Ph
 - **Baseline Commit:** `ed6e1cf94b7a94e3fdfda5e2dc19aad69dc1f141` (`feat(backend): integrate verified model inference and security audit API`)
 - **Repository:** `https://github.com/afrid995/blockchain-ai-iot-ids.git`
 - **Target Branch:** `master`
-- **Automated Test Baseline:** 40 passed in 9.11s
+- **Automated Test Baseline:** 40 collected, 40 passed, 0 failed (zero regression)
 
 ---
 
@@ -106,13 +106,14 @@ tests/test_blockchain.py (12 tests) ............                         [ 55%]
 tests/test_ml_pipeline.py (8 tests) ........                             [ 75%]
 tests/test_provenance.py (10 tests) ..........                           [100%]
 
-============================= 40 passed in 9.11s ==============================
+============================= 40 passed ==============================
 ```
 
-- **Total Tests:** 40
+- **Total Tests Collected:** 40
 - **Passed:** 40 (100%)
 - **Failed:** 0
 - **Regression:** Zero regressions observed across all layers.
+- **Runtime Note:** 40 tests passed; elapsed test-suite runtime is environment-dependent and is not used as a research performance metric.
 
 ---
 
@@ -143,3 +144,18 @@ All core research limitations remain preserved:
 ### **Verdict: APPROVED**
 
 All five requested research-integrity corrections have been verified and applied. All empirical metrics are accurately quoted, security boundaries are rigorously demarcated, and no unsupported claims remain in the repository.
+
+---
+
+## 10. Final Git & Reproducibility Checkpoint
+
+| Checkpoint Parameter | Recorded Repository State | Verification Status |
+| :--- | :--- | :--- |
+| **Phase 4 Baseline Commit** | `ed6e1cf94b7a94e3fdfda5e2dc19aad69dc1f141` | Verified baseline |
+| **Phase 4.1 Commit** | `9aae2ba15d05861975627ac594787ad3f9c73c35` | Verified commit |
+| **Commit Message** | `docs: finalize phase 4 research integrity corrections` | Exact match |
+| **Branch** | `master` | Active branch |
+| **GitHub Remote URL** | `https://github.com/afrid995/blockchain-ai-iot-ids.git` | Verified |
+| **Push Status** | Pushed successfully to `origin/master` | Confirmed |
+| **Remote HEAD Match** | `9aae2ba15d05861975627ac594787ad3f9c73c35` | Exact match (`refs/heads/master`) |
+| **Working Tree** | Clean (`nothing to commit, working tree clean`) | Verified |
