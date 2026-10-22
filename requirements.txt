@@ -8,6 +8,12 @@ joblib>=1.4.0
 pytest>=8.0.0
 pytest-cov>=5.0.0
 
+# Blockchain & EVM Layer (Phase 3)
+web3>=7.0.0
+eth-tester>=0.14.0b1
+py-evm>=0.12.1b1
+py-solc-x>=2.0.0
+
 # Future Phase Requirements (Pre-specified for environment planning)
 fastapi>=0.115.0
 uvicorn>=0.34.0

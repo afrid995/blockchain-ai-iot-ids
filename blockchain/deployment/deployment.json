@@ -1,0 +1,11 @@
+{
+  "network": "local-evm",
+  "contract_name": "ModelRegistry",
+  "contract_address": "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b",
+  "deployer_address": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+  "transaction_hash": "0274996a26ed57465654bb3debb502683360b9f2e24e8a7d2fb6ad860a0ae314",
+  "block_number": 1,
+  "gas_used": 1244483,
+  "deployment_latency_seconds": 0.03209,
+  "timestamp": "2026-10-22T14:35:18.425915+00:00"
+}

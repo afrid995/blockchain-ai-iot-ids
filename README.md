@@ -5,43 +5,52 @@
 
 ---
 
-## 1. Project Philosophy & Core Distinction
+## 1. Project Philosophy & Architecture
 
 A conventional ML-based intrusion-detection system answers:
 > *"Is this network traffic normal or malicious?"*
 
-However, in critical zero-trust IoT infrastructure, a second security question arises:
+However, in critical zero-trust IoT infrastructure, a second fundamental security question arises:
 > *"Can we trust the AI model that is making this prediction?"*
 
 This project rigorously decouples these responsibilities:
-1. **Machine Learning Component:** Performs high-speed IoT network traffic intrusion classification (Benign vs. Attack). Blockchain does **not** perform network traffic classification.
-2. **Blockchain Component (Phases 4–6):** Maintains immutable model provenance, cryptographic hashes (SHA-256), and security audit trails. The heavy model weights and raw IoT traffic are stored **off-chain**; only cryptographic proofs and metadata are anchored on-chain.
 
-> [!NOTE]
-> *Blockchain-based registration and verification will be implemented in a subsequent phase.* The present phase establishes the cryptographic model-provenance foundation.
+```
+[IoT Network Traffic]
+        │
+        ▼
+┌───────────────────────────────┐
+│     ML Intrusion Detector     │ ──> Benign vs. Malicious Prediction
+│  (Random Forest / UNSW-NB15)  │     (High-Speed Off-Chain Inference)
+└───────────────────────────────┘
+        ▲
+        │ Pre-Deployment Integrity Gate
+┌───────────────────────────────┐
+│     Model Artifact File       │ ──> SHA-256 Digest (64 hex / bytes32)
+│     (ids_model.joblib)        │
+└───────────────────────────────┘
+        │
+        ▼ Cryptographic Comparison (LOCAL_HASH == REGISTERED_HASH)
+┌───────────────────────────────┐
+│  Blockchain Provenance Layer  │ ──> Immutable Root of Trust
+│      (ModelRegistry.sol)      │     (On-Chain bytes32 Hash, Version, Timestamp)
+└───────────────────────────────┘
+```
+
+> [!IMPORTANT]
+> **Separation of Concerns:**  
+> The blockchain stores model provenance and cryptographic references; it does **not** store the model artifact or perform intrusion detection.  
+> 
+> **Scientific Scope & Limitations:**  
+> A successful hash comparison establishes artifact integrity relative to the registered reference. It does **not** prove that the model is accurate, unbiased, adversarially robust, or free from all security vulnerabilities.
 
 ---
 
-## 2. Model Provenance & Cryptographic Integrity
+## 2. On-Chain vs. Off-Chain Data Model
 
-### Why the AI Model is a Security-Sensitive Asset
-In an IoT environment, an intrusion detection system (IDS) acts as the first line of defense against botnets, denial-of-service (DoS), and unauthorized reconnaissance. If an adversary gains access to the host file system or edge gateway, they can subtly alter model decision boundaries, inject backdoors (trojans), or replace the model with a degraded version that systematically whitelists malicious traffic. Therefore, the serialized AI model artifact (`ids_model.joblib`) must be treated as a mission-critical asset requiring cryptographic integrity verification prior to deployment and execution.
-
-### Cryptographic Foundation: SHA-256
-We use standard SHA-256 (Secure Hash Algorithm 256-bit) to compute deterministic digital fingerprints of the model artifact file bytes:
-- **Low Memory Streaming:** Computes the hash over 64 KB buffers, ensuring efficient calculation regardless of file size.
-- **Preimage & Collision Resistance:** Computationally infeasible to craft a malicious or mutated model file that matches an authorized 64-character hexadecimal digest.
-- **Strict Byte-Level Representation:** The hash reflects the exact binary bytes of the serialized artifact on disk, rather than in-memory object state or arbitrary filename metadata.
-
-### Logical Model Version vs. Cryptographic Model Hash
-- **Model ID (`iot-ids-rf`):** Stable logical identifier representing the functional purpose of the model within the IoT security infrastructure.
-- **Model Version (`v1.0.0`):** Semantic release version indicating human-managed iterations, feature updates, or retraining cycles.
-- **Model SHA-256 Hash (`dc5e16889ea247...`):** Exact cryptographic digest of the compiled binary artifact. Any modification to weights, preprocessing pipelines, or tree thresholds changes this digest completely, regardless of whether the version string remains the same.
-
-### Why the Model Artifact is Kept Off-Chain
-Deploying serialized machine learning artifacts (e.g., 6.3 MB `ids_model.joblib`) directly onto an on-chain smart contract is prohibitively expensive, creates storage bloat, and introduces severe transaction latency. Consistent with modern decentralized systems literature (e.g., *BASIS Schema, Kaushik et al., Springer 2026*), the architecture employs a **hybrid on-chain/off-chain model**:
-- Heavy binary model files and network traffic datasets remain **off-chain** at the local edge node or artifact repository.
-- Lightweight cryptographic commitments (the 32-byte SHA-256 hash, model ID, version, and training timestamp) are anchored for provenance.
+Consistent with modern decentralized systems literature (e.g., *BASIS Schema, Kaushik et al., Springer 2026*), the architecture employs a hybrid on-chain/off-chain model:
+- **Off-Chain:** Heavy binary model files (`ids_model.joblib`, 6.3 MB) and raw network traffic datasets (`UNSW-NB15`, ~47 MB) remain strictly off-chain at the local edge node.
+- **On-Chain (`ModelRegistry.sol`):** Anchors only lightweight, fixed-size 32-byte cryptographic digests (`bytes32 modelHash`), release version, algorithm label, registrant address, and block timestamp.
 
 ---
 
@@ -56,8 +65,21 @@ major_project/
 │   └── processed/
 ├── core/
 │   ├── __init__.py
-│   ├── hashing.py                       # Streaming SHA-256 calculation and hex digest validation
-│   └── provenance.py                    # Provenance record schema and verify_model_integrity gatekeeper
+│   ├── hashing.py                       # Streaming SHA-256 digest calculation
+│   ├── provenance.py                    # Structured provenance records & local verifier
+│   └── blockchain.py                    # Web3 client, bytes32 conversion, and EVM verifier
+├── blockchain/
+│   ├── contracts/
+│   │   └── ModelRegistry.sol            # Solidity 0.8.20 provenance registry contract
+│   ├── artifacts/
+│   │   └── ModelRegistry.json           # Compiled ABI and Bytecode
+│   ├── deployment/
+│   │   └── deployment.json              # Local EVM deployment receipt & contract address
+│   ├── scripts/
+│   │   ├── compile.py                   # Solcx compilation runner
+│   │   ├── deploy.py                    # Contract deployment script
+│   │   └── register_model.py            # On-chain model registration script
+│   └── README.md                        # Blockchain layer architecture notes
 ├── ml/
 │   ├── __init__.py
 │   ├── dataset.py                       # Dataset loader, downloader, inspection, and SHA-256 hashing
@@ -70,12 +92,15 @@ major_project/
 │       ├── model_metadata.json          # Scientific metadata with cryptographic digests
 │       └── provenance_record.json       # Standardized provenance record
 ├── experiments/
-│   ├── tampering_experiment.py          # Reproducible binary model tampering verification experiment
+│   ├── tampering_experiment.py          # Local binary tampering simulation
+│   ├── blockchain_provenance_experiment.py # Blockchain provenance & latency benchmarking
 │   └── results/
-│       └── model_integrity_results.json # Machine-readable experimental records
+│       ├── model_integrity_results.json    # Local tampering experimental records
+│       └── blockchain_provenance_results.json # On-chain verification & latency records
 ├── tests/
 │   ├── test_ml_pipeline.py              # ML pipeline tests (8 tests)
-│   └── test_provenance.py               # Provenance & cryptographic integrity tests (10 tests)
+│   ├── test_provenance.py               # Provenance & local cryptographic tests (10 tests)
+│   └── test_blockchain.py               # Smart contract & Web3 integration tests (12 tests)
 ├── requirements.txt                     # Pinned project dependencies
 ├── pytest.ini                           # Test configuration
 └── README.md                            # Documentation and replication instructions
@@ -90,7 +115,7 @@ major_project/
 pip install -r requirements.txt
 ```
 
-### Run All Automated Unit Tests (18 Tests)
+### Run All Automated Unit & Integration Tests (30 Tests)
 ```bash
 python -m pytest tests -v
 ```
@@ -105,12 +130,18 @@ python -m ml.inspect_data
 python -m ml.train
 ```
 
-### Run Sample Inference on Unseen Packets
+### Compile and Deploy Smart Contract
 ```bash
-python -m ml.predict
+python -m blockchain.scripts.compile
+python -m blockchain.scripts.deploy
 ```
 
-### Run the Reproducible Tampering Detection Experiment
+### Register Phase 2 Model on Blockchain
 ```bash
-python -m experiments.tampering_experiment
+python -m blockchain.scripts.register_model
+```
+
+### Run Blockchain Provenance & Latency Experiment
+```bash
+python -m experiments.blockchain_provenance_experiment
 ```

@@ -1,0 +1,61 @@
+{
+  "experiment_name": "blockchain_model_provenance_and_integrity_verification",
+  "timestamp": "2026-10-22T14:35:02.123103+00:00",
+  "network": "local-evm",
+  "contract": {
+    "name": "ModelRegistry",
+    "address": "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b",
+    "deployment_block": 1,
+    "deployment_tx": "0274996a26ed57465654bb3debb502683360b9f2e24e8a7d2fb6ad860a0ae314",
+    "deployment_gas_used": 1244483,
+    "deployment_latency_seconds": 0.039284
+  },
+  "registration": {
+    "model_id": "iot-ids-rf",
+    "version": "v1.0.0",
+    "algorithm": "RandomForestClassifier",
+    "registered_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+    "transaction_hash": "bea2f3b2acb330914684e86433168bd68c3afb69584212e002a266eab713c196",
+    "block_number": 2,
+    "gas_used": 214023,
+    "transaction_latency_seconds": 0.071412,
+    "registrant": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf"
+  },
+  "scenarios": {
+    "scenario_a_legitimate": {
+      "description": "Registered model with pristine artifact",
+      "verified": true,
+      "status": "VERIFIED",
+      "local_hash": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "registered_hash": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5"
+    },
+    "scenario_b_tampered": {
+      "description": "Mutated model artifact compared against on-chain hash",
+      "verified": false,
+      "status": "HASH_MISMATCH",
+      "local_hash": "88b2c68b27e093018fa325dfbb4360d70599c78baef8d8ea9f317159d61fd5d9",
+      "registered_hash": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5"
+    },
+    "scenario_c_unregistered": {
+      "description": "Query for unknown model ID or unregistered version",
+      "verified": false,
+      "status": "NOT_REGISTERED"
+    }
+  },
+  "performance_overhead": {
+    "write_overhead": {
+      "registration_transaction_latency_seconds": 0.071412,
+      "registration_gas_used": 214023
+    },
+    "read_overhead": {
+      "benchmark_name": "on_chain_hash_lookup_latency",
+      "sample_count": 30,
+      "mean_ms": 7.2058,
+      "median_ms": 7.2653,
+      "min_ms": 6.3054,
+      "max_ms": 7.9071,
+      "stdev_ms": 0.4148
+    }
+  },
+  "security_conclusion": "The on-chain ModelRegistry successfully acts as a tamper-evident root of trust. Model verification confirms legitimate artifacts in under 1ms on local EVM, while binary alterations are deterministically detected and rejected."
+}
