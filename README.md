@@ -67,23 +67,25 @@ Consistent with decentralized systems literature (e.g., *BASIS Schema, Kaushik e
 
 ## 3. Implementation Status
 
-### Completed Components (Phases 1–3)
+### Completed Components (Phases 1–4)
 - **ML Intrusion Detection Baseline:** Random Forest trained on authentic UNSW-NB15 (90.30% accuracy, 98.78% precision, 86.82% recall, 2.29% FPR on untouched test partition).
 - **Cryptographic Model Hashing:** Low-memory streaming SHA-256 calculator operating over 64 KB binary buffers.
 - **Model Provenance Schema:** Structured JSON provenance records linking model ID, version, dataset hash, training hyperparameters, and metrics.
 - **Blockchain Model Registry:** Solidity 0.8.20 smart contract (`ModelRegistry.sol`) with unique `model_id + version` keys, duplicate registration rejection, and access control.
 - **Blockchain-Backed Model Integrity Verification:** Client engine validating local artifact hashes against on-chain records.
+- **FastAPI Backend Integration Layer:** RESTful service orchestrating model verification, fail-closed model loading, off-chain intrusion detection inference, and security event auditing.
+- **Fail-Closed Model Verification Gate:** Prohibits `joblib.load()` and rejects inference requests (HTTP 503) if verification fails (`HASH_MISMATCH`, `NOT_REGISTERED`, `BLOCKCHAIN_UNAVAILABLE`, `FILE_NOT_FOUND`).
+- **Security Event Audit Logging:** Local append-oriented SQLite audit store recording lifecycle and prediction events without persisting sensitive raw network payloads.
 - **Reproducible Experiments:**
   - Legitimate model verification (`VERIFIED`).
   - Binary tampering experiment using an isolated temporary copy (`HASH_MISMATCH`).
   - Unregistered model query (`NOT_REGISTERED`).
   - Blockchain overhead benchmarking (write latency, gas, read latency statistics over $N=30$ trials).
-- **Automated Test Suite:** 30 unit and integration tests passing.
+  - Backend latency benchmarks isolating verification, inference, and end-to-end API durations.
+- **Automated Test Suite:** 40 unit and integration tests passing in 9.05s across all layers.
 
 ### Planned Components (Future Phases — Not Yet Implemented)
-- FastAPI backend application service.
-- Security-event and audit logging API.
-- React-based dashboard.
+- React-based dashboard UI (Phase 5).
 - Production/testnet blockchain deployment (e.g., Sepolia or private consortium chain).
 - Evaluation on physical IoT hardware.
 
@@ -102,8 +104,19 @@ All metrics reflect actual measurements from the local `EthereumTesterProvider` 
   - Max: `7.9071 ms`
   - Standard Deviation: `0.4148 ms`
 
+### Backend Integration & Latency Benchmarks (Phase 4)
+
+Measured empirically using `experiments/backend_latency_experiment.py` on local Windows 11 with `EthereumTesterProvider`:
+
+| Benchmark Phase | Samples | Mean | Median | StDev | Description |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Model Verification** | $N=30$ | `27.23 ms` | `27.04 ms` | `1.53 ms` | SHA-256 calculation over 6.32 MB binary + EVM read |
+| **On-Chain Read Alone** | $N=30$ | `13.55 ms` | `13.30 ms` | `1.30 ms` | Smart contract `getModelRecord` call |
+| **Pure ML Inference** | $N=100$ | `39.16 ms` | `38.73 ms` | `2.68 ms` | Off-chain Random Forest classification per flow |
+| **End-to-End API `/predict`** | $N=100$ | `49.30 ms` | `48.24 ms` | `7.16 ms` | HTTP parsing, gate check, ML inference, and SQLite audit |
+
 > [!NOTE]
-> The measured blockchain hash-read latency was approximately 7.2 ms in the local `EthereumTesterProvider`/`py-evm` environment. In the current architecture, model verification is performed at model loading/deployment or an explicit verification boundary rather than for every network-flow inference request. Therefore, the blockchain lookup is not part of the steady-state per-flow inference path. This is an architectural separation and not an experimental claim of zero end-to-end latency overhead.
+> In the current architecture, model verification is performed at model loading/deployment or via an explicit `/model/verify` boundary rather than for every network-flow inference request. Therefore, the blockchain lookup is decoupled from steady-state per-flow inference. This is an architectural separation and not an experimental claim of zero end-to-end latency overhead.
 
 ---
 
@@ -111,6 +124,17 @@ All metrics reflect actual measurements from the local `EthereumTesterProvider` 
 
 ```text
 major_project/
+├── backend/                             # Phase 4 FastAPI REST Service
+│   ├── __init__.py
+│   ├── config.py                        # App configuration & env fallbacks
+│   ├── schemas.py                       # Pydantic request/response schemas
+│   ├── main.py                          # FastAPI routes, lifecycle, error handlers
+│   └── services/
+│       ├── __init__.py
+│       ├── audit_service.py             # Local SQLite append audit store
+│       ├── model_service.py             # Fail-closed model gatekeeper
+│       ├── prediction_service.py        # Off-chain ML inference engine
+│       └── verification_service.py      # Blockchain-backed integrity verifier
 ├── data/
 │   ├── raw/
 │   │   ├── UNSW_NB15_training-set.csv   # 82,332 records (SHA-256: 734fe6642edf...)
@@ -147,13 +171,16 @@ major_project/
 ├── experiments/
 │   ├── tampering_experiment.py          # Local binary tampering simulation
 │   ├── blockchain_provenance_experiment.py # Blockchain provenance & latency benchmarking
+│   ├── backend_latency_experiment.py    # Phase 4 end-to-end latency benchmarks
 │   └── results/
 │       ├── model_integrity_results.json    # Local tampering experimental records
-│       └── blockchain_provenance_results.json # On-chain verification & latency records
+│       ├── blockchain_provenance_results.json # On-chain verification & latency records
+│       └── backend_integration_results.json   # Phase 4 backend latency records
 ├── tests/
 │   ├── test_ml_pipeline.py              # ML pipeline tests (8 tests)
 │   ├── test_provenance.py               # Provenance & local cryptographic tests (10 tests)
-│   └── test_blockchain.py               # Smart contract & Web3 integration tests (12 tests)
+│   ├── test_blockchain.py               # Smart contract & Web3 integration tests (12 tests)
+│   └── test_backend.py                  # FastAPI & security gate tests (10 tests)
 ├── reports/                             # Formal research integrity and audit reports
 ├── requirements.txt                     # Pinned project dependencies
 ├── pytest.ini                           # Test configuration
@@ -169,10 +196,49 @@ major_project/
 pip install -r requirements.txt
 ```
 
-### Run All Automated Unit & Integration Tests (30 Tests)
+### Run All Automated Unit & Integration Tests (40 Tests)
 ```bash
 python -m pytest tests -v
 ```
+
+### Run Phase 4 Backend Latency Experiment
+```bash
+python -m experiments.backend_latency_experiment
+```
+
+### Start FastAPI Backend Service
+```bash
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+#### Example Endpoint Requests
+
+1. **System Health Check (`GET /health`)**
+   ```bash
+   curl -X GET http://127.0.0.1:8000/health
+   ```
+
+2. **Model Provenance & Integrity Status (`GET /model/status`)**
+   ```bash
+   curl -X GET http://127.0.0.1:8000/model/status
+   ```
+
+3. **Explicit Blockchain Model Verification (`POST /model/verify`)**
+   ```bash
+   curl -X POST http://127.0.0.1:8000/model/verify
+   ```
+
+4. **Off-Chain Intrusion Detection Inference (`POST /predict`)**
+   ```bash
+   curl -X POST http://127.0.0.1:8000/predict \
+     -H "Content-Type: application/json" \
+     -d '{"features": {"dur": 0.12, "proto": "tcp", "service": "-", "state": "FIN", "spkts": 6, "dpkts": 4, "sbytes": 258, "dbytes": 172, "rate": 74.08, "sttl": 252, "dttl": 254}}'
+   ```
+
+5. **Query Security Audit Events (`GET /audit/events`)**
+   ```bash
+   curl -X GET "http://127.0.0.1:8000/audit/events?limit=10&offset=0"
+   ```
 
 ### Inspect the Raw Dataset
 ```bash

@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "experiment_name": "Phase 4 Backend Integration & Latency Benchmarks",
+    "timestamp": "2026-10-22T15:49:33.659388+00:00",
+    "environment": {
+      "os": "Windows-11-10.0.26300-SP0",
+      "python_version": "3.12.4",
+      "processor": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+      "evm_provider": "EthereumTesterProvider (local in-process py-evm)",
+      "note": "Measurements reflect an isolated local execution environment. Public or production blockchain network latencies are NOT included."
+    },
+    "model_provenance": {
+      "model_id": "iot-ids-rf",
+      "version": "v1.0.0",
+      "algorithm": "RandomForestClassifier",
+      "artifact_size_bytes": 6319677,
+      "model_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "contract_address": "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b"
+    }
+  },
+  "benchmarks": {
+    "model_verification_latency": {
+      "sample_count": 30,
+      "mean_ms": 27.2321,
+      "median_ms": 27.0404,
+      "min_ms": 23.9512,
+      "max_ms": 30.4899,
+      "stdev_ms": 1.5278
+    },
+    "on_chain_read_latency": {
+      "sample_count": 30,
+      "mean_ms": 13.5491,
+      "median_ms": 13.3017,
+      "min_ms": 11.9798,
+      "max_ms": 17.5271,
+      "stdev_ms": 1.1255
+    },
+    "pure_ml_inference_latency": {
+      "sample_count": 100,
+      "mean_ms": 39.1582,
+      "median_ms": 38.7294,
+      "min_ms": 35.6939,
+      "max_ms": 57.5629,
+      "stdev_ms": 2.6823
+    },
+    "end_to_end_api_latency": {
+      "sample_count": 100,
+      "mean_ms": 49.3021,
+      "median_ms": 48.238,
+      "min_ms": 45.0318,
+      "max_ms": 111.1907,
+      "stdev_ms": 7.1562
+    }
+  },
+  "scenarios_verified": {
+    "Scenario A (Valid Registered Model)": "PASS - VERIFIED, model loaded, prediction succeeded",
+    "Scenario B (Tampered Model)": "PASS - HASH_MISMATCH, loading blocked, predict returned 503",
+    "Scenario C (Unregistered Model)": "PASS - NOT_REGISTERED, loading blocked, predict returned 503",
+    "Scenario D (Blockchain Unavailable)": "PASS - BLOCKCHAIN_UNAVAILABLE, loading blocked, no insecure fallback",
+    "Scenario E (Missing Artifact)": "PASS - FILE_NOT_FOUND, loading blocked",
+    "Scenario F (Valid Prediction Handling)": "PASS - Off-chain inference with non-predictive column stripping",
+    "Scenario G (Audit Retrieval)": "PASS - Paginated event retrieval and single UUID lookup"
+  }
+}
