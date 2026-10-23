@@ -51,7 +51,7 @@ python scripts/reproduce_research.py
 
 ### Execution Pipeline
 The workflow executes five sequential validation stages:
-1. **Stage A:** Validates dataset and model artifact identities by calculating real-time SHA-256 digests and asserting byte-exact matches against `ml/artifacts/provenance_record.json`.
+1. **Stage A:** Validates dataset and model artifact identities by calculating SHA-256 digests during execution and asserting byte-exact matches against `ml/artifacts/provenance_record.json`.
 2. **Stage B:** Executes the model integrity check on the canonical artifact (`VERIFIED`), then simulates an isolated binary byte-level mutation in a temporary directory and asserts deterministic rejection (`HASH_MISMATCH`).
 3. **Stage C:** Initializes an isolated in-process Ethereum test environment (`EthereumTesterProvider`), deploys `ModelRegistry.sol`, registers the Phase 2 canonical model reference, queries `getModel`, and verifies on-chain digest correspondence.
 4. **Stage D:** Boots an in-process FastAPI application with an isolated temporary SQLite audit database, asserts that unverified models block prediction requests with HTTP 503 (`fail-closed`), executes explicit verification, confirms model loading into memory, runs off-chain ML inference, and verifies structured audit log persistence.
@@ -68,7 +68,7 @@ Actual output recorded from `python scripts/reproduce_research.py`:
  RESEARCH REPRODUCIBILITY & EVIDENCE DEMONSTRATION WORKFLOW
 ============================================================================
 Repository: https://github.com/afrid995/blockchain-ai-iot-ids.git
-Timestamp:  2026-10-23T14:35:11.748440+00:00
+Timestamp:  2026-10-23T15:00:49.349769+00:00
 Python:     3.12.4 on win32
 
 ----------------------------------------------------------------------------
@@ -123,7 +123,7 @@ Python:     3.12.4 on win32
 [*] Deploying ModelRegistry.sol contract on local EVM...
     - Contract Address: 0xF2E246BB76DF876Cef8b38ae84130F4F55De395b
     - Gas Used:         1,244,483
-    - Latency:          0.0311 s
+    - Latency:          0.0279 s
 
 [*] Registering Model 'iot-ids-rf:v1.0.0' on-chain...
     - Tx Hash:          bea2f3b2acb330914684e86433168bd68c3afb69584212e002a266eab713c196
@@ -136,8 +136,8 @@ Python:     3.12.4 on win32
     - Algorithm:        RandomForestClassifier
     - Registered Hash:  dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5
     - Registrant:       0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
-    - Registered At:    1792766114
-    - Read Latency:     7.3520 ms
+    - Registered At:    1792767651
+    - Read Latency:     6.4198 ms
     -> [PASS] On-chain record matches artifact digest exactly.
 
 ----------------------------------------------------------------------------
@@ -152,16 +152,16 @@ Python:     3.12.4 on win32
 [2] Executing Explicit Cryptographic Verification:
     - Verified:            True
     - Status:              VERIFIED
-    - Read Latency:        26.04 ms
-    - Total Gate Time:     1688.37 ms
+    - Read Latency:        13.45 ms
+    - Total Gate Time:     1061.74 ms
     - Model Loaded State:  True
     -> [PASS] Verified model successfully enabled in memory.
 
 [3] Executing Off-Chain Model Inference (Gated & Enabled):
     - Classification:      Attack
     - Confidence:          93.98%
-    - Model Compute Time:  46.45 ms
-    - End-to-End API Time: 57.74 ms
+    - Model Compute Time:  40.54 ms
+    - End-to-End API Time: 47.92 ms
     -> [PASS] Off-chain ML inference executed successfully.
 
 [4] Querying Append-Oriented Security Audit Log:
@@ -190,8 +190,10 @@ Python:     3.12.4 on win32
 ============================================================================
  ALL REPRODUCIBILITY STAGES VERIFIED (PASS)
 ============================================================================
-Total Workflow Duration: 4.60 s
+Total Workflow Duration: 3.74 s
 ```
+
+*(Note: Observed workflow duration of 3.74s is an empirical benchmark measurement of the local evaluation environment rather than a deterministic runtime or performance guarantee).*
 
 ---
 
@@ -215,7 +217,7 @@ Total Workflow Duration: 4.60 s
 - **Deployer / Registrant Address:** `0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf`
 - **Registered Model Hash:** `dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5`
 - **Registered Model Key:** `model_id="iot-ids-rf"`, `version="v1.0.0"`, `algorithm="RandomForestClassifier"`
-- **On-Chain Lookup Latency:** $\approx 7.35\text{ ms}$ (mean local lookup)
+- **On-Chain Lookup Latency:** $\approx 6.42\text{ ms}$ (observed local EVM lookup)
 
 ---
 
@@ -225,19 +227,24 @@ All existing test suites and the new reproducibility workflow were executed and 
 
 ### A. Backend Test Suite (pytest)
 Command: `python -m pytest tests -v`
-- **Total Backend Tests:** 40
+- **Total Backend Tests Collected:** 40
 - **Passed:** 40
 - **Failed:** 0
-- **Execution Time:** 9.33s
-- **Suites:** `test_ml_pipeline.py` (11 tests), `test_provenance.py` (10 tests), `test_blockchain.py` (12 tests), `test_backend.py` (10 tests; total 40 test functions).
+- **Execution Time:** ~9.09s
+- **Suites & Per-File Reconciliation:**
+  - `tests/test_backend.py`: 10 passed (`test_1` through `test_10`)
+  - `tests/test_blockchain.py`: 12 passed (`test_1` through `test_12`)
+  - `tests/test_ml_pipeline.py`: 8 passed (`test_1`, `test_2`, `test_3`, composite `test_4_and_5`, `test_6`, composite `test_7_8`, composite `test_9_10`, `test_11`; validating 11 requirements across 8 test functions)
+  - `tests/test_provenance.py`: 10 passed (`test_1` through `test_10`)
+  - **Arithmetic Consistency:** $10 + 12 + 8 + 10 = 40$ test functions collected and passed.
 
 ### B. Frontend Test Suite (Vitest)
 Command: `cd frontend && npm test`
-- **Total Frontend Tests:** 26
+- **Total Frontend Tests Collected:** 26
 - **Passed:** 26
 - **Failed:** 0
-- **Execution Time:** 1.99s
-- **Suites:** `src/test/analytics.test.js` (16 tests), `src/test/App.test.jsx` (10 tests).
+- **Execution Time:** ~17.06s (includes test runner startup and JSDOM environment initialization; test execution ~819ms)
+- **Suites:** `src/test/analytics.test.js` (16 passed), `src/test/App.test.jsx` (10 passed).
 
 ### C. Total Automated Project Tests
 - **Total Tests Collected:** 66
@@ -247,11 +254,11 @@ Command: `cd frontend && npm test`
 
 ### D. Frontend Production Build (Vite)
 Command: `cd frontend && npm run build`
-- **Status:** Successful (compiled 36 modules into `frontend/dist/` in 550ms).
+- **Status:** Successful (compiled 36 modules into `frontend/dist/` in 626ms).
 
 ### E. Reproducibility Workflow Execution
 Command: `python scripts/reproduce_research.py`
-- **Status:** All 5 stages PASSED in 4.60s.
+- **Status:** All 5 stages PASSED with observed duration 3.74s.
 
 ---
 
@@ -282,12 +289,13 @@ A rigorous text audit was performed across the new scripts and report:
 | **Phase 5A Implementation Commit** | `5bab3ea44d8100e3efe2b241eec541b710c7bf98` | Verified implementation |
 | **Phase 5B Implementation Commit** | `5b2a99c578f761c88d3b0b60c23c4846a879733e` | Verified implementation |
 | **Phase 5B.1 Starting Checkpoint** | `d3293084d6fbce0d27475695f3aa4947a9c0fae2` | Verified starting HEAD |
+| **Phase 5C Implementation Commit** | `ab4244ea3bb8f7a5db85d1486c33913f40cd3fc7` | Verified implementation |
 | **Target Branch** | `master` | Active branch |
 | **GitHub Remote URL** | `https://github.com/afrid995/blockchain-ai-iot-ids.git` | Verified |
-| **Backend Tests** | 40 passed (0 failures) | Confirmed |
-| **Frontend Tests** | 26 passed (0 failures) | Confirmed |
-| **Total Automated Tests** | 66 passed (0 failures) | Confirmed |
-| **Reproducibility Workflow** | 5/5 stages passed in 4.60s | Confirmed |
+| **Backend Tests** | 40 passed (0 failures) | Confirmed (10 + 12 + 8 + 10 = 40) |
+| **Frontend Tests** | 26 passed (0 failures) | Confirmed (16 + 10 = 26) |
+| **Total Automated Tests** | 66 passed (0 failures) | Confirmed (40 + 26 = 66) |
+| **Reproducibility Workflow** | 5/5 stages passed in 3.74s (observed) | Confirmed |
 
 *(Note: In accordance with Sections 10 and 11, the actual resulting local and remote HEAD hashes are reported externally upon committing).*
 
