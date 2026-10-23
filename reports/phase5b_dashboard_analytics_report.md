@@ -21,7 +21,7 @@ Phase 5B strictly adds frontend dashboard analytics and visualization.
 - **Zero changes** to the Solidity smart contract (`ModelRegistry.sol`) or blockchain deployment scripts.
 - **Zero changes** to backend verification gates or fail-closed architecture.
 - **Zero per-prediction blockchain calls** introduced.
-- **Zero third-party charting bloat**: Implemented with pure, responsive, accessible SVG/CSS components in React to guarantee zero dependency vulnerabilities, deterministic testing in jsdom, and fast production compilation.
+- **Zero third-party charting bloat**: Implemented with pure, responsive, accessible SVG/CSS components in React to avoid introducing an additional charting-library dependency and keep the visualization layer lightweight and deterministic.
 
 ---
 
@@ -31,8 +31,8 @@ The fundamental architectural boundaries established in Phases 1–5A remain com
 - **Presentation Layer (React):** Renders UI components, displays provenance metadata, executes user predictions, presents audit records, and deterministically computes aggregate analytics from backend records.
 - **Backend Orchestration Layer (FastAPI):** Serves REST endpoints (`/health`, `/model/status`, `/model/verify`, `/predict`, `/audit/events`).
 - **Off-Chain ML Inference:** Random Forest model executes inference locally off-chain without transmitting raw network flows onto the blockchain.
-- **Cryptographic Model Verification Gate:** SHA-256 digest comparison against the immutable on-chain registry gates model loading into memory.
-- **On-Chain Provenance Registry:** Ethereum smart contract stores model identity, version, artifact SHA-256 digest, and training metadata.
+- **Cryptographic Model Verification Gate:** SHA-256 digest comparison against the evaluated on-chain provenance registry gates model loading into memory.
+- **On-Chain Provenance Registry:** Ethereum smart contract stores the registered model identity, version, artifact SHA-256 digest, algorithm, timestamp, and registrant. Detailed training metadata remains off-chain.
 - **Operational Audit Log:** Append-oriented local SQLite store tracks operational events (inferences, verification attempts, gate blocks).
 
 No live streaming, WebSockets, or polling intervals were introduced; data is refreshed deterministically via manual user controls or upon executing verifications and predictions.
@@ -60,7 +60,7 @@ Six responsive summary cards provide at-a-glance visibility into system activity
 ### C. Verification Outcomes Chart (Section B)
 - **Gate Outcome Breakdown:** Frequency and percentage of verification attempts grouped by exact status code:
   - `VERIFIED`: Successful hash match against blockchain registry.
-  - `HASH_MISMATCH`: Local binary altered or tampered.
+  - `HASH_MISMATCH`: Local artifact differs from the registered digest.
   - `NOT_REGISTERED`: Model ID/version not present on-chain.
   - `BLOCKCHAIN_UNAVAILABLE`: EVM RPC node unreachable.
 - **Progress Indicators:** Proportional status bars for each observed status.
