@@ -3,6 +3,7 @@ import { api, ApiError } from './api/client';
 import { Header } from './components/Header';
 import { ModelProvenance } from './components/ModelProvenance';
 import { PredictionForm } from './components/PredictionForm';
+import { AnalyticsSection } from './components/AnalyticsSection';
 import { AuditLog } from './components/AuditLog';
 import { AlertBanner } from './components/AlertBanner';
 
@@ -32,7 +33,13 @@ export function App() {
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   const [auditError, setAuditError] = useState(null);
 
-  // Fetch audit records
+  // Analytics states (Phase 5B)
+  const [analyticsEvents, setAnalyticsEvents] = useState([]);
+  const [analyticsTotal, setAnalyticsTotal] = useState(0);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(null);
+
+  // Fetch audit records for paginated table
   const loadAuditEvents = useCallback(async (limit, offset, filter) => {
     setIsLoadingAudit(true);
     setAuditError(null);
@@ -47,6 +54,21 @@ export function App() {
     }
   }, []);
 
+  // Fetch analytics records (up to 100 recent audit events)
+  const loadAnalytics = useCallback(async () => {
+    setIsLoadingAnalytics(true);
+    setAnalyticsError(null);
+    try {
+      const data = await api.getAuditEvents(100, 0, null);
+      setAnalyticsEvents(data?.events || []);
+      setAnalyticsTotal(data?.total || 0);
+    } catch (err) {
+      setAnalyticsError(err.message || 'Failed to load analytics data');
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  }, []);
+
   // Fetch all system data
   const loadAll = useCallback(async () => {
     setIsRefreshing(true);
@@ -58,6 +80,7 @@ export function App() {
       ]);
       setHealth(healthData);
       setModelStatus(statusData);
+      await loadAnalytics();
     } catch (err) {
       setGeneralError(
         `Backend Connection Alert: ${err.message}. Please verify that the FastAPI backend server is running on http://127.0.0.1:8000.`
@@ -65,7 +88,7 @@ export function App() {
     } finally {
       setIsRefreshing(false);
     }
-  }, []);
+  }, [loadAnalytics]);
 
   // Initial load
   useEffect(() => {
@@ -82,11 +105,12 @@ export function App() {
     try {
       const result = await api.verifyModel();
       setLastVerifyResult(result);
-      // Refresh status and audit events to reflect new gate state
+      // Refresh status, audit events, and analytics to reflect new gate state
       await Promise.all([
         api.getModelStatus().then(setModelStatus),
         api.getHealth().then(setHealth),
         loadAuditEvents(auditLimit, auditOffset, auditFilter),
+        loadAnalytics(),
       ]);
     } catch (err) {
       setVerificationError(err.message || 'Verification failed unexpectedly.');
@@ -104,8 +128,9 @@ export function App() {
     try {
       const result = await api.predict(features);
       setPredictionResult(result);
-      // Automatically refresh audit events so the prediction appears in the audit log
+      // Automatically refresh audit events and analytics
       loadAuditEvents(auditLimit, auditOffset, auditFilter);
+      loadAnalytics();
     } catch (err) {
       if (err instanceof ApiError && err.status === 503) {
         setPredictionError(
@@ -151,7 +176,16 @@ export function App() {
             isModelLoaded={modelStatus?.is_loaded}
           />
 
-          {/* Section 3: Security Audit Trail */}
+          {/* Section 3: Dashboard Analytics & Audit Visualization (Phase 5B) */}
+          <AnalyticsSection
+            events={analyticsEvents}
+            totalEventsCount={analyticsTotal}
+            isLoading={isLoadingAnalytics}
+            error={analyticsError}
+            onRefresh={loadAnalytics}
+          />
+
+          {/* Section 4: Operational Security Audit Trail */}
           <AuditLog
             events={auditEvents}
             total={auditTotal}

@@ -191,4 +191,111 @@ describe('Phase 5A Frontend React Dashboard Tests', () => {
       );
     });
   });
+
+  it('8. Analytics section renders summary cards and charts with populated data', async () => {
+    const mockRichAuditData = {
+      total: 3,
+      limit: 10,
+      offset: 0,
+      events: [
+        {
+          event_id: 'ev-1',
+          timestamp: '2026-10-22T20:06:00Z',
+          event_type: 'PREDICTION',
+          status: 'SUCCESS',
+          model_id: 'iot-ids-rf',
+          model_version: 'v1.0.0',
+          verification_status: 'VERIFIED',
+          prediction: 'Attack',
+          inference_latency_ms: 38.5,
+        },
+        {
+          event_id: 'ev-2',
+          timestamp: '2026-10-22T20:07:00Z',
+          event_type: 'PREDICTION',
+          status: 'SUCCESS',
+          model_id: 'iot-ids-rf',
+          model_version: 'v1.0.0',
+          verification_status: 'VERIFIED',
+          prediction: 'Benign',
+          inference_latency_ms: 22.1,
+        },
+        {
+          event_id: 'ev-3',
+          timestamp: '2026-10-22T20:08:00Z',
+          event_type: 'MODEL_VERIFICATION',
+          status: 'SUCCESS',
+          model_id: 'iot-ids-rf',
+          model_version: 'v1.0.0',
+          verification_status: 'VERIFIED',
+        },
+      ],
+    };
+
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockRichAuditData);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('analytics-section')).toBeInTheDocument();
+      expect(screen.getByTestId('metric-predictions')).toHaveTextContent('2');
+      expect(screen.getByTestId('metric-attacks')).toHaveTextContent('1');
+      expect(screen.getByTestId('metric-benign')).toHaveTextContent('1');
+      expect(screen.getByTestId('metric-verifications')).toHaveTextContent('1');
+      expect(screen.getByTestId('metric-latency')).toHaveTextContent(/30.3 ms/);
+      expect(screen.getByTestId('prediction-chart')).toBeInTheDocument();
+      expect(screen.getByTestId('verification-chart')).toBeInTheDocument();
+      expect(screen.getByTestId('latency-chart')).toBeInTheDocument();
+      expect(screen.getByTestId('event-distribution-chart')).toBeInTheDocument();
+    });
+  });
+
+  it('9. Analytics section displays empty-state notices when audit events are empty', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue({
+      total: 0,
+      limit: 10,
+      offset: 0,
+      events: [],
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('empty-prediction-chart')).toHaveTextContent(
+        /No prediction data available in loaded audit events/i
+      );
+      expect(screen.getByTestId('empty-verification-chart')).toHaveTextContent(
+        /No verification events available/i
+      );
+      expect(screen.getByTestId('empty-latency-chart')).toHaveTextContent(
+        /No latency records available in loaded audit events/i
+      );
+      expect(screen.getByTestId('empty-distribution-chart')).toHaveTextContent(
+        /No audit events recorded/i
+      );
+    });
+  });
+
+  it('10. Analytics refresh button triggers audit reload', async () => {
+    const getAuditSpy = vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('analytics-refresh-btn')).toBeInTheDocument();
+    });
+
+    const refreshBtn = screen.getByTestId('analytics-refresh-btn');
+    fireEvent.click(refreshBtn);
+
+    await waitFor(() => {
+      expect(getAuditSpy).toHaveBeenCalled();
+    });
+  });
 });
