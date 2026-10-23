@@ -1,0 +1,89 @@
+{
+  "project": "Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection",
+  "repository": "https://github.com/afrid995/blockchain-ai-iot-ids.git",
+  "phase": "5C",
+  "manifest_version": "1.0.0",
+  "generated_at": "2026-10-23T14:35:00Z",
+  "model": {
+    "model_id": "iot-ids-rf",
+    "version": "v1.0.0",
+    "algorithm": "RandomForestClassifier",
+    "artifact_filename": "ids_model.joblib",
+    "artifact_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+    "artifact_size_bytes": 6319677,
+    "metrics": {
+      "accuracy": 0.902978,
+      "precision": 0.987778,
+      "recall": 0.868193,
+      "f1": 0.924133,
+      "fpr": 0.022893,
+      "roc_auc": 0.985992,
+      "specificity": 0.977107
+    }
+  },
+  "dataset": {
+    "name": "UNSW-NB15",
+    "training_file": "UNSW_NB15_training-set.csv",
+    "training_sha256": "734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559",
+    "training_size_bytes": 15380800,
+    "testing_file": "UNSW_NB15_testing-set.csv",
+    "testing_sha256": "bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa",
+    "testing_size_bytes": 32293018
+  },
+  "blockchain": {
+    "contract_name": "ModelRegistry",
+    "contract_address": "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b",
+    "deployer_address": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+    "network_environment": "local-evm (EthereumTesterProvider / py-evm)",
+    "registered_model_hash": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+    "solidity_version": "^0.8.20"
+  },
+  "backend": {
+    "framework": "FastAPI",
+    "fail_closed_gate": true,
+    "endpoints": [
+      "/health",
+      "/model/status",
+      "/model/verify",
+      "/predict",
+      "/audit/events",
+      "/audit/events/{event_id}"
+    ]
+  },
+  "frontend": {
+    "framework": "React 18 + Vite 6",
+    "production_build_entry": "frontend/dist/index.html",
+    "components": [
+      "ModelProvenance",
+      "PredictionForm",
+      "AnalyticsSection",
+      "AuditLog",
+      "Header",
+      "StatusBadge",
+      "AlertBanner"
+    ]
+  },
+  "tests": {
+    "backend_collected": 40,
+    "backend_passed": 40,
+    "frontend_collected": 26,
+    "frontend_passed": 26,
+    "total_passed": 66,
+    "total_failed": 0
+  },
+  "reproducibility_workflow": {
+    "entrypoint": "scripts/reproduce_research.py",
+    "stages_verified": [
+      "Stage A: Dataset & Baseline Evidence (Phase 1)",
+      "Stage B: Cryptographic SHA-256 Model Integrity (Phase 2)",
+      "Stage C: Blockchain Model Provenance Registry (Phase 3)",
+      "Stage D: Fail-Closed Backend Architecture (Phase 4)",
+      "Stage E: React Dashboard & Operational Analytics UI (Phases 5A & 5B)"
+    ],
+    "verification_status": "PASS"
+  },
+  "git_baseline": {
+    "phase_5b1_checkpoint": "d3293084d6fbce0d27475695f3aa4947a9c0fae2",
+    "branch": "master"
+  }
+}
