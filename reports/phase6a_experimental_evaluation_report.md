@@ -38,7 +38,7 @@ To prevent conceptual confusion, the framework strictly enforces and evaluates f
    - *Boundary:* The blockchain answers: *"What specific digest and version was officially registered by an authorized administrator?"* It does not evaluate network traffic or train models.
 4. **Runtime Inference Execution (Off-Chain Memory):**
    - Following successful pre-load verification, the verified model resides in server memory to classify live flow records.
-   - *Boundary:* The runtime prediction path is executed completely off-chain. **No blockchain queries are performed during packet classification.**
+   - *Boundary:* The runtime prediction path is executed completely off-chain. **No blockchain queries are performed during network-flow classification.**
 
 ---
 
@@ -48,7 +48,7 @@ To prevent conceptual confusion, the framework strictly enforces and evaluates f
 2. Measure the latency and component breakdown of legitimate artifact cryptographic verification and on-chain lookup (Experiment E2).
 3. Demonstrate deterministic detection and fail-closed rejection of tampered model binaries in an isolated simulation (Experiment E3).
 4. Demonstrate deterministic rejection of unregistered model/version combinations (Experiment E4).
-5. Empirically prove the architectural cost separation between one-time pre-load verification and runtime per-flow inference (Experiment E5).
+5. Empirically prove the architectural cost separation between pre-load verification and runtime per-flow inference (Experiment E5).
 6. Verify the complete fail-closed security gate matrix across all valid and invalid operating states (Experiment E6).
 7. Inspect the operational audit trail to confirm event logging fidelity, privacy protection (zero raw payload persistence), and off-chain storage demarcation (Experiment E7).
 
@@ -179,13 +179,13 @@ Experiment E4 evaluates the rejection of an authentic binary presented under an 
 
 ## 11. Experiment E5: Verification vs. Inference Cost Separation
 
-Experiment E5 is the central performance evaluation of the project. It demonstrates that pre-load verification overhead is incurred **once at server initialization**, leaving runtime per-flow inference completely unencumbered by blockchain transactions or queries.
+Experiment E5 is the central performance evaluation of the project. The verification workflow is a pre-load verification cost measured before model loading; it is not a measurement of complete application or server startup time. Once verified and loaded into memory, runtime per-flow inference is performed completely off-chain without blockchain lookups.
 
 ### A. Empirical Latency Measurements
 
 | Operational Path | Scope | $N$ | Mean (ms) | Median (ms) | Std Dev (ms) | Min (ms) | Max (ms) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Pre-Load Verification** | One-time gate at boot | 30 | 28.60 | 28.54 | 2.68 | 19.22 | 35.18 |
+| **Pre-Load Verification** | Verification gate before model loading | 30 | 28.60 | 28.54 | 2.68 | 19.22 | 35.18 |
 | **Pure ML Inference** | Per-flow compute | 100 | 41.63 | 39.65 | 8.85 | 33.19 | 85.28 |
 | **End-to-End API Request** | Per-flow HTTP + Audit | 100 | 53.24 | 51.57 | 14.07 | 43.02 | 177.22 |
 
@@ -206,7 +206,7 @@ Experiment E6 tests all four primary operational states at the REST API interfac
 
 | State # | Evaluated Condition | Gate Status | Model Loaded in RAM? | `/predict` HTTP Code | Classification Served? | Security Outcome |
 | :---: | :--- | :--- | :---: | :---: | :---: | :--- |
-| **1** | Initial Server Boot | `UNVERIFIED` | **False** | **503** | No | **PASS** — Blocked prior to verification |
+| **1** | Initial Unverified State | `UNVERIFIED` | **False** | **503** | No | **PASS** — Blocked prior to verification |
 | **2** | Tampered Binary | `HASH_MISMATCH` | **False** | **503** | No | **PASS** — Aborted loading, blocked |
 | **3** | Unregistered Version | `NOT_REGISTERED` | **False** | **503** | No | **PASS** — Missing provenance, blocked |
 | **4** | Authentic Registered Model | `VERIFIED` | **True** | **200** | **Yes** (`Attack`) | **PASS** — Enabled for runtime inference |
@@ -258,7 +258,7 @@ Experiment E7 inspects the SQLite database (`audit_e7.db`) following the executi
 | **Legitimate Registered Model** | Canonical `ids_model.joblib` | `VERIFIED` | `VERIFIED` | **Yes** | **HTTP 200** | Allowed |
 | **Tampered Model Artifact** | Injected 37-byte mutation | `HASH_MISMATCH` | `HASH_MISMATCH` | **No** | **HTTP 503** | **Enforced (Blocked)** |
 | **Unregistered Model / Version** | Unregistered key `v9.9.9` | `NOT_REGISTERED` | `NOT_REGISTERED` | **No** | **HTTP 503** | **Enforced (Blocked)** |
-| **Initial Unverified Boot** | Prior to explicit verify call | `UNVERIFIED` | `UNVERIFIED` | **No** | **HTTP 503** | **Enforced (Blocked)** |
+| **Initial Unverified State** | Prior to explicit verify call | `UNVERIFIED` | `UNVERIFIED` | **No** | **HTTP 503** | **Enforced (Blocked)** |
 
 ### Table C: Operational Timing & Latency Separation
 
@@ -266,7 +266,7 @@ Experiment E7 inspects the SQLite database (`audit_e7.db`) following the executi
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Local SHA-256 Hashing** | File Read + Crypto Hash (6.3MB) | 30 | 6.64 | 5.82 | 3.91 | 5.22 | 27.16 |
 | **On-Chain Registry Read** | In-Process EVM Query (`getModel`) | 30 | 13.55 | 13.22 | 1.72 | 10.92 | 21.67 |
-| **Total Pre-Load Gate** | Pre-Load Verification (One-Time Gate) | 30 | 28.60 | 28.54 | 2.68 | 19.22 | 35.18 |
+| **Total Pre-Load Gate** | Verification gate before model loading | 30 | 28.60 | 28.54 | 2.68 | 19.22 | 35.18 |
 | **Pure ML Model Compute** | Off-Chain Feature Processing | 100 | 41.63 | 39.65 | 8.85 | 33.19 | 85.28 |
 | **End-to-End API Request** | HTTP + Gate + Predict + Audit | 100 | 53.24 | 51.57 | 14.07 | 43.02 | 177.22 |
 
@@ -278,7 +278,7 @@ The evaluation runner programmatically generated three publication-quality figur
 
 1. **Figure 1: Latency Cost Separation**
    File: [`reports/figures/figure1_latency_separation.png`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/reports/figures/figure1_latency_separation.png)
-   *Description:* Boxplot and bar chart illustrating the distribution and mean latencies across one-time pre-load verification (28.60 ms), end-to-end API requests (53.24 ms), and pure ML compute (41.63 ms).
+   *Description:* Boxplot and bar chart illustrating the distribution and mean latencies across pre-load verification (28.60 ms), end-to-end API requests (53.24 ms), and pure ML compute (41.63 ms).
 2. **Figure 2: Verification Component Breakdown**
    File: [`reports/figures/figure2_verification_components.png`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/reports/figures/figure2_verification_components.png)
    *Description:* Error bar chart isolating local SHA-256 disk hashing time (6.64 ms) versus on-chain smart contract read time (13.55 ms).
@@ -293,7 +293,7 @@ The evaluation runner programmatically generated three publication-quality figur
 ### What the Experiments Defensibly Demonstrate
 1. **Cryptographic Protection Against Model Replacement:** An attacker who gains write access to the model storage directory and modifies the `.joblib` binary cannot execute inference through the gateway. The pre-load verification gate detects the hash discrepancy in $\approx 27.42\text{ ms}$ and aborts loading with HTTP 503.
 2. **Provenance Enforcement:** Only model artifacts corresponding to registered on-chain digests can be transitioned into server memory.
-3. **Architectural Decoupling:** Blockchain verification is performed before model loading, while the evaluated per-flow inference path performs off-chain prediction without a blockchain lookup. Live per-flow packet evaluation is not subjected to blockchain block times, consensus delays, or gas costs.
+3. **Architectural Decoupling:** Blockchain verification is performed before model loading, while the evaluated per-flow inference path performs off-chain prediction without a blockchain lookup. The evaluated per-flow network-flow inference is not subjected to blockchain block times, consensus delays, or gas costs.
 4. **Fail-Closed Gate:** In all unverified or error states, predictions are blocked by default.
 5. **Auditable Lifecycle:** The operational security audit store logs every verification attempt, failure, and prediction for forensic review.
 
@@ -340,8 +340,8 @@ cd frontend && npm test && npm run build && cd ..
 ## 20. Research-Integrity Audit
 
 An automated scan of all newly generated Phase 6A documentation, scripts, and reports verified:
-- **Zero occurrences of prohibited claims:** `real-time`, `wire-speed`, `high-throughput`, `zero latency`, `zero overhead`, `zero runtime penalty`, `sub-50 ms`, `tamper-proof`, `guaranteed secure`, `blockchain improves accuracy`, `blockchain detects attacks`, `proves model safety`.
-- **Latency Disclaimers:** All reported latencies are explicitly qualified as local benchmark observations without constituting hardware SLAs or performance guarantees.
+- **Zero unsupported performance or security claims:** Confirmed zero unsupported claims regarding `real-time`, `wire-speed`, `high-throughput`, `zero latency`, `zero overhead`, `zero runtime penalty`, `sub-50 ms`, `tamper-proof`, `guaranteed secure`, `blockchain improves accuracy`, `blockchain detects attacks`, `proves model safety`, `decentralized public blockchain performance`, or `packet-level` processing.
+- **Legitimate Disclaimers Preserved:** All reported latencies and throughputs are explicitly qualified as local benchmark observations without constituting hardware SLAs, wire-speed guarantees, or public network performance claims.
 
 ---
 
