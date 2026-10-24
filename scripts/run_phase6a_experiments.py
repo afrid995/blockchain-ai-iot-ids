@@ -525,7 +525,7 @@ def run_experiment_e5(
 
     print("\n[*] Architectural Separation Insight:")
     print("    - Pre-load verification involves disk I/O (hashing 6.3MB) and an EVM call.")
-    print("    - Runtime inference executes completely off-chain in memory without any blockchain lookups.")
+    print("    - The evaluated per-flow inference path performs prediction without a blockchain lookup.")
     print("    - Hence, the blockchain provenance gate does not impose per-flow latency on network traffic.")
 
     return {

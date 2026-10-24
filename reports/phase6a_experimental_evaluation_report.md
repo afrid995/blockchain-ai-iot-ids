@@ -13,7 +13,7 @@
 This report establishes the formal experimental evaluation framework for the B.Tech final-year research project:
 > **“Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection”**
 
-The objective of Phase 6A is to transform the implemented, verified system (Phases 1–5C.1) into defensible, publication-grade empirical research evidence. Through seven rigorous experiments (**E1–E7**), this evaluation measures intrusion detection capability, cryptographic integrity verification, on-chain provenance enforcement, fail-closed security gating, and the operational separation between startup pre-load gates and runtime per-flow inference.
+The objective of Phase 6A is to transform the implemented, verified system (Phases 1–5C.1) into defensible, publication-grade empirical research evidence. Through seven rigorous experiments (**E1–E7**), this evaluation measures intrusion detection capability, cryptographic integrity verification, on-chain provenance enforcement, fail-closed security gating, and the operational separation between pre-load verification gates and runtime per-flow inference.
 
 ---
 
@@ -196,7 +196,7 @@ Experiment E5 is the central performance evaluation of the project. It demonstra
 - **Verification Median / End-to-End API Request Median:** **0.55x**
 
 ### C. Architectural Analysis
-Because the verification gate executes prior to model loading, its 28.60 ms latency is a **fixed startup cost**. Once loaded, network flows are processed entirely off-chain in 41.63 ms (pure compute) or 53.24 ms (end-to-end API including JSON validation and audit logging).
+Because the verification gate executes prior to model loading, its 28.60 ms latency is a **pre-load verification cost**. Once loaded, network flows are processed entirely off-chain in 41.63 ms (pure compute) or 53.24 ms (end-to-end API including JSON validation and audit logging). The evaluated per-flow inference path performs prediction without a blockchain lookup.
 
 ---
 
@@ -266,7 +266,7 @@ Experiment E7 inspects the SQLite database (`audit_e7.db`) following the executi
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Local SHA-256 Hashing** | File Read + Crypto Hash (6.3MB) | 30 | 6.64 | 5.82 | 3.91 | 5.22 | 27.16 |
 | **On-Chain Registry Read** | In-Process EVM Query (`getModel`) | 30 | 13.55 | 13.22 | 1.72 | 10.92 | 21.67 |
-| **Total Pre-Load Gate** | Startup Verification (One-Time) | 30 | 28.60 | 28.54 | 2.68 | 19.22 | 35.18 |
+| **Total Pre-Load Gate** | Pre-Load Verification (One-Time Gate) | 30 | 28.60 | 28.54 | 2.68 | 19.22 | 35.18 |
 | **Pure ML Model Compute** | Off-Chain Feature Processing | 100 | 41.63 | 39.65 | 8.85 | 33.19 | 85.28 |
 | **End-to-End API Request** | HTTP + Gate + Predict + Audit | 100 | 53.24 | 51.57 | 14.07 | 43.02 | 177.22 |
 
@@ -293,14 +293,14 @@ The evaluation runner programmatically generated three publication-quality figur
 ### What the Experiments Defensibly Demonstrate
 1. **Cryptographic Protection Against Model Replacement:** An attacker who gains write access to the model storage directory and modifies the `.joblib` binary cannot execute inference through the gateway. The pre-load verification gate detects the hash discrepancy in $\approx 27.42\text{ ms}$ and aborts loading with HTTP 503.
 2. **Provenance Enforcement:** Only model artifacts corresponding to registered on-chain digests can be transitioned into server memory.
-3. **Architectural Decoupling:** Verification latency is decoupled from network flow processing. Live per-flow packet evaluation is not subjected to blockchain block times, consensus delays, or gas costs.
+3. **Architectural Decoupling:** Blockchain verification is performed before model loading, while the evaluated per-flow inference path performs off-chain prediction without a blockchain lookup. Live per-flow packet evaluation is not subjected to blockchain block times, consensus delays, or gas costs.
 4. **Fail-Closed Gate:** In all unverified or error states, predictions are blocked by default.
 5. **Auditable Lifecycle:** The operational security audit store logs every verification attempt, failure, and prediction for forensic review.
 
 ### What the Experiments Do NOT Demonstrate (Explicit Non-Claims)
 1. **Model Correctness / Semantic Safety:** SHA-256 verification only proves that the binary matches the registered artifact; it does **not** prove that the model is free of training-data poisoning, backdoor triggers, or algorithmic bias.
 2. **Adversarial Robustness:** The system does **not** protect against adversarial feature perturbations (e.g., evasion attacks) submitted at runtime.
-3. **Accuracy Improvement via Blockchain:** Blockchain does **not** train or enhance the Random Forest model; it functions strictly as a decentralized provenance registry.
+3. **Accuracy Improvement via Blockchain:** Blockchain does **not** train or enhance the Random Forest model; it functions strictly as an on-chain provenance registry.
 4. **Public Ethereum SLA / Gas Performance:** All blockchain metrics reflect a local in-process EVM (`EthereumTesterProvider`); public Ethereum mainnet gas spikes and transaction inclusion delays are not modeled.
 5. **Embedded Hardware Deployment:** Tests were conducted on standard workstation architecture, not constrained microcontroller units (e.g., ESP32, ARM Cortex-M).
 
