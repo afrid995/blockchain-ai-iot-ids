@@ -1,0 +1,117 @@
+{
+  "metadata": {
+    "project": "Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection",
+    "phase": "7B.2",
+    "task": "Register and Verify Selected Attack-Type Classifier",
+    "timestamp": "2026-10-24T12:35:08.416033+00:00",
+    "repository": "https://github.com/afrid995/blockchain-ai-iot-ids.git"
+  },
+  "blockchain_environment": {
+    "backend": "EthereumTesterProvider (py-evm)",
+    "environment_scope": "local Ethereum-compatible test environment (process-local EVM)",
+    "contract_name": "ModelRegistry",
+    "contract_address": "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b",
+    "deployer_address": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+    "deployment_block": 1,
+    "deployment_gas_used": 1244483,
+    "deployment_latency_seconds": 0.031236
+  },
+  "model_identity": {
+    "stage": 2,
+    "model_id": "iot-ids-attack-classifier",
+    "version": "v1.0.0",
+    "algorithm": "RandomForestClassifier",
+    "canonical_artifact_path": "ml/artifacts/attack_classifier.joblib",
+    "canonical_artifact_sha256": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+    "canonical_artifact_size_bytes": 19376646
+  },
+  "registration_transaction": {
+    "transaction_hash": "5ed5dff5c08ac95378b6c6673d78213bc0870e4e58726bf9b4f65dc885aa12e1",
+    "block_number": 2,
+    "gas_used": 214206,
+    "transaction_latency_seconds": 0.069538,
+    "status": "SUCCESS"
+  },
+  "experimental_trials": {
+    "e1_legitimate": {
+      "description": "Legitimate canonical artifact verified against on-chain registry",
+      "model_id": "iot-ids-attack-classifier",
+      "version": "v1.0.0",
+      "input_hash": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+      "registered_hash": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+      "verified": true,
+      "status": "VERIFIED",
+      "read_latency_ms": 13.1922,
+      "expected_status": "VERIFIED",
+      "match": true
+    },
+    "e2_tampered": {
+      "description": "Temporary byte-altered artifact verified against on-chain registry",
+      "model_id": "iot-ids-attack-classifier",
+      "version": "v1.0.0",
+      "tampered_hash": "18341fea70236f462b3b842d201aeb7e8ea2099196edcc169bc421c48a3b5195",
+      "registered_hash": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+      "verified": false,
+      "status": "HASH_MISMATCH",
+      "expected_status": "HASH_MISMATCH",
+      "match": true,
+      "canonical_artifact_unmodified": true
+    },
+    "e3_unregistered_version": {
+      "description": "Canonical artifact queried with unreleased version",
+      "model_id": "iot-ids-attack-classifier",
+      "version": "v9.9.9",
+      "input_hash": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+      "verified": false,
+      "status": "NOT_REGISTERED",
+      "expected_status": "NOT_REGISTERED",
+      "match": true
+    },
+    "e4_missing_artifact": {
+      "description": "Nonexistent file path queried against on-chain registry",
+      "model_id": "iot-ids-attack-classifier",
+      "version": "v1.0.0",
+      "target_path": "C:\\Users\\Shaik Afrid\\OneDrive\\Desktop\\major_project\\ml\\artifacts\\nonexistent_attack_classifier.joblib",
+      "verified": false,
+      "status": "FILE_NOT_FOUND",
+      "expected_status": "FILE_NOT_FOUND",
+      "match": true
+    },
+    "e5_wrong_expected_hash": {
+      "description": "Deliberately incorrect expected hash supplied to integrity gate",
+      "model_id": "iot-ids-attack-classifier",
+      "version": "v1.0.0",
+      "expected_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "actual_hash": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+      "verified": false,
+      "status": "HASH_MISMATCH",
+      "expected_status": "HASH_MISMATCH",
+      "match": true
+    }
+  },
+  "latency_statistics_n30": {
+    "samples": 30,
+    "overall_verification_latency_ms": {
+      "mean": 37.1875,
+      "median": 37.5136,
+      "min": 30.5257,
+      "max": 39.8785,
+      "std_dev": 1.7937
+    },
+    "on_chain_read_latency_ms": {
+      "mean": 21.2801,
+      "median": 21.5325,
+      "std_dev": 1.3301
+    }
+  },
+  "invariants_verified": {
+    "stage1_binary_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+    "stage1_invariant_preserved": true,
+    "stage2_multiclass_sha256": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+    "stage2_invariant_preserved": true,
+    "distinct_model_ids": true,
+    "fastapi_integration_performed": false,
+    "remediation_implemented": false
+  },
+  "overall_status": "PASS"
+}

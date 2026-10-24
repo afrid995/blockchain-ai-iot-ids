@@ -608,7 +608,7 @@ def serialize_artifact_and_metadata(
     print(f"Artifact SHA-256: {artifact_sha256}")
 
     metadata = {
-        "model_id": "iot-stage2-multiclass-rf",
+        "model_id": "iot-ids-attack-classifier",
         "model_version": "v1.0.0",
         "stage": 2,
         "role": "Attack-Type Multiclass Classification",

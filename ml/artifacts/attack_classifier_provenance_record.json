@@ -1,0 +1,84 @@
+{
+  "model_id": "iot-ids-attack-classifier",
+  "version": "v1.0.0",
+  "stage": 2,
+  "role": "Stage 2 Attack-Type Multiclass Classification",
+  "algorithm": "RandomForestClassifier",
+  "classifier_configuration": {
+    "n_estimators": 100,
+    "max_depth": 20,
+    "class_weight": "balanced",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "artifact": {
+    "filename": "attack_classifier.joblib",
+    "path": "ml/artifacts/attack_classifier.joblib",
+    "sha256": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+    "size_bytes": 19376646
+  },
+  "dataset": {
+    "name": "UNSW-NB15",
+    "training_file": "UNSW_NB15_training-set.csv",
+    "training_sha256": "734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559",
+    "testing_file": "UNSW_NB15_testing-set.csv",
+    "testing_sha256": "bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa",
+    "scope": "attack-only (label == 1 and attack_cat != 'Normal')",
+    "training_sample_count": 45332,
+    "test_sample_count": 119341
+  },
+  "features": {
+    "total_count": 42,
+    "numerical_count": 39,
+    "categorical_count": 3,
+    "categorical_names": [
+      "proto",
+      "service",
+      "state"
+    ],
+    "excluded_columns": [
+      "id",
+      "label",
+      "attack_cat"
+    ]
+  },
+  "target_definition": {
+    "column": "attack_cat",
+    "classes": [
+      "Analysis",
+      "Backdoor",
+      "DoS",
+      "Exploits",
+      "Fuzzers",
+      "Generic",
+      "Reconnaissance",
+      "Shellcode",
+      "Worms"
+    ],
+    "class_count": 9
+  },
+  "evaluation_metrics": {
+    "accuracy": 0.761775,
+    "balanced_accuracy": 0.534064,
+    "macro_precision": 0.576026,
+    "macro_recall": 0.534064,
+    "macro_f1": 0.530577,
+    "weighted_precision": 0.814892,
+    "weighted_recall": 0.761775,
+    "weighted_f1": 0.775049,
+    "bootstrap_macro_f1_95ci": [
+      0.52008,
+      0.540688
+    ]
+  },
+  "blockchain_provenance": {
+    "contract_name": "ModelRegistry",
+    "key_computation": "keccak256(abi.encodePacked(model_id, ':', version))",
+    "stored_digest_type": "bytes32",
+    "raw_flow_storage": false,
+    "pii_storage": false,
+    "weights_storage": false
+  },
+  "created_at": "2026-10-24T12:13:12.004299+00:00",
+  "schema_version": "1.0.0"
+}
