@@ -1,0 +1,806 @@
+{
+  "metadata": {
+    "project": "Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection",
+    "repository": "https://github.com/afrid995/blockchain-ai-iot-ids.git",
+    "phase": "6B",
+    "timestamp": "2026-10-24T08:13:33.754067+00:00",
+    "total_benchmark_duration_seconds": 15.45,
+    "environment": {
+      "os": "Windows-11-10.0.26300-SP0",
+      "python_version": "3.12.4",
+      "processor": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+      "evm_provider": "EthereumTesterProvider (py-evm in-process test network)",
+      "note": "Empirical measurements on local benchmark hardware. Public network latencies not modeled."
+    },
+    "canonical_model": {
+      "model_id": "iot-ids-rf",
+      "version": "v1.0.0",
+      "algorithm": "RandomForestClassifier",
+      "artifact_size_bytes": 6319677,
+      "sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "contract_address": "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b"
+    }
+  },
+  "comparative_experiments": {
+    "B1_ml_only_baseline": {
+      "experiment_id": "B1_ml_only_baseline",
+      "description": "Baseline ML detection metrics and pure off-chain inference latency without artifact-integrity gates",
+      "configuration": "Configuration A (ML-only baseline)",
+      "model_id": "iot-ids-rf",
+      "version": "v1.0.0",
+      "algorithm": "RandomForestClassifier",
+      "baseline_metrics": {
+        "accuracy": 0.902978,
+        "precision": 0.987778,
+        "recall": 0.868193,
+        "f1_score": 0.924133,
+        "specificity": 0.977107,
+        "false_positive_rate": 0.022893,
+        "roc_auc": 0.985992,
+        "confusion_matrix": [
+          [
+            54718,
+            1282
+          ],
+          [
+            15730,
+            103611
+          ]
+        ],
+        "total_test_samples": 175341,
+        "true_positives": 103611,
+        "true_negatives": 54718,
+        "false_positives": 1282,
+        "false_negatives": 15730
+      },
+      "pure_inference_latency": {
+        "sample_count": 100,
+        "mean": 42.3989,
+        "median": 42.4459,
+        "std_dev": 5.9872,
+        "min": 34.1198,
+        "max": 70.5356,
+        "unit": "ms"
+      },
+      "bootstrap_95_ci": {
+        "ci_lower": 41.245,
+        "ci_upper": 43.6144,
+        "confidence_level": 0.95
+      },
+      "raw_latencies_ms": [
+        43.89400000218302,
+        42.408699984662235,
+        39.519599988125265,
+        36.086700041778386,
+        35.47379997326061,
+        43.9394999993965,
+        37.62250003637746,
+        49.71960000693798,
+        48.348399985115975,
+        47.51490004127845,
+        38.97359996335581,
+        37.48300002189353,
+        42.24500001873821,
+        41.31599998800084,
+        47.910000022966415,
+        40.65549996448681,
+        34.92619999451563,
+        42.64060000423342,
+        49.35349995503202,
+        42.99300001002848,
+        45.50169996218756,
+        40.56929994840175,
+        39.332999964244664,
+        38.90949999913573,
+        35.027500009164214,
+        35.094200051389635,
+        37.21620002761483,
+        43.06890000589192,
+        45.22410000208765,
+        42.483000026550144,
+        44.716799980960786,
+        44.38269999809563,
+        45.19879998406395,
+        37.19879995333031,
+        36.68989997822791,
+        36.436399968806654,
+        48.06810000445694,
+        46.86499998206273,
+        41.04290000395849,
+        43.40229998342693,
+        37.31530002551153,
+        35.59990000212565,
+        36.67579998727888,
+        35.015400033444166,
+        37.91900002397597,
+        39.6828000084497,
+        34.86209997208789,
+        37.495900003705174,
+        37.66269999323413,
+        45.339400006923825,
+        43.29229996073991,
+        38.79250003956258,
+        44.91170000983402,
+        40.66740005509928,
+        34.533999976702034,
+        36.42799996305257,
+        35.593300010077655,
+        43.2767000165768,
+        47.70430002827197,
+        42.90569998556748,
+        50.24299997603521,
+        50.81029998837039,
+        46.98729998199269,
+        48.31080004805699,
+        35.77519999817014,
+        39.99419999308884,
+        36.412800021935254,
+        44.20219996245578,
+        45.77830003108829,
+        43.81100001046434,
+        46.17009998764843,
+        47.053400019649416,
+        41.75129998475313,
+        44.804399949498475,
+        44.17070001363754,
+        45.986899989657104,
+        42.130200017709285,
+        42.304900009185076,
+        40.34359997604042,
+        40.06580001441762,
+        43.40460000094026,
+        44.18740002438426,
+        37.45350003009662,
+        34.17520003858954,
+        34.919400000944734,
+        39.209900016430765,
+        44.2996000056155,
+        61.50630000047386,
+        46.875800006091595,
+        70.53559995256364,
+        50.94550002831966,
+        58.17500001285225,
+        48.64679998718202,
+        49.02599996421486,
+        47.38130001351237,
+        34.37820001272485,
+        38.85030001401901,
+        34.11980002420023,
+        46.74139997223392,
+        42.827799974475056
+      ],
+      "pre_load_verification_cost_ms": 0.0,
+      "integrity_gate_present": false,
+      "provenance_registry_present": false,
+      "disclaimer": "These metrics characterize the ML classifier and are not evidence that blockchain improves intrusion-detection accuracy. In the evaluated ML-only baseline, no artifact integrity gate is enforced."
+    },
+    "B2_sha_only_verification": {
+      "experiment_id": "B2_sha_only_verification",
+      "description": "Cryptographic artifact-integrity verification using local SHA-256 against off-chain expected digest",
+      "configuration": "Configuration B (SHA-256-only integrity verification)",
+      "expected_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "canonical_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "canonical_trials_evaluated": 30,
+      "canonical_verification_status": "VERIFIED",
+      "verification_timing": {
+        "sample_count": 30,
+        "mean": 5.6472,
+        "median": 5.6193,
+        "std_dev": 0.1427,
+        "min": 5.4121,
+        "max": 6.0623,
+        "unit": "ms"
+      },
+      "bootstrap_95_ci": {
+        "ci_lower": 5.6011,
+        "ci_upper": 5.6992,
+        "confidence_level": 0.95
+      },
+      "raw_latencies_ms": [
+        5.694299994502217,
+        5.598200019448996,
+        5.550800007767975,
+        5.937000038102269,
+        5.710800003726035,
+        5.613899964373559,
+        5.624699988402426,
+        5.669099977239966,
+        5.818900011945516,
+        5.61089999973774,
+        5.703300004824996,
+        5.598199961241335,
+        5.533599993214011,
+        5.523499974515289,
+        5.532899987883866,
+        5.412099999375641,
+        5.466199945658445,
+        5.519900005310774,
+        5.642200005240738,
+        5.524199979845434,
+        5.830699985381216,
+        5.6022999924607575,
+        5.491900024935603,
+        5.65390003612265,
+        5.56790002156049,
+        6.062300002668053,
+        5.777799990028143,
+        5.694499996025115,
+        5.8246999979019165,
+        5.626600002869964
+      ],
+      "tampered_evaluation": {
+        "tampered_sha256": "9950cf966e4b2699393eda86feca43fd2020a4f0a82b8e070f11b63ba086ae30",
+        "verification_status": "HASH_MISMATCH",
+        "verified": false,
+        "detection_latency_ms": 13.6603,
+        "rejection_action": "REJECT - Local SHA-256 differs from expected digest"
+      },
+      "canonical_unaltered": true,
+      "provenance_checked": false,
+      "disclaimer": "SHA-only verifies byte-exact binary correspondence against a provided expected digest. It does not provide an independently managed provenance or version authorization registry."
+    },
+    "B3_blockchain_backed_verification": {
+      "experiment_id": "B3_blockchain_backed_verification",
+      "description": "Cryptographic artifact-integrity verification plus on-chain provenance/version registry lookup",
+      "configuration": "Configuration C (SHA-256 + blockchain-backed provenance verification)",
+      "model_id": "iot-ids-rf",
+      "version": "v1.0.0",
+      "contract_address": "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b",
+      "local_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "registered_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "verification_status": "VERIFIED",
+      "trials_evaluated": 30,
+      "component_timings": {
+        "local_sha256_hashing_ms": {
+          "sample_count": 30,
+          "mean": 5.3986,
+          "median": 5.1322,
+          "std_dev": 0.7426,
+          "min": 4.5977,
+          "max": 7.7603,
+          "unit": "ms"
+        },
+        "on_chain_read_latency_ms": {
+          "sample_count": 30,
+          "mean": 8.896,
+          "median": 7.9108,
+          "std_dev": 2.0654,
+          "min": 6.9926,
+          "max": 13.7003,
+          "unit": "ms"
+        },
+        "total_verification_latency_ms": {
+          "sample_count": 30,
+          "mean": 20.3051,
+          "median": 19.4416,
+          "std_dev": 2.7375,
+          "min": 16.7836,
+          "max": 28.9065,
+          "unit": "ms"
+        }
+      },
+      "bootstrap_95_ci_total": {
+        "ci_lower": 19.3738,
+        "ci_upper": 21.3029,
+        "confidence_level": 0.95
+      },
+      "raw_data": {
+        "hashing_ms": [
+          6.085200002416968,
+          5.716399988159537,
+          5.216999968979508,
+          5.014299997128546,
+          5.1015999633818865,
+          6.125900021288544,
+          7.459299988113344,
+          5.131700017955154,
+          7.7603000099770725,
+          4.597699968144298,
+          5.273499991744757,
+          5.325899983290583,
+          5.026099970564246,
+          4.940700018778443,
+          4.6660000225529075,
+          4.678500001318753,
+          4.919800034258515,
+          5.131700017955154,
+          5.086600023787469,
+          6.110199959948659,
+          4.875799990259111,
+          4.639899998437613,
+          5.967199977021664,
+          5.060700001195073,
+          5.231799965258688,
+          5.594999995082617,
+          5.162499961443245,
+          5.827899964060634,
+          5.095600034110248,
+          5.132699967361987
+        ],
+        "on_chain_read_ms": [
+          13.301300001330674,
+          13.7002999545075,
+          9.69109998550266,
+          7.195600017439574,
+          13.578000012785196,
+          7.928400009404868,
+          7.352499989792705,
+          7.776600017677993,
+          8.506800048053265,
+          7.043000019621104,
+          7.314799993764609,
+          7.893199974205345,
+          7.3247000109404325,
+          8.247699995990843,
+          10.235399997327477,
+          7.528699992690235,
+          6.992599985096604,
+          7.221599982585758,
+          7.604099984746426,
+          11.40100002521649,
+          10.992399998940527,
+          7.0115000125952065,
+          11.59810001263395,
+          7.234699965920299,
+          9.432099992409348,
+          9.552799980156124,
+          7.856700045522302,
+          9.39210003707558,
+          8.846199954859912,
+          7.126100012101233
+        ],
+        "total_verification_ms": [
+          28.906499966979027,
+          26.378300040960312,
+          17.778599984012544,
+          20.922499999869615,
+          17.812400008551776,
+          20.920599985402077,
+          16.78360003279522,
+          20.58389998273924,
+          23.07469997322187,
+          21.68010000605136,
+          18.65189999807626,
+          19.35860002413392,
+          17.931199981831014,
+          20.097700005862862,
+          19.332399999257177,
+          20.267200015950948,
+          19.41940002143383,
+          20.287299994379282,
+          20.639199996367097,
+          19.26249999087304,
+          19.375899981241673,
+          19.356800010427833,
+          25.879599968902767,
+          18.01340002566576,
+          17.034700023941696,
+          19.46370000950992,
+          18.428799987304956,
+          22.206599998753518,
+          18.832300032954663,
+          20.473300013691187
+        ]
+      },
+      "disclaimer": "Measurements conducted in a local in-process EVM environment (EthereumTesterProvider). Does not model public Ethereum mainnet gas prices, network congestion, or validator delays."
+    },
+    "B4_tampered_artifact_comparison": {
+      "experiment_id": "B4_tampered_artifact_comparison",
+      "description": "Comparative evaluation of unauthorized model binary alteration across all three configurations",
+      "tampered_sha256": "9950cf966e4b2699393eda86feca43fd2020a4f0a82b8e070f11b63ba086ae30",
+      "canonical_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "configurations": {
+        "configuration_a_ml_only": {
+          "configuration": "Configuration A (ML-only)",
+          "tampered_detection_gate": "None",
+          "artifact_action": "Accepted / Loaded (No integrity gate)",
+          "security_property": "No artifact-integrity verification is performed in this baseline.",
+          "tampered_detected": false,
+          "model_loaded": true,
+          "inference_served": true
+        },
+        "configuration_b_sha_only": {
+          "configuration": "Configuration B (SHA-only)",
+          "tampered_detection_gate": "Local SHA-256 Digest Comparison",
+          "artifact_action": "Rejected (HASH_MISMATCH)",
+          "security_property": "Provides local artifact-integrity comparison against expected digest; detects modification.",
+          "tampered_detected": true,
+          "model_loaded": false,
+          "inference_served": false
+        },
+        "configuration_c_sha_blockchain": {
+          "configuration": "Configuration C (SHA + Blockchain)",
+          "tampered_detection_gate": "On-Chain Provenance Registry Gate",
+          "artifact_action": "Rejected (HASH_MISMATCH / Fail-Closed)",
+          "security_property": "Rejects binary modification; aborts deserialization; denies inference with HTTP 503.",
+          "tampered_detected": true,
+          "model_loaded": false,
+          "inference_served": false,
+          "predict_http_status": 503
+        }
+      },
+      "conclusion": "Configuration A provides no integrity checking. Configuration B and C both detect unauthorized binary modification via SHA-256. Configuration C additionally integrates fail-closed gate enforcement preventing memory loading and serving HTTP 503."
+    },
+    "B5_unregistered_model_comparison": {
+      "experiment_id": "B5_unregistered_model_comparison",
+      "description": "Comparative evaluation of unregistered model/version identity demonstrating provenance authorization",
+      "tested_unregistered_key": "iot-ids-rf:v9.9.9",
+      "configurations": {
+        "configuration_a_ml_only": {
+          "configuration": "Configuration A (ML-only)",
+          "registry_checked": false,
+          "version_authorized": "N/A (No registry check exists)",
+          "outcome": "Accepted/Loaded (No provenance authorization check performed in baseline)"
+        },
+        "configuration_b_sha_only": {
+          "configuration": "Configuration B (SHA-only)",
+          "registry_checked": false,
+          "version_authorized": "Unverified (Relies on caller-supplied expected digest; cannot independently verify release authorization)",
+          "outcome": "Can validate binary hash, but provides no blockchain-backed registry-membership check"
+        },
+        "configuration_c_sha_blockchain": {
+          "configuration": "Configuration C (SHA + Blockchain)",
+          "registry_checked": true,
+          "version_authorized": "REJECTED (NOT_REGISTERED)",
+          "outcome": "Enforced fail-closed; model loading denied; HTTP 503 returned on inference attempts",
+          "verify_status": "NOT_REGISTERED",
+          "model_loaded": false,
+          "predict_http_status": 503
+        }
+      },
+      "conceptual_distinction": "Integrity checking (SHA-only) answers: 'Has this binary file been altered since the expected digest was created?' Provenance authorization (Blockchain-backed registry) answers: 'Is this specific model version officially registered and authorized for deployment by the governance authority?'"
+    },
+    "B6_verification_overhead_comparison": {
+      "experiment_id": "B6_verification_overhead_comparison",
+      "description": "Comparative analysis of pre-load verification overhead and incremental blockchain costs",
+      "overhead_comparison": {
+        "configuration_a_ml_only": {
+          "sample_count": 0,
+          "mean": 0.0,
+          "median": 0.0,
+          "std_dev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "unit": "ms"
+        },
+        "configuration_b_sha_only": {
+          "sample_count": 30,
+          "mean": 5.6472,
+          "median": 5.6193,
+          "std_dev": 0.1427,
+          "min": 5.4121,
+          "max": 6.0623,
+          "unit": "ms"
+        },
+        "configuration_c_sha_blockchain": {
+          "sample_count": 30,
+          "mean": 20.3051,
+          "median": 19.4416,
+          "std_dev": 2.7375,
+          "min": 16.7836,
+          "max": 28.9065,
+          "unit": "ms"
+        }
+      },
+      "incremental_overhead": {
+        "delta_mean_c_minus_b_ms": 14.6579,
+        "delta_median_c_minus_b_ms": 13.8223,
+        "ratio_c_to_b_mean": 3.6
+      },
+      "timing_classification": "Pre-load verification cost measured before model loading into memory.",
+      "disclaimer": "These measurements represent pre-load verification latency on local benchmark hardware. They are completely decoupled from runtime per-flow inference latency."
+    },
+    "B7_runtime_inference_separation": {
+      "experiment_id": "B7_runtime_inference_separation",
+      "description": "Evaluation of off-chain runtime per-flow inference demonstrating operational decoupling",
+      "end_to_end_api_latency": {
+        "sample_count": 100,
+        "mean": 51.4877,
+        "median": 49.7304,
+        "std_dev": 7.0193,
+        "min": 45.8431,
+        "max": 109.0458,
+        "unit": "ms"
+      },
+      "bootstrap_95_ci": {
+        "ci_lower": 50.3718,
+        "ci_upper": 52.9917,
+        "confidence_level": 0.95
+      },
+      "raw_api_latencies_ms": [
+        61.771699984092265,
+        53.20169997867197,
+        49.42150000715628,
+        48.88720001326874,
+        50.79080001451075,
+        51.03959998814389,
+        52.46699997223914,
+        48.16269996808842,
+        49.77199999848381,
+        49.33880001772195,
+        49.883499974384904,
+        50.40369997732341,
+        45.843100000638515,
+        47.44799999753013,
+        48.01560001214966,
+        53.99010004475713,
+        51.50360002880916,
+        54.53729996224865,
+        48.238900024443865,
+        71.4412999805063,
+        47.7553999517113,
+        48.42730000382289,
+        47.9926000116393,
+        47.44140000548214,
+        46.936300001107156,
+        47.586900007445365,
+        46.76210001343861,
+        48.03809995064512,
+        47.87220002617687,
+        53.39889996685088,
+        52.877800015266985,
+        52.834900037851185,
+        49.5435000048019,
+        51.322199986316264,
+        55.379899975378066,
+        53.44330001389608,
+        53.19710000185296,
+        53.342900006100535,
+        52.23229998955503,
+        56.23139999806881,
+        53.36620000889525,
+        51.41940002795309,
+        50.39210000541061,
+        49.280600040219724,
+        51.376899995375425,
+        58.9015000150539,
+        50.982599961571395,
+        52.33919998863712,
+        50.8957999991253,
+        49.23860001144931,
+        54.35599997872487,
+        55.56160002015531,
+        53.05789998965338,
+        49.406200007069856,
+        48.39189996710047,
+        49.04830001760274,
+        67.21310003194958,
+        50.16760004218668,
+        54.291099950205535,
+        49.68880000524223,
+        49.553000018931925,
+        49.11920003360137,
+        47.52119997283444,
+        49.67819998273626,
+        57.92310001561418,
+        57.737399998586625,
+        50.16839999007061,
+        49.11959997843951,
+        48.150099988561124,
+        49.520500004291534,
+        50.42990000220016,
+        47.739500005263835,
+        47.12840000865981,
+        49.311599985230714,
+        48.55229996610433,
+        47.881799982860684,
+        48.640199995134026,
+        48.859699978493154,
+        109.0457999962382,
+        50.32849998679012,
+        47.7314000017941,
+        48.89019997790456,
+        49.80959999375045,
+        46.74799996428192,
+        48.62289997981861,
+        48.984099994413555,
+        49.9400999979116,
+        47.38629999337718,
+        48.267000005580485,
+        55.323899956420064,
+        51.61160003626719,
+        48.533699999097735,
+        48.841900017578155,
+        48.71379997348413,
+        47.80270002083853,
+        49.512900004629046,
+        50.59440003242344,
+        50.15730002196506,
+        53.19890001555905,
+        53.53950004791841
+      ],
+      "per_flow_blockchain_queries": 0,
+      "per_flow_sha_recomputations": 0,
+      "architectural_assertion": "The evaluated per-flow inference path performs prediction without a blockchain lookup.",
+      "disclaimer": "Runtime inference executes entirely in local memory after pre-load verification. Does not constitute a zero-overhead or real-time SLA guarantee."
+    },
+    "B8_security_outcome_matrix": {
+      "experiment_id": "B8_security_outcome_matrix",
+      "description": "Comparative matrix of security outcomes across all five evaluation scenarios",
+      "matrix": [
+        {
+          "scenario": "Registered legitimate artifact",
+          "ml_only": "Accepted / Loaded (No integrity gate)",
+          "sha_only": "Accepted / Loaded (Matches expected digest)",
+          "sha_plus_blockchain": "Accepted / Loaded (Matches on-chain registered digest)"
+        },
+        {
+          "scenario": "Locally modified artifact",
+          "ml_only": "No artifact-integrity verification is performed in this baseline.",
+          "sha_only": "Rejected (HASH_MISMATCH against expected digest)",
+          "sha_plus_blockchain": "Rejected (HASH_MISMATCH; fail-closed; HTTP 503)"
+        },
+        {
+          "scenario": "Unregistered model / version",
+          "ml_only": "No provenance registry check exists in this baseline.",
+          "sha_only": "Provides local artifact-integrity comparison but no blockchain-backed registry-membership check.",
+          "sha_plus_blockchain": "Rejected (NOT_REGISTERED; fail-closed; HTTP 503)"
+        },
+        {
+          "scenario": "Verification failure handling",
+          "ml_only": "No verification gate present",
+          "sha_only": "Fail closed (loading aborted)",
+          "sha_plus_blockchain": "Fail closed (loading aborted; HTTP 503; audited)"
+        },
+        {
+          "scenario": "Runtime inference after accepted load",
+          "ml_only": "Available (off-chain execution)",
+          "sha_only": "Available (off-chain execution; no per-flow hash)",
+          "sha_plus_blockchain": "Available (off-chain execution; no blockchain lookup)"
+        }
+      ]
+    },
+    "B9_statistical_summary": {
+      "experiment_id": "B9_statistical_summary",
+      "description": "Comprehensive statistical distributions and bootstrap confidence intervals",
+      "summary_table": {
+        "local_sha256_alone": {
+          "description": "Configuration B: Local SHA-256 Hashing Alone",
+          "stats": {
+            "sample_count": 30,
+            "mean": 5.6472,
+            "median": 5.6193,
+            "std_dev": 0.1427,
+            "min": 5.4121,
+            "max": 6.0623,
+            "unit": "ms"
+          },
+          "bootstrap_ci": {
+            "ci_lower": 5.6011,
+            "ci_upper": 5.6992,
+            "confidence_level": 0.95
+          }
+        },
+        "blockchain_read_alone": {
+          "description": "Configuration C Component: In-Process EVM Read Alone",
+          "stats": {
+            "sample_count": 30,
+            "mean": 8.896,
+            "median": 7.9108,
+            "std_dev": 2.0654,
+            "min": 6.9926,
+            "max": 13.7003,
+            "unit": "ms"
+          },
+          "bootstrap_ci": {
+            "ci_lower": 8.2136,
+            "ci_upper": 9.6816,
+            "confidence_level": 0.95
+          }
+        },
+        "blockchain_total_gate": {
+          "description": "Configuration C: Complete Pre-Load Verification Gate",
+          "stats": {
+            "sample_count": 30,
+            "mean": 20.3051,
+            "median": 19.4416,
+            "std_dev": 2.7375,
+            "min": 16.7836,
+            "max": 28.9065,
+            "unit": "ms"
+          },
+          "bootstrap_ci": {
+            "ci_lower": 19.3738,
+            "ci_upper": 21.3029,
+            "confidence_level": 0.95
+          }
+        },
+        "pure_ml_inference": {
+          "description": "Configuration A/B/C: Pure Off-Chain Model Inference",
+          "stats": {
+            "sample_count": 100,
+            "mean": 42.3989,
+            "median": 42.4459,
+            "std_dev": 5.9872,
+            "min": 34.1198,
+            "max": 70.5356,
+            "unit": "ms"
+          },
+          "bootstrap_ci": {
+            "ci_lower": 41.245,
+            "ci_upper": 43.6144,
+            "confidence_level": 0.95
+          }
+        },
+        "end_to_end_api_request": {
+          "description": "Configuration C: End-to-End API /predict Request",
+          "stats": {
+            "sample_count": 100,
+            "mean": 51.4877,
+            "median": 49.7304,
+            "std_dev": 7.0193,
+            "min": 45.8431,
+            "max": 109.0458,
+            "unit": "ms"
+          },
+          "bootstrap_ci": {
+            "ci_lower": 50.3718,
+            "ci_upper": 52.9917,
+            "confidence_level": 0.95
+          }
+        }
+      }
+    },
+    "B10_audit_trail_evidence": {
+      "experiment_id": "B10_audit_trail_evidence",
+      "description": "Verification of operational audit trail logging fidelity, privacy protection, and off-chain demarcation",
+      "total_events_recorded": 10,
+      "event_type_distribution": {
+        "PREDICTION": 5,
+        "MODEL_LOAD": 1,
+        "MODEL_VERIFICATION": 1,
+        "MODEL_LOAD_BLOCKED": 2,
+        "MODEL_VERIFICATION_FAILURE": 1
+      },
+      "sample_events": [
+        {
+          "event_id": "d1ce35c2-16ff-44f9-ae18-156bfc683450",
+          "event_type": "PREDICTION",
+          "status": "SUCCESS",
+          "timestamp": "2026-10-24T08:13:32.530009+00:00",
+          "model_id": "iot-ids-rf",
+          "verification_status": "VERIFIED"
+        },
+        {
+          "event_id": "7e8cf53e-de71-41a4-9e16-48895dc6c32c",
+          "event_type": "PREDICTION",
+          "status": "SUCCESS",
+          "timestamp": "2026-10-24T08:13:32.481639+00:00",
+          "model_id": "iot-ids-rf",
+          "verification_status": "VERIFIED"
+        },
+        {
+          "event_id": "7060e545-ddd0-4cfd-b4e2-34b6ead9b759",
+          "event_type": "PREDICTION",
+          "status": "SUCCESS",
+          "timestamp": "2026-10-24T08:13:32.434206+00:00",
+          "model_id": "iot-ids-rf",
+          "verification_status": "VERIFIED"
+        },
+        {
+          "event_id": "f3346603-0f64-4c91-9bbe-66b394653ab5",
+          "event_type": "PREDICTION",
+          "status": "SUCCESS",
+          "timestamp": "2026-10-24T08:13:32.385759+00:00",
+          "model_id": "iot-ids-rf",
+          "verification_status": "VERIFIED"
+        },
+        {
+          "event_id": "7353fcaf-89f6-4660-9c21-a136c0d6e081",
+          "event_type": "PREDICTION",
+          "status": "SUCCESS",
+          "timestamp": "2026-10-24T08:13:32.337178+00:00",
+          "model_id": "iot-ids-rf",
+          "verification_status": "VERIFIED"
+        }
+      ],
+      "privacy_verified": true,
+      "raw_payloads_excluded": true,
+      "demarcation": "Off-chain SQLite operational store; local accountability layer distinct from on-chain ModelRegistry."
+    }
+  },
+  "figures": [
+    "reports\\figures\\figure4_comparative_verification_overhead.png",
+    "reports\\figures\\figure5_comparative_security_matrix.png"
+  ]
+}
