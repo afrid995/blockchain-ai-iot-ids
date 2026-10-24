@@ -1,0 +1,519 @@
+{
+  "metadata": {
+    "project": "Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection",
+    "phase": "7A",
+    "task": "Feasibility Analysis for Multi-Class Attack-Type Classification",
+    "timestamp": "2026-10-24T11:41:58.011294+00:00",
+    "repository": "https://github.com/afrid995/blockchain-ai-iot-ids.git"
+  },
+  "datasets": {
+    "training_file": {
+      "path": "C:/Users/Shaik Afrid/OneDrive/Desktop/major_project/data/raw/UNSW_NB15_training-set.csv",
+      "size_bytes": 15380800,
+      "sha256": "734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559",
+      "verified": true
+    },
+    "testing_file": {
+      "path": "C:/Users/Shaik Afrid/OneDrive/Desktop/major_project/data/raw/UNSW_NB15_testing-set.csv",
+      "size_bytes": 32293018,
+      "sha256": "bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa",
+      "verified": true
+    }
+  },
+  "descriptive_analysis": {
+    "training_set": {
+      "dataset": "UNSW_NB15_training-set",
+      "total_rows": 82332,
+      "null_count": 0,
+      "blank_count": 0,
+      "nan_count": 0,
+      "has_whitespace_diff": false,
+      "whitespace_variants": [],
+      "unique_categories": [
+        "Normal",
+        "Reconnaissance",
+        "Backdoor",
+        "DoS",
+        "Exploits",
+        "Analysis",
+        "Fuzzers",
+        "Worms",
+        "Shellcode",
+        "Generic"
+      ],
+      "category_count": 10,
+      "category_statistics": {
+        "Normal": {
+          "count": 37000,
+          "percentage": 44.94
+        },
+        "Generic": {
+          "count": 18871,
+          "percentage": 22.9206
+        },
+        "Exploits": {
+          "count": 11132,
+          "percentage": 13.5209
+        },
+        "Fuzzers": {
+          "count": 6062,
+          "percentage": 7.3629
+        },
+        "DoS": {
+          "count": 4089,
+          "percentage": 4.9665
+        },
+        "Reconnaissance": {
+          "count": 3496,
+          "percentage": 4.2462
+        },
+        "Analysis": {
+          "count": 677,
+          "percentage": 0.8223
+        },
+        "Backdoor": {
+          "count": 583,
+          "percentage": 0.7081
+        },
+        "Shellcode": {
+          "count": 378,
+          "percentage": 0.4591
+        },
+        "Worms": {
+          "count": 44,
+          "percentage": 0.0534
+        }
+      },
+      "label_crosstab": {
+        "label_0": {
+          "Analysis": 0,
+          "Backdoor": 0,
+          "DoS": 0,
+          "Exploits": 0,
+          "Fuzzers": 0,
+          "Generic": 0,
+          "Normal": 37000,
+          "Reconnaissance": 0,
+          "Shellcode": 0,
+          "Worms": 0
+        },
+        "label_1": {
+          "Analysis": 677,
+          "Backdoor": 583,
+          "DoS": 4089,
+          "Exploits": 11132,
+          "Fuzzers": 6062,
+          "Generic": 18871,
+          "Normal": 0,
+          "Reconnaissance": 3496,
+          "Shellcode": 378,
+          "Worms": 44
+        }
+      },
+      "anomalies": {
+        "label_0_non_normal_count": 0,
+        "label_1_normal_count": 0,
+        "label_1_missing_attack_cat_count": 0
+      }
+    },
+    "testing_set": {
+      "dataset": "UNSW_NB15_testing-set",
+      "total_rows": 175341,
+      "null_count": 0,
+      "blank_count": 0,
+      "nan_count": 0,
+      "has_whitespace_diff": false,
+      "whitespace_variants": [],
+      "unique_categories": [
+        "Normal",
+        "Backdoor",
+        "Analysis",
+        "Fuzzers",
+        "Shellcode",
+        "Reconnaissance",
+        "Exploits",
+        "DoS",
+        "Worms",
+        "Generic"
+      ],
+      "category_count": 10,
+      "category_statistics": {
+        "Normal": {
+          "count": 56000,
+          "percentage": 31.9378
+        },
+        "Generic": {
+          "count": 40000,
+          "percentage": 22.8127
+        },
+        "Exploits": {
+          "count": 33393,
+          "percentage": 19.0446
+        },
+        "Fuzzers": {
+          "count": 18184,
+          "percentage": 10.3706
+        },
+        "DoS": {
+          "count": 12264,
+          "percentage": 6.9944
+        },
+        "Reconnaissance": {
+          "count": 10491,
+          "percentage": 5.9832
+        },
+        "Analysis": {
+          "count": 2000,
+          "percentage": 1.1406
+        },
+        "Backdoor": {
+          "count": 1746,
+          "percentage": 0.9958
+        },
+        "Shellcode": {
+          "count": 1133,
+          "percentage": 0.6462
+        },
+        "Worms": {
+          "count": 130,
+          "percentage": 0.0741
+        }
+      },
+      "label_crosstab": {
+        "label_0": {
+          "Analysis": 0,
+          "Backdoor": 0,
+          "DoS": 0,
+          "Exploits": 0,
+          "Fuzzers": 0,
+          "Generic": 0,
+          "Normal": 56000,
+          "Reconnaissance": 0,
+          "Shellcode": 0,
+          "Worms": 0
+        },
+        "label_1": {
+          "Analysis": 2000,
+          "Backdoor": 1746,
+          "DoS": 12264,
+          "Exploits": 33393,
+          "Fuzzers": 18184,
+          "Generic": 40000,
+          "Normal": 0,
+          "Reconnaissance": 10491,
+          "Shellcode": 1133,
+          "Worms": 130
+        }
+      },
+      "anomalies": {
+        "label_0_non_normal_count": 0,
+        "label_1_normal_count": 0,
+        "label_1_missing_attack_cat_count": 0
+      }
+    }
+  },
+  "consistency_analysis": {
+    "categories_in_both": [
+      "Analysis",
+      "Backdoor",
+      "DoS",
+      "Exploits",
+      "Fuzzers",
+      "Generic",
+      "Normal",
+      "Reconnaissance",
+      "Shellcode",
+      "Worms"
+    ],
+    "categories_train_only": [],
+    "categories_test_only": [],
+    "is_consistent": true,
+    "comparison_table": [
+      {
+        "category": "Normal",
+        "training_count": 37000,
+        "training_pct": 44.94,
+        "testing_count": 56000,
+        "testing_pct": 31.9378,
+        "total_count": 93000,
+        "in_both": true
+      },
+      {
+        "category": "Generic",
+        "training_count": 18871,
+        "training_pct": 22.9206,
+        "testing_count": 40000,
+        "testing_pct": 22.8127,
+        "total_count": 58871,
+        "in_both": true
+      },
+      {
+        "category": "Exploits",
+        "training_count": 11132,
+        "training_pct": 13.5209,
+        "testing_count": 33393,
+        "testing_pct": 19.0446,
+        "total_count": 44525,
+        "in_both": true
+      },
+      {
+        "category": "Fuzzers",
+        "training_count": 6062,
+        "training_pct": 7.3629,
+        "testing_count": 18184,
+        "testing_pct": 10.3706,
+        "total_count": 24246,
+        "in_both": true
+      },
+      {
+        "category": "DoS",
+        "training_count": 4089,
+        "training_pct": 4.9665,
+        "testing_count": 12264,
+        "testing_pct": 6.9944,
+        "total_count": 16353,
+        "in_both": true
+      },
+      {
+        "category": "Reconnaissance",
+        "training_count": 3496,
+        "training_pct": 4.2462,
+        "testing_count": 10491,
+        "testing_pct": 5.9832,
+        "total_count": 13987,
+        "in_both": true
+      },
+      {
+        "category": "Analysis",
+        "training_count": 677,
+        "training_pct": 0.8223,
+        "testing_count": 2000,
+        "testing_pct": 1.1406,
+        "total_count": 2677,
+        "in_both": true
+      },
+      {
+        "category": "Backdoor",
+        "training_count": 583,
+        "training_pct": 0.7081,
+        "testing_count": 1746,
+        "testing_pct": 0.9958,
+        "total_count": 2329,
+        "in_both": true
+      },
+      {
+        "category": "Shellcode",
+        "training_count": 378,
+        "training_pct": 0.4591,
+        "testing_count": 1133,
+        "testing_pct": 0.6462,
+        "total_count": 1511,
+        "in_both": true
+      },
+      {
+        "category": "Worms",
+        "training_count": 44,
+        "training_pct": 0.0534,
+        "testing_count": 130,
+        "testing_pct": 0.0741,
+        "total_count": 174,
+        "in_both": true
+      }
+    ]
+  },
+  "candidate_multiclass_dataset": {
+    "candidate_definition": "label == 1 and attack_cat is valid/non-empty and attack_cat != 'Normal'",
+    "candidate_training_samples": 45332,
+    "candidate_testing_samples": 119341,
+    "total_candidate_samples": 164673,
+    "distinct_attack_categories_count": 9,
+    "attack_categories_list": [
+      "Analysis",
+      "Backdoor",
+      "DoS",
+      "Exploits",
+      "Fuzzers",
+      "Generic",
+      "Reconnaissance",
+      "Shellcode",
+      "Worms"
+    ],
+    "category_breakdown": [
+      {
+        "category": "Generic",
+        "train_count": 18871,
+        "train_pct_of_attacks": 41.6284,
+        "test_count": 40000,
+        "test_pct_of_attacks": 33.5174,
+        "total_attack_samples": 58871,
+        "imbalance_ratio_vs_max": 1.0
+      },
+      {
+        "category": "Exploits",
+        "train_count": 11132,
+        "train_pct_of_attacks": 24.5566,
+        "test_count": 33393,
+        "test_pct_of_attacks": 27.9812,
+        "total_attack_samples": 44525,
+        "imbalance_ratio_vs_max": 1.7
+      },
+      {
+        "category": "Fuzzers",
+        "train_count": 6062,
+        "train_pct_of_attacks": 13.3725,
+        "test_count": 18184,
+        "test_pct_of_attacks": 15.237,
+        "total_attack_samples": 24246,
+        "imbalance_ratio_vs_max": 3.11
+      },
+      {
+        "category": "DoS",
+        "train_count": 4089,
+        "train_pct_of_attacks": 9.0201,
+        "test_count": 12264,
+        "test_pct_of_attacks": 10.2764,
+        "total_attack_samples": 16353,
+        "imbalance_ratio_vs_max": 4.62
+      },
+      {
+        "category": "Reconnaissance",
+        "train_count": 3496,
+        "train_pct_of_attacks": 7.712,
+        "test_count": 10491,
+        "test_pct_of_attacks": 8.7908,
+        "total_attack_samples": 13987,
+        "imbalance_ratio_vs_max": 5.4
+      },
+      {
+        "category": "Analysis",
+        "train_count": 677,
+        "train_pct_of_attacks": 1.4934,
+        "test_count": 2000,
+        "test_pct_of_attacks": 1.6759,
+        "total_attack_samples": 2677,
+        "imbalance_ratio_vs_max": 27.87
+      },
+      {
+        "category": "Backdoor",
+        "train_count": 583,
+        "train_pct_of_attacks": 1.2861,
+        "test_count": 1746,
+        "test_pct_of_attacks": 1.463,
+        "total_attack_samples": 2329,
+        "imbalance_ratio_vs_max": 32.37
+      },
+      {
+        "category": "Shellcode",
+        "train_count": 378,
+        "train_pct_of_attacks": 0.8338,
+        "test_count": 1133,
+        "test_pct_of_attacks": 0.9494,
+        "total_attack_samples": 1511,
+        "imbalance_ratio_vs_max": 49.92
+      },
+      {
+        "category": "Worms",
+        "train_count": 44,
+        "train_pct_of_attacks": 0.0971,
+        "test_count": 130,
+        "test_pct_of_attacks": 0.1089,
+        "total_attack_samples": 174,
+        "imbalance_ratio_vs_max": 428.89
+      }
+    ],
+    "dominant_category": "Generic",
+    "rarest_category": "Worms",
+    "class_imbalance_ratio_train": 428.89,
+    "rare_categories": [
+      "Analysis",
+      "Backdoor",
+      "Shellcode",
+      "Worms"
+    ],
+    "normal_samples_excluded_train": 37000,
+    "normal_samples_excluded_test": 56000,
+    "removed_missing_or_invalid_count": 0
+  },
+  "feature_compatibility_and_leakage": {
+    "is_attack_cat_excluded_from_binary_inputs": true,
+    "is_label_excluded_from_binary_inputs": true,
+    "is_id_excluded_from_inputs": true,
+    "can_same_42_features_be_reused_for_multiclass": true,
+    "feature_count": 42,
+    "numerical_feature_count": 39,
+    "categorical_feature_count": 3,
+    "categorical_column_names": [
+      "proto",
+      "service",
+      "state"
+    ],
+    "numerical_column_names": [
+      "dur",
+      "spkts",
+      "dpkts",
+      "sbytes",
+      "dbytes",
+      "rate",
+      "sttl",
+      "dttl",
+      "sload",
+      "dload",
+      "sloss",
+      "dloss",
+      "sinpkt",
+      "dinpkt",
+      "sjit",
+      "djit",
+      "swin",
+      "stcpb",
+      "dtcpb",
+      "dwin",
+      "tcprtt",
+      "synack",
+      "ackdat",
+      "smean",
+      "dmean",
+      "trans_depth",
+      "response_body_len",
+      "ct_srv_src",
+      "ct_state_ttl",
+      "ct_dst_ltm",
+      "ct_src_dport_ltm",
+      "ct_dst_sport_ltm",
+      "ct_dst_src_ltm",
+      "is_ftp_login",
+      "ct_ftp_cmd",
+      "ct_flw_http_mthd",
+      "ct_src_ltm",
+      "ct_srv_dst",
+      "is_sm_ips_ports"
+    ],
+    "target_demarcation": {
+      "current_binary_ids_target": "label (0=Benign, 1=Attack)",
+      "future_multiclass_target": "attack_cat (9 distinct attack categories)"
+    },
+    "leakage_assessment": "PASSED: Neither 'label', 'attack_cat', nor sequential 'id' are included in the predictive input matrix. Feature extraction is mathematically leak-free."
+  },
+  "recommendations": {
+    "recommended_option": "Option A (Hierarchical Two-Stage Architecture)",
+    "justification": [
+      "Preserves the existing Phase 1-6 verified binary Random Forest model, its weights, its canonical SHA-256 hash, and its smart contract registration completely unchanged.",
+      "Normal traffic (which constitutes the vast majority of benign flows in IoT networks) is processed solely by the lightweight binary model without incurring multi-class overhead.",
+      "Maintains high binary detection performance (90.30% accuracy, 98.78% precision, 2.29% FPR) as an independent security gate before fine-grained diagnostic classification.",
+      "Isolates the multi-class training distribution strictly to attack flows (N=45,332 train, N=119,341 test), focusing classification capacity on discriminating between the 9 distinct attack types."
+    ],
+    "option_b_drawbacks": [
+      "Option B (Single flat 10-class model including Normal) would require retraining and replacing the existing baseline, destroying historical comparability and requiring re-registration on-chain.",
+      "Flat 10-class models conflate benign false positives with inter-attack misclassifications, weakening the binary defense perimeter."
+    ],
+    "response_recommendation_scope": {
+      "distinction": "Statistical flow classification ('This flow resembles DoS') vs. Operational remediation advice ('Rate limit source IP')",
+      "dataset_limitations": "UNSW-NB15 contains passive network packet telemetry; it does NOT contain ground-truth remediation actions, operational mitigation histories, or causal counterfactuals.",
+      "research_boundary": "Response recommendations must be explicitly structured as heuristic advisory guidance for security analysts, NOT as verified causal proofs that an attack will be automatically neutralized."
+    },
+    "phase_7b_feasibility_verdict": "FEASIBLE AND SCIENTIFICALLY JUSTIFIED"
+  },
+  "figures": {
+    "figure8_path": "reports/figures/figure8_multiclass_category_distribution.png"
+  }
+}
