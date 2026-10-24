@@ -13,7 +13,7 @@
 This report establishes the formal comparative evaluation for the B.Tech final-year research project:
 > **“Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection”**
 
-The objective of Phase 6B is to conduct a rigorous, fair, and publication-grade comparative evaluation across three progressively stronger model-integrity and provenance architectures:
+The objective of Phase 6B is to conduct a rigorous, fair, and academically structured comparative evaluation across three progressively stronger model-integrity and provenance architectures:
 1. **Configuration A (ML-Only Baseline):** Standard machine learning inference deployment without cryptographic artifact verification.
 2. **Configuration B (SHA-256-Only Integrity Verification):** Pre-load artifact integrity verification using local SHA-256 computation compared against an off-chain expected digest.
 3. **Configuration C (SHA-256 + Blockchain-Backed Provenance Verification):** The evaluated full architecture combining local SHA-256 hashing, smart-contract registry queries, and fail-closed gate enforcement.
@@ -214,7 +214,7 @@ Experiment B5 evaluates the system when presented with an unregistered model ide
 ### Critical Research Finding: Integrity vs. Provenance Authorization
 This experiment highlights the decisive distinction between cryptographic integrity and provenance authorization:
 - **Integrity Verification (SHA-only):** Answers *"Has this specific binary file changed byte-for-byte?"* If an attacker replaces the binary with a valid, differently trained model and updates the expected hash file, SHA-only will declare the artifact valid.
-- **Provenance Authorization (SHA + Blockchain):** Answers *"Has this specific model identity and version been authorized and registered on-chain by the designated administrator?"* An unregistered version key is deterministically rejected, preventing unauthorized model substitution.
+- **Provenance Authorization (SHA + Blockchain):** Answers *"Has this specific model identity and version been authorized and registered on-chain by the designated administrator?"* An unregistered model/version is rejected by the evaluated provenance gate, preventing that tested substitution scenario from proceeding through the model-loading path. This result demonstrates deterministic rejection of the tested unregistered key (`v9.9.9`) under the evaluated trust assumptions; it is not a universal guarantee against every arbitrary model-substitution attack vector, nor does it establish that the registered model artifact is inherently benign or semantically safe.
 
 ---
 
@@ -235,7 +235,7 @@ Experiment B6 quantifies the pre-load verification overhead introduced by crypto
 - **Verification vs. Pure Inference Ratio ($C / \text{ML}$):** $0.48\times$ (Pre-load verification is less than half of a single pure inference cycle).
 
 ### Operational Classification
-This overhead is incurred strictly as a **pre-load verification cost** during model initialization before memory loading. It does **not** degrade per-flow packet or flow classification throughput.
+This overhead is incurred strictly as a **pre-load verification cost** during model initialization before memory loading. The evaluated pre-load verification operations are outside the per-flow inference path; no blockchain lookup or model re-hashing is performed during network-flow classification. This establishes architectural separation of the measured verification operations from the evaluated inference path, but it is not a controlled throughput measurement.
 
 ---
 
@@ -310,7 +310,7 @@ Experiment B10 validates the operational security audit trail generated during s
 
 ## 16. Generated Comparative Figures
 
-Two publication-quality figures were generated under `reports/figures/`:
+Two thesis-ready evaluation figures were generated under `reports/figures/`:
 
 1. **Figure 4: Comparative Verification Overhead**
    - File: [`reports/figures/figure4_comparative_verification_overhead.png`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/reports/figures/figure4_comparative_verification_overhead.png)

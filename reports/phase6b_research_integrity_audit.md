@@ -10,7 +10,7 @@
 
 ## 1. Audit Objective
 
-This audit verifies that all Phase 6B deliverables adhere strictly to publication-grade scientific and academic integrity standards. It verifies that:
+This audit verifies that all Phase 6B deliverables adhere strictly to rigorous academic and research integrity standards. It verifies that:
 1. No unsupported performance guarantees, throughput exaggerations, or marketing claims are present.
 2. The core conceptual boundaries between ML inference, cryptographic hashing, and blockchain registry lookups are strictly maintained.
 3. All empirical measurements are accurately reported from reproducible code without fabrication.
@@ -84,4 +84,4 @@ The audit confirms that the comparative evaluation adheres to the fair compariso
 
 ## 5. Audit Sign-Off
 
-All Phase 6B comparative evaluation artifacts have passed research-integrity verification. The experimental methodology, results, and documentation are publication-grade and defensible for B.Tech thesis evaluation.
+All Phase 6B comparative evaluation artifacts have passed research-integrity verification. The experimental methodology, results, and documentation are designed to support a reproducible and defensible B.Tech thesis evaluation.
