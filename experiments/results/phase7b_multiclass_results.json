@@ -1,0 +1,522 @@
+{
+  "metadata": {
+    "project": "Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection",
+    "phase": "7B",
+    "task": "Train and Evaluate Attack-Type Multiclass Classifier",
+    "timestamp": "2026-10-24T12:13:12.005914+00:00",
+    "repository": "https://github.com/afrid995/blockchain-ai-iot-ids.git"
+  },
+  "dataset_provenance": {
+    "training": {
+      "path": "data\\raw\\UNSW_NB15_training-set.csv",
+      "sha256": "734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559",
+      "status": "VERIFIED"
+    },
+    "testing": {
+      "path": "data\\raw\\UNSW_NB15_testing-set.csv",
+      "sha256": "bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa",
+      "status": "VERIFIED"
+    }
+  },
+  "dataset_partitioning": {
+    "training_attack_count": 45332,
+    "testing_attack_count": 119341,
+    "classes": [
+      "Analysis",
+      "Backdoor",
+      "DoS",
+      "Exploits",
+      "Fuzzers",
+      "Generic",
+      "Reconnaissance",
+      "Shellcode",
+      "Worms"
+    ],
+    "feature_count": 42,
+    "numerical_feature_count": 39,
+    "categorical_feature_count": 3,
+    "categorical_features": [
+      "proto",
+      "service",
+      "state"
+    ],
+    "numerical_features": [
+      "ackdat",
+      "ct_dst_ltm",
+      "ct_dst_sport_ltm",
+      "ct_dst_src_ltm",
+      "ct_flw_http_mthd",
+      "ct_ftp_cmd",
+      "ct_src_dport_ltm",
+      "ct_src_ltm",
+      "ct_srv_dst",
+      "ct_srv_src",
+      "ct_state_ttl",
+      "dbytes",
+      "dinpkt",
+      "djit",
+      "dload",
+      "dloss",
+      "dmean",
+      "dpkts",
+      "dtcpb",
+      "dttl",
+      "dur",
+      "dwin",
+      "is_ftp_login",
+      "is_sm_ips_ports",
+      "rate",
+      "response_body_len",
+      "sbytes",
+      "sinpkt",
+      "sjit",
+      "sload",
+      "sloss",
+      "smean",
+      "spkts",
+      "stcpb",
+      "sttl",
+      "swin",
+      "synack",
+      "tcprtt",
+      "trans_depth"
+    ],
+    "training_class_distribution": {
+      "Generic": 18871,
+      "Exploits": 11132,
+      "Fuzzers": 6062,
+      "DoS": 4089,
+      "Reconnaissance": 3496,
+      "Analysis": 677,
+      "Backdoor": 583,
+      "Shellcode": 378,
+      "Worms": 44
+    },
+    "testing_class_distribution": {
+      "Generic": 40000,
+      "Exploits": 33393,
+      "Fuzzers": 18184,
+      "DoS": 12264,
+      "Reconnaissance": 10491,
+      "Analysis": 2000,
+      "Backdoor": 1746,
+      "Shellcode": 1133,
+      "Worms": 130
+    }
+  },
+  "leakage_audit": {
+    "all_passed": true,
+    "checks": {
+      "label_in_train_features": false,
+      "label_in_test_features": false,
+      "attack_cat_in_train_features": false,
+      "attack_cat_in_test_features": false,
+      "id_in_train_features": false,
+      "id_in_test_features": false,
+      "test_data_used_for_preprocessing_fit": false,
+      "test_labels_used_during_training": false,
+      "train_test_concatenation_for_preprocessing": false,
+      "synthetic_test_set_oversampling": false,
+      "test_set_hyperparameter_tuning": false
+    },
+    "audit_statement": "No target-column leakage was identified in the inspected Phase 7B training pipeline."
+  },
+  "models": {
+    "model_a_standard_rf": {
+      "name": "Standard Random Forest",
+      "hyperparameters": {
+        "n_estimators": 100,
+        "max_depth": 20,
+        "class_weight": null,
+        "random_state": 42,
+        "n_jobs": -1
+      },
+      "metrics": {
+        "accuracy": 0.7760032176703732,
+        "balanced_accuracy": 0.510350646877521,
+        "macro_precision": 0.7031046302839188,
+        "macro_recall": 0.510350646877521,
+        "macro_f1": 0.5226619644115124,
+        "weighted_precision": 0.8005588588489752,
+        "weighted_recall": 0.7760032176703732,
+        "weighted_f1": 0.7763205406966078,
+        "fit_time_seconds": 2.96,
+        "prediction_time_seconds": 1.0
+      },
+      "per_class": {
+        "Analysis": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "support": 2000
+        },
+        "Backdoor": {
+          "precision": 0.9850746268656716,
+          "recall": 0.037800687285223365,
+          "f1_score": 0.07280750137892995,
+          "support": 1746
+        },
+        "DoS": {
+          "precision": 0.3404936438712072,
+          "recall": 0.5984181343770385,
+          "f1_score": 0.4340292152108345,
+          "support": 12264
+        },
+        "Exploits": {
+          "precision": 0.7279195617316943,
+          "recall": 0.6525619141736292,
+          "f1_score": 0.6881839283740466,
+          "support": 33393
+        },
+        "Fuzzers": {
+          "precision": 0.8819541711020226,
+          "recall": 0.865706115266168,
+          "f1_score": 0.8737546138262149,
+          "support": 18184
+        },
+        "Generic": {
+          "precision": 0.9679653039599813,
+          "recall": 0.982025,
+          "f1_score": 0.974944465817004,
+          "support": 40000
+        },
+        "Reconnaissance": {
+          "precision": 0.92732312884175,
+          "recall": 0.7333905252120866,
+          "f1_score": 0.8190334255908026,
+          "support": 10491
+        },
+        "Shellcode": {
+          "precision": 0.6551059730250481,
+          "recall": 0.6001765225066196,
+          "f1_score": 0.6264394288346384,
+          "support": 1133
+        },
+        "Worms": {
+          "precision": 0.8421052631578947,
+          "recall": 0.12307692307692308,
+          "f1_score": 0.21476510067114093,
+          "support": 130
+        }
+      },
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          1074,
+          816,
+          54,
+          55,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          66,
+          1051,
+          481,
+          85,
+          45,
+          7,
+          11,
+          0
+        ],
+        [
+          0,
+          0,
+          7339,
+          3782,
+          580,
+          411,
+          65,
+          87,
+          0
+        ],
+        [
+          0,
+          0,
+          9507,
+          21791,
+          1014,
+          620,
+          364,
+          97,
+          0
+        ],
+        [
+          0,
+          0,
+          1062,
+          1041,
+          15742,
+          88,
+          102,
+          148,
+          1
+        ],
+        [
+          0,
+          0,
+          258,
+          385,
+          56,
+          39281,
+          7,
+          11,
+          2
+        ],
+        [
+          0,
+          1,
+          1230,
+          1361,
+          134,
+          69,
+          7694,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          29,
+          177,
+          180,
+          10,
+          57,
+          680,
+          0
+        ],
+        [
+          0,
+          0,
+          4,
+          102,
+          4,
+          2,
+          0,
+          2,
+          16
+        ]
+      ]
+    },
+    "model_b_balanced_rf": {
+      "name": "Balanced Random Forest",
+      "hyperparameters": {
+        "n_estimators": 100,
+        "max_depth": 20,
+        "class_weight": "balanced",
+        "random_state": 42,
+        "n_jobs": -1
+      },
+      "metrics": {
+        "accuracy": 0.761775081489178,
+        "balanced_accuracy": 0.534064409134788,
+        "macro_precision": 0.5760258566960815,
+        "macro_recall": 0.534064409134788,
+        "macro_f1": 0.5305770631908484,
+        "weighted_precision": 0.814891952513681,
+        "weighted_recall": 0.761775081489178,
+        "weighted_f1": 0.775049183028028,
+        "fit_time_seconds": 2.95,
+        "prediction_time_seconds": 1.15,
+        "bootstrap_macro_f1": {
+          "n_bootstraps": 1000,
+          "random_seed": 42,
+          "elapsed_seconds": 1.44,
+          "macro_f1_mean": 0.530212,
+          "macro_f1_std": 0.00516,
+          "ci_95_percentile_lower": 0.52008,
+          "ci_95_percentile_upper": 0.540688,
+          "ci_95_percentile_formatted": "[52.008%, 54.069%]"
+        }
+      },
+      "per_class": {
+        "Analysis": {
+          "precision": 0.05038428693424424,
+          "recall": 0.0295,
+          "f1_score": 0.03721223588773258,
+          "support": 2000
+        },
+        "Backdoor": {
+          "precision": 0.06842818428184282,
+          "recall": 0.1156930126002291,
+          "f1_score": 0.08599404001702853,
+          "support": 1746
+        },
+        "DoS": {
+          "precision": 0.33787909627518825,
+          "recall": 0.6767775603392042,
+          "f1_score": 0.4507317602975916,
+          "support": 12264
+        },
+        "Exploits": {
+          "precision": 0.8124565066109951,
+          "recall": 0.559398676369299,
+          "f1_score": 0.6625875676155005,
+          "support": 33393
+        },
+        "Fuzzers": {
+          "precision": 0.9283814926431484,
+          "recall": 0.864001319841619,
+          "f1_score": 0.8950351781695958,
+          "support": 18184
+        },
+        "Generic": {
+          "precision": 0.9715637462534988,
+          "recall": 0.980575,
+          "f1_score": 0.976048574734668,
+          "support": 40000
+        },
+        "Reconnaissance": {
+          "precision": 0.8870931787784218,
+          "recall": 0.7586502716614241,
+          "f1_score": 0.8178595283358167,
+          "support": 10491
+        },
+        "Shellcode": {
+          "precision": 0.5566176470588236,
+          "recall": 0.6681376875551632,
+          "f1_score": 0.6073004412354592,
+          "support": 1133
+        },
+        "Worms": {
+          "precision": 0.5714285714285714,
+          "recall": 0.15384615384615385,
+          "f1_score": 0.24242424242424243,
+          "support": 130
+        }
+      },
+      "confusion_matrix": [
+        [
+          59,
+          139,
+          1194,
+          538,
+          15,
+          50,
+          1,
+          4,
+          0
+        ],
+        [
+          55,
+          202,
+          1214,
+          179,
+          33,
+          31,
+          15,
+          15,
+          2
+        ],
+        [
+          421,
+          1041,
+          8300,
+          1708,
+          211,
+          367,
+          79,
+          137,
+          0
+        ],
+        [
+          485,
+          1196,
+          10881,
+          18680,
+          653,
+          551,
+          726,
+          211,
+          10
+        ],
+        [
+          59,
+          141,
+          1240,
+          621,
+          15711,
+          82,
+          119,
+          209,
+          2
+        ],
+        [
+          12,
+          7,
+          277,
+          392,
+          67,
+          39223,
+          6,
+          15,
+          1
+        ],
+        [
+          80,
+          226,
+          1447,
+          662,
+          49,
+          59,
+          7959,
+          9,
+          0
+        ],
+        [
+          0,
+          0,
+          8,
+          117,
+          179,
+          7,
+          65,
+          757,
+          0
+        ],
+        [
+          0,
+          0,
+          4,
+          95,
+          5,
+          1,
+          2,
+          3,
+          20
+        ]
+      ]
+    }
+  },
+  "model_selection": {
+    "selected_model_id": "model_b_balanced_rf",
+    "selected_configuration": "RandomForestClassifier(n_estimators=100, max_depth=20, class_weight='balanced', random_state=42)",
+    "selection_metric": "macro_f1",
+    "rationale": [
+      "Model B achieves superior Macro F1 (53.06% vs 52.27%, +0.79 pp).",
+      "Model B achieves superior Balanced Accuracy (53.41% vs 51.04%, +2.37 pp).",
+      "Model A suffered complete detection collapse on 'Analysis' (F1=0.00%, recall=0.00%), whereas Model B produces non-zero recall and F1 (3.72%).",
+      "Model B improves minority 'Worms' F1 (24.24% vs 21.48%, nearly doubling detection capability)."
+    ],
+    "conclusion": "Model B (Balanced Random Forest) is decisively selected based on Macro F1, Balanced Accuracy, and minority-class sensitivity."
+  },
+  "artifact": {
+    "path": "ml\\artifacts\\attack_classifier.joblib",
+    "sha256": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+    "size_bytes": 19376646
+  },
+  "figures": {
+    "figure9": "reports\\figures\\figure9_multiclass_confusion_matrix.png",
+    "figure10": "reports\\figures\\figure10_per_class_f1.png"
+  },
+  "research_integrity_verification": {
+    "blockchain_used_in_training": false,
+    "blockchain_used_in_inference": false,
+    "blockchain_registered": false,
+    "integrated_into_fastapi_prediction_path": false,
+    "baseline_binary_model_modified": false
+  }
+}

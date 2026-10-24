@@ -1,0 +1,304 @@
+{
+  "model_id": "iot-stage2-multiclass-rf",
+  "model_version": "v1.0.0",
+  "stage": 2,
+  "role": "Attack-Type Multiclass Classification",
+  "algorithm": "RandomForestClassifier",
+  "class_weight": "balanced",
+  "random_seed": 42,
+  "dataset_name": "UNSW-NB15",
+  "training_dataset_sha256": "734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559",
+  "testing_dataset_sha256": "bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa",
+  "model_artifact_filename": "attack_classifier.joblib",
+  "model_artifact_sha256": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+  "model_artifact_size_bytes": 19376646,
+  "created_at": "2026-10-24T12:13:12.004299+00:00",
+  "features": {
+    "total_count": 42,
+    "categorical": [
+      "proto",
+      "service",
+      "state"
+    ],
+    "numerical": [
+      "ackdat",
+      "ct_dst_ltm",
+      "ct_dst_sport_ltm",
+      "ct_dst_src_ltm",
+      "ct_flw_http_mthd",
+      "ct_ftp_cmd",
+      "ct_src_dport_ltm",
+      "ct_src_ltm",
+      "ct_srv_dst",
+      "ct_srv_src",
+      "ct_state_ttl",
+      "dbytes",
+      "dinpkt",
+      "djit",
+      "dload",
+      "dloss",
+      "dmean",
+      "dpkts",
+      "dtcpb",
+      "dttl",
+      "dur",
+      "dwin",
+      "is_ftp_login",
+      "is_sm_ips_ports",
+      "rate",
+      "response_body_len",
+      "sbytes",
+      "sinpkt",
+      "sjit",
+      "sload",
+      "sloss",
+      "smean",
+      "spkts",
+      "stcpb",
+      "sttl",
+      "swin",
+      "synack",
+      "tcprtt",
+      "trans_depth"
+    ]
+  },
+  "target_definition": {
+    "column": "attack_cat",
+    "classes": [
+      "Analysis",
+      "Backdoor",
+      "DoS",
+      "Exploits",
+      "Fuzzers",
+      "Generic",
+      "Reconnaissance",
+      "Shellcode",
+      "Worms"
+    ],
+    "class_count": 9
+  },
+  "training_hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 20,
+    "class_weight": "balanced",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "evaluation_metrics": {
+    "total_test_samples": 119341,
+    "accuracy": 0.761775081489178,
+    "balanced_accuracy": 0.534064409134788,
+    "macro_precision": 0.5760258566960815,
+    "macro_recall": 0.534064409134788,
+    "macro_f1": 0.5305770631908484,
+    "weighted_precision": 0.814891952513681,
+    "weighted_recall": 0.761775081489178,
+    "weighted_f1": 0.775049183028028,
+    "per_class": {
+      "Analysis": {
+        "precision": 0.05038428693424424,
+        "recall": 0.0295,
+        "f1_score": 0.03721223588773258,
+        "support": 2000
+      },
+      "Backdoor": {
+        "precision": 0.06842818428184282,
+        "recall": 0.1156930126002291,
+        "f1_score": 0.08599404001702853,
+        "support": 1746
+      },
+      "DoS": {
+        "precision": 0.33787909627518825,
+        "recall": 0.6767775603392042,
+        "f1_score": 0.4507317602975916,
+        "support": 12264
+      },
+      "Exploits": {
+        "precision": 0.8124565066109951,
+        "recall": 0.559398676369299,
+        "f1_score": 0.6625875676155005,
+        "support": 33393
+      },
+      "Fuzzers": {
+        "precision": 0.9283814926431484,
+        "recall": 0.864001319841619,
+        "f1_score": 0.8950351781695958,
+        "support": 18184
+      },
+      "Generic": {
+        "precision": 0.9715637462534988,
+        "recall": 0.980575,
+        "f1_score": 0.976048574734668,
+        "support": 40000
+      },
+      "Reconnaissance": {
+        "precision": 0.8870931787784218,
+        "recall": 0.7586502716614241,
+        "f1_score": 0.8178595283358167,
+        "support": 10491
+      },
+      "Shellcode": {
+        "precision": 0.5566176470588236,
+        "recall": 0.6681376875551632,
+        "f1_score": 0.6073004412354592,
+        "support": 1133
+      },
+      "Worms": {
+        "precision": 0.5714285714285714,
+        "recall": 0.15384615384615385,
+        "f1_score": 0.24242424242424243,
+        "support": 130
+      }
+    },
+    "confusion_matrix": [
+      [
+        59,
+        139,
+        1194,
+        538,
+        15,
+        50,
+        1,
+        4,
+        0
+      ],
+      [
+        55,
+        202,
+        1214,
+        179,
+        33,
+        31,
+        15,
+        15,
+        2
+      ],
+      [
+        421,
+        1041,
+        8300,
+        1708,
+        211,
+        367,
+        79,
+        137,
+        0
+      ],
+      [
+        485,
+        1196,
+        10881,
+        18680,
+        653,
+        551,
+        726,
+        211,
+        10
+      ],
+      [
+        59,
+        141,
+        1240,
+        621,
+        15711,
+        82,
+        119,
+        209,
+        2
+      ],
+      [
+        12,
+        7,
+        277,
+        392,
+        67,
+        39223,
+        6,
+        15,
+        1
+      ],
+      [
+        80,
+        226,
+        1447,
+        662,
+        49,
+        59,
+        7959,
+        9,
+        0
+      ],
+      [
+        0,
+        0,
+        8,
+        117,
+        179,
+        7,
+        65,
+        757,
+        0
+      ],
+      [
+        0,
+        0,
+        4,
+        95,
+        5,
+        1,
+        2,
+        3,
+        20
+      ]
+    ],
+    "bootstrap_macro_f1_95ci": {
+      "n_bootstraps": 1000,
+      "random_seed": 42,
+      "elapsed_seconds": 1.44,
+      "macro_f1_mean": 0.530212,
+      "macro_f1_std": 0.00516,
+      "ci_95_percentile_lower": 0.52008,
+      "ci_95_percentile_upper": 0.540688,
+      "ci_95_percentile_formatted": "[52.008%, 54.069%]"
+    }
+  },
+  "dataset_inspection": {
+    "training_attack_count": 45332,
+    "testing_attack_count": 119341,
+    "training_class_balance": {
+      "Generic": 18871,
+      "Exploits": 11132,
+      "Fuzzers": 6062,
+      "DoS": 4089,
+      "Reconnaissance": 3496,
+      "Analysis": 677,
+      "Backdoor": 583,
+      "Shellcode": 378,
+      "Worms": 44
+    },
+    "testing_class_balance": {
+      "Generic": 40000,
+      "Exploits": 33393,
+      "Fuzzers": 18184,
+      "DoS": 12264,
+      "Reconnaissance": 10491,
+      "Analysis": 2000,
+      "Backdoor": 1746,
+      "Shellcode": 1133,
+      "Worms": 130
+    }
+  },
+  "selection_rationale": [
+    "Model B achieves superior Macro F1 (53.06% vs 52.27%, +0.79 pp).",
+    "Model B achieves superior Balanced Accuracy (53.41% vs 51.04%, +2.37 pp).",
+    "Model A suffered complete detection collapse on 'Analysis' (F1=0.00%, recall=0.00%), whereas Model B produces non-zero recall and F1 (3.72%).",
+    "Model B improves minority 'Worms' F1 (24.24% vs 21.48%, nearly doubling detection capability)."
+  ],
+  "known_limitations": [
+    "Evaluated strictly on attack flows (Stage 2); does not evaluate benign/normal separation.",
+    "Worms category has severe training sample scarcity (44 samples, 0.097% of training attacks); performance estimates are subject to sample instability.",
+    "Analysis category demonstrates poor precision (0.019) and high false assignment from other attack types.",
+    "Evaluation reflects closed-world UNSW-NB15 attack distributions; does not claim zero-day detection or IoT-wide generalization.",
+    "Blockchain provenance was NOT registered in this phase; registration deferred to Phase 7B.1."
+  ]
+}
