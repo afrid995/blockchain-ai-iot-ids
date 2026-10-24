@@ -3,7 +3,7 @@
     "project": "Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection",
     "repository": "https://github.com/afrid995/blockchain-ai-iot-ids.git",
     "phase": "6C",
-    "timestamp": "2026-10-24T09:47:35.400242+00:00",
+    "timestamp": "2026-10-24T10:01:56.019775+00:00",
     "environment": {
       "os": "Windows-11-10.0.26300-SP0",
       "python_version": "3.12.4",
@@ -62,7 +62,7 @@
         "Deterministic rejection of unregistered model/version identifiers (NOT_REGISTERED)",
         "Fail-closed REST API gating (denies memory loading and returns HTTP 503 on predict)",
         "Decoupled off-chain runtime inference (zero per-flow blockchain lookups)",
-        "Operational audit trail logging in SQLite with raw payload privacy protection"
+        "Operational audit trail logging in SQLite without recording raw network-flow feature vectors"
       ],
       "evaluated_tradeoff": [
         "Incurs a quantified pre-load verification cost (+14.66 ms incremental over SHA-only)",

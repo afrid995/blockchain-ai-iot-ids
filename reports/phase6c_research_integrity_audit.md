@@ -45,6 +45,8 @@ An automated text scan evaluated 16 prohibited terms and concepts across all new
 | `SHA-256 prevents arbitrary code execution` | **0** | 1 | Explicitly listed as an out-of-scope threat if the host operating system is compromised. |
 | `production blockchain performance` | **0** | 1 | Explicitly qualified as an in-process local EVM benchmark (`EthereumTesterProvider`). |
 | `universal prevention` | **0** | 1 | Scoped to tested substitution scenarios under evaluated trust assumptions. |
+| `privacy guarantees` | **0** | 0 | Prohibited; scoped strictly to data minimization (non-persistence of raw network flow vectors in audit log). |
+| `universal model substitution` | **0** | 0 | Prohibited; scoped strictly to rejection of tested unregistered-version scenario through evaluated loading path. |
 | `publication-grade` | **0** | 0 | Prohibited; replaced with objective academic evaluation terminology. |
 
 ---
@@ -83,3 +85,9 @@ The audit confirms that all derived metrics are explicitly labeled and distingui
 ## 5. Audit Sign-Off
 
 All Phase 6C experimental synthesis artifacts have passed research-integrity verification. The experimental methodology, derived metrics, and documentation are designed to support a reproducible and defensible B.Tech thesis evaluation.
+
+### Final Verification Checklist
+- **Unsupported positive performance/security claims:** **0** (0 claims of wire-speed, real-time, zero overhead, or ML accuracy improvement)
+- **Privacy guarantees:** **0** (all audit trail claims strictly scoped to data minimization and non-persistence of raw feature vectors)
+- **Universal substitution claims:** **0** (strictly scoped to rejection of tested unregistered-version substitution scenario through the evaluated model-loading path)
+- **Self-certifying words:** **0** (0 occurrences of "publication-grade" or similar promotional terminology)

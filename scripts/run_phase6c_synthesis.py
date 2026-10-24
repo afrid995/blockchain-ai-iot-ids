@@ -284,7 +284,7 @@ def main() -> int:
                 "Deterministic rejection of unregistered model/version identifiers (NOT_REGISTERED)",
                 "Fail-closed REST API gating (denies memory loading and returns HTTP 503 on predict)",
                 "Decoupled off-chain runtime inference (zero per-flow blockchain lookups)",
-                "Operational audit trail logging in SQLite with raw payload privacy protection",
+                "Operational audit trail logging in SQLite without recording raw network-flow feature vectors",
             ],
             "evaluated_tradeoff": [
                 "Incurs a quantified pre-load verification cost (+14.66 ms incremental over SHA-only)",

@@ -32,7 +32,7 @@ The synthesis directly answers the primary research question:
 1. **Integrity vs. Provenance Authorization:** Local SHA-256 verification (Config B) proves binary correspondence against an expected hash, but cannot independently determine whether that digest or version was authorized by the designated governance entity. Blockchain-backed verification (Config C) uniquely enforces release authorization, rejecting unregistered version keys (`NOT_REGISTERED`) and failing closed.
 2. **Quantified Cost Allocation:** The pre-load verification gate incurs a mean latency of $20.31\text{ ms}$ (95% CI: [19.37, 21.30] ms), which is $0.48\times$ the latency of a single pure ML inference compute cycle ($42.40\text{ ms}$) and $0.39\times$ of an end-to-end API request ($51.49\text{ ms}$).
 3. **Operational Separation:** Zero blockchain RPC queries and zero model re-hashing operations occur during per-flow classification. Verification overhead is decoupled from runtime network-flow prediction.
-4. **ML Independence Boundary:** Blockchain provenance does **not** improve machine learning intrusion detection accuracy, precision, recall, or F1 score; the model's detection metrics are invariant across Configurations A, B, and C.
+4. **ML Independence Boundary:** Blockchain provenance does **not** improve machine learning intrusion detection accuracy, precision, recall, or F1 score. The same underlying Random Forest model and baseline evaluation metrics are used across the three configurations; the experiments do not provide evidence that blockchain provenance changes ML classification performance.
 
 ---
 
@@ -84,7 +84,7 @@ The synthesis integrates data directly from verified experiment records across t
 
 ## 5. ML Baseline: Intrusion-Detection Capability
 
-The Random Forest classifier was evaluated on 42 tabular network-flow features from the UNSW-NB15 benchmark. These metrics characterize the ML model and are invariant across all three security configurations:
+The Random Forest classifier was evaluated on 42 tabular network-flow features from the UNSW-NB15 benchmark. The same underlying Random Forest model and baseline evaluation metrics are used across the three configurations; the experiments do not provide evidence that blockchain provenance changes ML classification performance:
 
 | Evaluation Metric | Exact Proportion | Percentage (%) | Benchmark Dataset |
 | :--- | :---: | :---: | :--- |
@@ -228,7 +228,7 @@ The empirical evidence directly substantiates the following conclusions:
 2. **On-Chain Version Authorization:** Querying the Solidity smart contract enables deterministic rejection of unregistered model identities and versions (`v9.9.9`), enforcing release governance that local SHA-256 alone cannot provide (Experiment E4, B5).
 3. **Fail-Closed Application Security:** In all failure states (`UNVERIFIED`, `HASH_MISMATCH`, `NOT_REGISTERED`), the backend blocks memory instantiation and returns HTTP 503, preventing prediction requests from executing against unverified code (Experiment E6, B4, B5).
 4. **Decoupled Verification Overhead:** Blockchain queries are confined to pre-load verification ($20.31\text{ ms}$ mean), leaving runtime flow inference unburdened by blockchain RPC delays (Experiment E5, B7).
-5. **Privacy-Preserving Audit Accountability:** The SQLite audit trail records 100% of lifecycle security events while excluding raw network feature vectors (Experiment E7, B10).
+5. **Audit Accountability & Data Minimization:** The SQLite audit trail records all generated security events across the defined lifecycle event categories while reducing persistence of raw network-flow feature data in the evaluated audit store (Experiment E7, B10).
 
 ---
 
@@ -282,7 +282,7 @@ cd frontend && npm test -- --run && npm run build && cd ..
 The experimental synthesis provides an unambiguous answer to the core research question:
 
 - **Local SHA-256 integrity verification alone (Config B)** provides fast ($5.65\text{ ms}$), deterministic protection against binary tampering, but depends entirely on externally maintained expected digests and lacks an independent mechanism to establish whether a specific model release is authorized.
-- **Blockchain-backed provenance verification (Config C)** introduces an on-chain release authorization registry that deterministically rejects unregistered versions (`NOT_REGISTERED`) and enforces fail-closed REST API gating, preventing unauthorized model substitution.
+- **Blockchain-backed provenance verification (Config C)** introduces an on-chain release authorization registry that deterministically rejects unregistered versions (`NOT_REGISTERED`) and enforces fail-closed REST API gating, rejecting the tested unregistered-version substitution scenario through the evaluated model-loading path.
 - This additional governance capability introduces a quantified pre-load verification cost of **$20.31\text{ ms}$** ($+14.66\text{ ms}$ incremental over local hashing), which is less than half the latency of a single pure inference cycle ($42.40\text{ ms}$).
 - **Runtime inference remains completely off-chain**, executing zero blockchain queries during per-flow classification.
 - **Blockchain does not improve intrusion-detection metrics** (Accuracy 90.30%, Precision 98.78%, Recall 86.82%, F1 92.41%). The security benefit is strictly one of **model provenance, release authorization, and tamper-evident auditing**, rather than enhanced attack classification.

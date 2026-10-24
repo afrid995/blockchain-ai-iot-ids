@@ -15,7 +15,7 @@ The objective of Phase 6C is to produce the final experimental synthesis and sta
 - Formally evaluate capability progression across Configuration A (ML-only), Configuration B (SHA-only), and Configuration C (SHA + Blockchain).
 - Quantify pre-load verification overhead and distinguish directly measured from derived metrics.
 - Evaluate the seven-scenario security capability matrix.
-- Prove operational decoupling between pre-load verification and runtime off-chain inference.
+- Empirically demonstrate the evaluated architectural separation between pre-load verification and runtime off-chain inference.
 - Explicitly enforce research boundaries (zero claims that blockchain improves ML detection accuracy).
 
 ---
@@ -90,6 +90,8 @@ Zero application, machine learning, smart contract, or frontend code was altered
 An automated audit across all Phase 6C documentation and synthesized artifacts verified:
 - **Unsupported Universal Security Claims:** **0**
 - **Unsupported Performance Claims:** **0** (0 claims of zero latency, zero overhead, real-time SLAs, or wire-speed throughput)
+- **Privacy Guarantees:** **0** (strictly scoped to data minimization and non-persistence of raw feature vectors)
+- **Universal Substitution Claims:** **0** (strictly scoped to rejection of tested unregistered-version substitution scenario)
 - **Self-Certifying Language:** **0** (0 claims of "publication-grade")
 - **Conceptual Demarcation:** 100% compliant across all five demarcation standards
 - **Legitimate Disclaimers Preserved:** Explicitly contextualized across all reports
