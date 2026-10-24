@@ -24,7 +24,7 @@ The primary objective of Phase 7A is to conduct a rigorous, empirical feasibilit
 
 Phase 7A investigates the following core scientific question:
 
-> **Does the authentic UNSW-NB15 dataset already present in the repository support a defensible, leak-free multi-class attack classification extension using `attack_cat`, and what architectural design best integrates with the existing blockchain-verified binary IDS without compromising historical baseline comparability?**
+> **Does the authentic UNSW-NB15 dataset already present in the repository support a defensible multi-class attack classification extension using `attack_cat` without identified target-column leakage in the feature pipeline, and what architectural design best integrates with the existing blockchain-verified binary IDS without compromising historical baseline comparability?**
 
 The proposed two-stage conceptual architecture under evaluation is:
 ```text
@@ -155,7 +155,7 @@ The candidate attack dataset displays severe class imbalance:
    - **Macro-Averaged F1 Score** (giving equal weight to all 9 categories regardless of support).
    - **Balanced Accuracy** (unweighted mean of class-specific recall rates).
    - **Per-Class Precision, Recall, and Confusion Matrices**.
-3. **Stratified Sampling / Class Weighting:** Future training should employ `class_weight='balanced'` in Random Forest estimators to penalize errors on minority categories like `Worms`.
+3. **Class Weighting Evaluation:** `class_weight='balanced'` should be evaluated as one candidate strategy for addressing the severe class imbalance; its effect must be compared empirically in Phase 7B.
 
 ---
 
@@ -167,8 +167,8 @@ Three candidate modeling options were evaluated:
 - **Design:** Hierarchical two-stage IDS. Stage 1 (existing binary model) classifies `Benign` vs `Attack`. If and only if an attack is detected, Stage 2 (attack-category model) classifies the flow into one of the 9 attack categories.
 - **Advantages:**
   1. **Preserves Verified Baseline:** The existing Phase 1–6 binary model weights, SHA-256 digest, and blockchain registration remain 100% intact.
-  2. **Operational Efficiency:** Normal flows (the dominant traffic in real networks) only traverse Stage 1, avoiding multi-class compute overhead.
-  3. **High Baseline Security:** Maintains the 90.30% accuracy and 2.29% false positive rate of the binary defense perimeter.
+  2. **Operational Efficiency:** In the evaluated UNSW-NB15 benchmark, flows classified as Normal are processed only by Stage 1, avoiding unnecessary Stage 2 classification for flows classified as benign.
+  3. **First-Stage Detection Baseline:** The existing binary model remains the first-stage detection gate. Its previously measured 90.30% accuracy and 2.29% false-positive rate remain the established Stage 1 baseline. The end-to-end performance of the future hierarchical system must be measured separately in Phase 7B.
   4. **Focused Training:** Stage 2 is optimized exclusively to discriminate between attack signatures rather than separating attacks from benign baselines.
 
 ### Option B: Flat 10-Class Single Model (Not Recommended)
@@ -204,7 +204,7 @@ Response Recommendation (Advisory Operational Guidance):
 ## 11. Threats to Validity
 
 1. **Synthetic & Emulated Attack Traffic:** UNSW-NB15 was synthesized in a cyber-range environment; real-world zero-day variants may deviate from recorded category distributions.
-2. **Severe Rarity of `Worms`:** With only 44 training instances, statistical variance for the `Worms` class will be high; bootstrap confidence intervals should be employed.
+2. **Minority-Class Limitation for `Worms`:** The Worms category has only 44 training samples in the evaluated training partition, so minority-class metrics for this category may have high variance and should be interpreted cautiously in Phase 7B.
 3. **Distribution Shift Across Partitions:** `Generic` constitutes 41.63% of train attacks but 33.52% of test attacks, while `Exploits` rises from 24.56% in train to 27.98% in test. Supervised classifiers must generalize across this shift.
 
 ---
@@ -214,7 +214,7 @@ Response Recommendation (Advisory Operational Guidance):
 **Phase 7A Feasibility Verdict:** **FEASIBLE AND SCIENTIFICALLY JUSTIFIED.**
 
 1. The authentic UNSW-NB15 dataset exhibits 100% categorical consistency across train and test partitions for all 9 attack categories.
-2. Zero data leakage exists between the existing 42 input features and the target labels.
+2. The inspected feature-extraction pipeline excludes label, attack_cat, and id from the model input; no target-column leakage was identified in the Phase 7A analysis.
 3. A candidate dataset of 164,673 attack flows ($N=45,332$ train, $N=119,341$ test) provides ample statistical support for multi-class modeling.
 4. **Phase 7B implementation is justified**, utilizing a hierarchical two-stage architecture that preserves the existing blockchain-backed binary model.
 

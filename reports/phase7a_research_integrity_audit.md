@@ -64,11 +64,11 @@ The deliverables strictly adhere to the project's core research standards:
 
 3. **Data Leakage Boundary:**
    - *Standard:* "Target variables (`label`, `attack_cat`) and sequential identifiers (`id`) must be strictly excluded from input features."
-   - *Compliance:* Verified. Feature analysis confirms 42 leak-free input features.
+   - *Compliance:* Verified. The inspected feature-extraction pipeline excludes label, attack_cat, and id from the model input; no target-column leakage was identified in the Phase 7A analysis.
 
-4. **Class Imbalance Strategy:**
-   - *Standard:* "Severe class imbalance must be documented with exact proportions, and macro-averaged metrics must be required for future modeling."
-   - *Compliance:* Verified. The 428.89:1 imbalance between `Generic` and `Worms` is documented alongside the mandate for Macro F1 and Balanced Accuracy in future Phase 7B work.
+4. **Class Imbalance Strategy & Minority Limitation:**
+   - *Standard:* "Severe class imbalance must be documented with exact proportions, candidate mitigation strategies evaluated without certainty claims, and minority limitations explicitly stated."
+   - *Compliance:* Verified. The 428.89:1 imbalance between `Generic` and `Worms` is documented, `class_weight='balanced'` is identified as a candidate strategy to evaluate empirically, and the limitation that `Worms` has only 44 training samples is explicitly stated.
 
 ---
 

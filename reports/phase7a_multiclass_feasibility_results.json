@@ -3,7 +3,7 @@
     "project": "Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection",
     "phase": "7A",
     "task": "Feasibility Analysis for Multi-Class Attack-Type Classification",
-    "timestamp": "2026-10-24T11:41:58.011294+00:00",
+    "timestamp": "2026-10-24T11:51:26.747049+00:00",
     "repository": "https://github.com/afrid995/blockchain-ai-iot-ids.git"
   },
   "datasets": {
@@ -492,14 +492,14 @@
       "current_binary_ids_target": "label (0=Benign, 1=Attack)",
       "future_multiclass_target": "attack_cat (9 distinct attack categories)"
     },
-    "leakage_assessment": "PASSED: Neither 'label', 'attack_cat', nor sequential 'id' are included in the predictive input matrix. Feature extraction is mathematically leak-free."
+    "leakage_assessment": "The inspected feature-extraction pipeline excludes label, attack_cat, and id from the model input; no target-column leakage was identified in the Phase 7A analysis."
   },
   "recommendations": {
     "recommended_option": "Option A (Hierarchical Two-Stage Architecture)",
     "justification": [
       "Preserves the existing Phase 1-6 verified binary Random Forest model, its weights, its canonical SHA-256 hash, and its smart contract registration completely unchanged.",
-      "Normal traffic (which constitutes the vast majority of benign flows in IoT networks) is processed solely by the lightweight binary model without incurring multi-class overhead.",
-      "Maintains high binary detection performance (90.30% accuracy, 98.78% precision, 2.29% FPR) as an independent security gate before fine-grained diagnostic classification.",
+      "In the evaluated UNSW-NB15 benchmark, flows classified as Normal are processed only by Stage 1, avoiding unnecessary Stage 2 classification for flows classified as benign.",
+      "The existing binary model remains the first-stage detection gate. Its previously measured 90.30% accuracy and 2.29% false-positive rate remain the established Stage 1 baseline. The end-to-end performance of the future hierarchical system must be measured separately in Phase 7B.",
       "Isolates the multi-class training distribution strictly to attack flows (N=45,332 train, N=119,341 test), focusing classification capacity on discriminating between the 9 distinct attack types."
     ],
     "option_b_drawbacks": [

@@ -327,8 +327,8 @@ def analyze_feature_compatibility_and_leakage(
             "future_multiclass_target": "attack_cat (9 distinct attack categories)",
         },
         "leakage_assessment": (
-            "PASSED: Neither 'label', 'attack_cat', nor sequential 'id' are included "
-            "in the predictive input matrix. Feature extraction is mathematically leak-free."
+            "The inspected feature-extraction pipeline excludes label, attack_cat, and id from the model input; "
+            "no target-column leakage was identified in the Phase 7A analysis."
         ),
     }
 
@@ -430,10 +430,11 @@ def formulate_recommendations() -> Dict[str, Any]:
         "justification": [
             "Preserves the existing Phase 1-6 verified binary Random Forest model, its weights, "
             "its canonical SHA-256 hash, and its smart contract registration completely unchanged.",
-            "Normal traffic (which constitutes the vast majority of benign flows in IoT networks) "
-            "is processed solely by the lightweight binary model without incurring multi-class overhead.",
-            "Maintains high binary detection performance (90.30% accuracy, 98.78% precision, 2.29% FPR) "
-            "as an independent security gate before fine-grained diagnostic classification.",
+            "In the evaluated UNSW-NB15 benchmark, flows classified as Normal are processed only by Stage 1, "
+            "avoiding unnecessary Stage 2 classification for flows classified as benign.",
+            "The existing binary model remains the first-stage detection gate. Its previously measured 90.30% "
+            "accuracy and 2.29% false-positive rate remain the established Stage 1 baseline. The end-to-end "
+            "performance of the future hierarchical system must be measured separately in Phase 7B.",
             "Isolates the multi-class training distribution strictly to attack flows (N=45,332 train, N=119,341 test), "
             "focusing classification capacity on discriminating between the 9 distinct attack types.",
         ],
