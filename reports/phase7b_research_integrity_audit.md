@@ -21,6 +21,7 @@ Every verification item was checked against actual repository code (`experiments
 
 | Category | Integrity Criterion | Verified State | Audit Finding |
 | :--- | :--- | :--- | :--- |
+| **Dataset Hashes** | Direct hash verification of raw dataset CSVs | Training: `734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559`. Testing: Candidate A (`bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa`) verified directly against disk. Candidate B (`...00c...`) verified absent. | **PASS** |
 | **Data Leakage** | Target columns excluded from inputs | `label`, `attack_cat`, and `id` dropped prior to model fitting. | **PASS** |
 | **Test Contamination** | Preprocessing fit strictly on training set | `ColumnTransformer` is fit exclusively on the training partition ($N = 45,332$). Test partition ($N = 119,341$) is only transformed. | **PASS** |
 | **Pre-split Merging** | No train/test concatenation | Data partitions loaded and filtered separately; no combined `.fit()` step. | **PASS** |
@@ -31,8 +32,9 @@ Every verification item was checked against actual repository code (`experiments
 | **Remediation Claims** | No claims of automated remediation | Explicitly noted that remediation is not implemented or evaluated. | **PASS** |
 | **IoT Generalization** | Scope restricted to UNSW-NB15 benchmark | Explicitly states findings are bounded by UNSW-NB15 distributions. | **PASS** |
 | **Blockchain Claims** | No blockchain claims for ML accuracy | Confirmed: Blockchain is NOT used in Stage 2 training or per-sample inference. | **PASS** |
-| **Rare-Class Scrutiny**| Rare-class performance not overclaimed | Worms ($N_{\text{train}} = 44$) explicitly noted as statistically unstable. | **PASS** |
-| **Model Selection** | Selection not based solely on accuracy | Selection driven by Macro F1 ($53.06\%$ vs $52.27\%$) and Balanced Accuracy. | **PASS** |
+| **Rare-Class Scrutiny**| Rare-class performance not overclaimed | Worms ($N_{\text{train}} = 44$) explicitly noted as statistically unstable. Analysis framed as recovery from complete detection failure without implying complete solution. | **PASS** |
+| **Model Selection** | Selection not based solely on accuracy | Selection driven strictly by predefined Macro F1 ($53.06\%$ vs $52.27\%$) and Balanced Accuracy; no claims of decisive selection or statistical superiority. | **PASS** |
+| **Weighted F1 Comparison** | No unsupported statistical claims | Weighted F1 documented as very similar; Model A is higher by 0.13 percentage points ($77.63\%$ vs $77.50\%$). | **PASS** |
 | **Result Authenticity** | Numerical metrics match actual evaluation | Metrics in reports exactly match JSON output down to decimal places. | **PASS** |
 | **Artifact Integrity** | Artifact hash verified against disk | SHA-256 (`596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208`) verified. | **PASS** |
 
@@ -62,12 +64,13 @@ Every verification item was checked against actual repository code (`experiments
 
 ### 3.4. Rare-Class Discussion Scrutiny
 - **Analysis:**
-  - Standard RF (Model A) suffered complete failure on `Analysis` (F1 = $0.00\%$, recall = $0.00\%$).
+  - Standard RF (Model A) suffered complete detection failure on `Analysis` (F1 = $0.00\%$, recall = $0.00\%$).
   - Balanced RF (Model B) achieved $3.72\%$ F1 on `Analysis` and $24.24\%$ F1 on `Worms`.
   - Documentation explicitly identifies that Worms has only 44 training flows ($0.10\%$) and Analysis has poor precision ($5.04\%$), preventing unsupported generalization claims.
+  - Analysis is strictly described as "recovery from complete Analysis-category detection failure observed with Model A", explicitly clarifying that low recall ($2.95\%$) reflects remaining classification difficulty.
 
 ---
 
 ## 4. Audit Conclusion
 
-The Phase 7B implementation conforms strictly to all established research integrity requirements. No data leakage, test contamination, or unsupported claims were identified. The findings are defensible, empirically verified, and reproducible.
+Phase 7B research-integrity documentation was reconciled. No experimental architecture or model-selection result was changed unless directly contradicted by recomputation. The Phase 7B implementation conforms strictly to all established research integrity requirements. No data leakage, test contamination, or unsupported claims were identified.

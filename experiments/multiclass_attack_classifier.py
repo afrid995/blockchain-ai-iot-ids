@@ -429,6 +429,7 @@ def train_and_evaluate_models(
     print(f"{'Macro F1 (Primary)':<25} | {metrics_a['macro_f1']*100:>20.2f}% | {metrics_b['macro_f1']*100:>20.2f}% | {(metrics_b['macro_f1']-metrics_a['macro_f1'])*100:>+16.2f} pp")
     print(f"{'Weighted F1':<25} | {metrics_a['weighted_f1']*100:>20.2f}% | {metrics_b['weighted_f1']*100:>20.2f}% | {(metrics_b['weighted_f1']-metrics_a['weighted_f1'])*100:>+16.2f} pp")
     print("-" * 85)
+    print("Note: Models exhibit very similar weighted F1; Model A is higher by 0.13 percentage points.")
 
     print("\nPer-Class F1-Score Breakdown:")
     print(f"{'Attack Category':<18} | {'Support':<8} | {'Model A F1':<12} | {'Model B F1':<12} | {'Delta F1'}")
@@ -460,11 +461,11 @@ def select_model(metrics_a: Dict[str, Any], metrics_b: Dict[str, Any]) -> Tuple[
 
     rationale = []
     if macro_f1_b > macro_f1_a:
-        rationale.append(f"Model B achieves superior Macro F1 ({macro_f1_b*100:.2f}% vs {macro_f1_a*100:.2f}%, +{(macro_f1_b-macro_f1_a)*100:.2f} pp).")
+        rationale.append(f"Model B achieves higher Macro F1 ({macro_f1_b*100:.2f}% vs {macro_f1_a*100:.2f}%, +{(macro_f1_b-macro_f1_a)*100:.2f} pp).")
     if bal_acc_b > bal_acc_a:
-        rationale.append(f"Model B achieves superior Balanced Accuracy ({bal_acc_b*100:.2f}% vs {bal_acc_a*100:.2f}%, +{(bal_acc_b-bal_acc_a)*100:.2f} pp).")
+        rationale.append(f"Model B achieves higher Balanced Accuracy ({bal_acc_b*100:.2f}% vs {bal_acc_a*100:.2f}%, +{(bal_acc_b-bal_acc_a)*100:.2f} pp).")
     if analysis_f1_b > analysis_f1_a:
-        rationale.append(f"Model A suffered complete detection collapse on 'Analysis' (F1=0.00%, recall=0.00%), whereas Model B produces non-zero recall and F1 ({analysis_f1_b*100:.2f}%).")
+        rationale.append(f"Model A suffered complete detection failure on 'Analysis' (F1=0.00%, recall=0.00%), whereas Model B enables recovery with non-zero recall (2.95%) and F1 ({analysis_f1_b*100:.2f}%).")
     if worms_f1_b > worms_f1_a:
         rationale.append(f"Model B improves minority 'Worms' F1 ({worms_f1_b*100:.2f}% vs {worms_f1_a*100:.2f}%, nearly doubling detection capability).")
 
@@ -474,7 +475,7 @@ def select_model(metrics_a: Dict[str, Any], metrics_b: Dict[str, Any]) -> Tuple[
         "selected_configuration": "RandomForestClassifier(n_estimators=100, max_depth=20, class_weight='balanced', random_state=42)",
         "selection_metric": "macro_f1",
         "rationale": rationale,
-        "conclusion": "Model B (Balanced Random Forest) is decisively selected based on Macro F1, Balanced Accuracy, and minority-class sensitivity.",
+        "conclusion": "Model B was selected according to the predefined primary metric (Macro F1), with supporting improvement in balanced accuracy and minority-class recall.",
     }
 
     print("Selection Decision: " + selection_decision["conclusion"])

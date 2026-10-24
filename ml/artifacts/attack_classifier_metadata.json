@@ -289,9 +289,9 @@
     }
   },
   "selection_rationale": [
-    "Model B achieves superior Macro F1 (53.06% vs 52.27%, +0.79 pp).",
-    "Model B achieves superior Balanced Accuracy (53.41% vs 51.04%, +2.37 pp).",
-    "Model A suffered complete detection collapse on 'Analysis' (F1=0.00%, recall=0.00%), whereas Model B produces non-zero recall and F1 (3.72%).",
+    "Model B achieves higher Macro F1 (53.06% vs 52.27%, +0.79 pp).",
+    "Model B achieves higher Balanced Accuracy (53.41% vs 51.04%, +2.37 pp).",
+    "Model A suffered complete detection failure on 'Analysis' (F1=0.00%, recall=0.00%), whereas Model B enables recovery with non-zero recall (2.95%) and F1 (3.72%).",
     "Model B improves minority 'Worms' F1 (24.24% vs 21.48%, nearly doubling detection capability)."
   ],
   "known_limitations": [

@@ -144,7 +144,7 @@ A bootstrap analysis ($B = 1,000$ iterations, random seed $42$) on the fixed tes
 
 ## 10. Model Comparison
 
-| Evaluation Metric | Model A (Standard RF) | Model B (Balanced RF) | Difference (B - A) | Superior Configuration |
+| Evaluation Metric | Model A (Standard RF) | Model B (Balanced RF) | Difference (B - A) | Higher Metric Configuration |
 | :--- | :--- | :--- | :--- | :--- |
 | **Accuracy** | 77.60% | 76.18% | -1.42 pp | Model A |
 | **Balanced Accuracy** | 51.04% | 53.41% | **+2.37 pp** | **Model B** |
@@ -154,7 +154,7 @@ A bootstrap analysis ($B = 1,000$ iterations, random seed $42$) on the fixed tes
 | **Weighted F1** | 77.63% | 77.50% | -0.13 pp | Model A |
 | **Training Time** | 2.96 s | 2.95 s | -0.01 s | Identical |
 
-While Model A achieves a marginally higher global accuracy ($+1.42$ pp), it does so by sacrificing minority classes. Model B provides superior balanced accuracy ($+2.37$ pp) and superior Macro F1 ($+0.79$ pp).
+Both models exhibit very similar weighted F1 (Model A is higher by 0.13 percentage points: $77.63\%$ vs $77.50\%$). While Model A achieves a marginally higher global accuracy ($+1.42$ pp), it does so by sacrificing minority classes. Model B provides higher balanced accuracy ($+2.37$ pp) and higher Macro F1 ($+0.79$ pp). No claims of statistical superiority are asserted.
 
 ---
 
@@ -196,7 +196,7 @@ Special attention must be paid to the rare classes:
 - **Worms ($N_{\text{train}} = 44$, $N_{\text{test}} = 130$)**:
   With only 44 training instances, Worms accounts for $0.10\%$ of training attacks. Although Model B achieves $24.24\%$ F1 ($15.38\%$ recall, $57.14\%$ precision), **estimates for Worms are subject to statistical instability due to extreme sample scarcity**. This measured test performance cannot be assumed to generalize reliably to unobserved operational environments.
 - **Analysis ($N_{\text{train}} = 677$, $N_{\text{test}} = 2,000$)**:
-  Model A experienced a complete detection collapse ($0.00\%$ F1). While Model B recovers non-zero recall ($2.95\%$), its low precision ($5.04\%$) reflects severe overlapping feature spaces with DoS and Exploits.
+  Model A experienced complete detection failure on Analysis ($0.00\%$ F1, $0.00\%$ recall). While Model B recovers non-zero recall ($2.95\%$), its low precision ($5.04\%$) reflects severe overlapping feature spaces with DoS and Exploits.
 - **Backdoor ($N_{\text{train}} = 583$, $N_{\text{test}} = 1,746$)**:
   Recall increased from $3.78\%$ (Model A) to $11.57\%$ (Model B), but precision fell from $98.51\%$ to $6.84\%$, reflecting the cost of aggressive minority re-weighting without domain-specific feature engineering.
 
@@ -208,9 +208,10 @@ Special attention must be paid to the rare classes:
 - Configuration: `RandomForestClassifier(n_estimators=100, max_depth=20, class_weight="balanced", random_state=42, n_jobs=-1)`
 
 ### Selection Rationale:
+Model B was selected according to the predefined primary metric (Macro F1), with supporting improvement in balanced accuracy and minority-class recall:
 1. **Primary Metric**: Model B achieves a higher Macro F1 ($53.06\%$ vs $52.27\%$).
 2. **Balanced Accuracy**: Model B achieves $+2.37$ percentage points higher balanced accuracy ($53.41\%$ vs $51.04\%$).
-3. **Prevention of Category Collapse**: Model A completely failed to identify `Analysis` ($0$ true positives), whereas Model B preserves non-zero detection capability across all 9 categories.
+3. **Recovery from Analysis Detection Failure**: Model A completely failed to identify `Analysis` ($0$ true positives out of $2,000$ test flows, recall = $0.00\%$), whereas Model B achieves non-zero recall ($2.95\%$) and F1 ($3.72\%$). While an Analysis recall of $2.95\%$ indicates that the category remains difficult to distinguish, Model B enables recovery from complete detection failure without degrading overall classification capability.
 4. **Minority Sensitivity**: Model B nearly doubles recall for `Backdoor` ($11.57\%$ vs $3.78\%$) and improves recall for `DoS` ($67.68\%$ vs $59.84\%$) and `Worms` ($15.38\%$ vs $12.31\%$).
 
 ---
@@ -275,7 +276,7 @@ A programmatic leakage audit was executed prior to model finalization:
 
 Phase 7B successfully trained and evaluated a 9-class Stage 2 attack-type classifier on the authentic UNSW-NB15 dataset. 
 
-By comparing Standard Random Forest against Balanced Random Forest, the evaluation demonstrated that class-balanced weighting improves Macro F1 from $52.27\%$ to $53.06\%$ and Balanced Accuracy from $51.04\%$ to $53.41\%$, preventing complete category collapse on minority attacks like `Analysis`. The final pipeline was serialized to `attack_classifier.joblib` with SHA-256 `596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208`.
+By comparing Standard Random Forest against Balanced Random Forest, the evaluation demonstrated that class-balanced weighting improves Macro F1 from $52.27\%$ to $53.06\%$ and Balanced Accuracy from $51.04\%$ to $53.41\%$, enabling recovery from complete Analysis-category detection failure observed with Model A (recovering from $0.00\%$ to $3.72\%$ F1). The final pipeline was serialized to `attack_classifier.joblib` with SHA-256 `596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208`.
 
 **Critical Distinction**:
 This evaluation validates the standalone performance of the Stage 2 attack-type classifier. **It does NOT validate or claim end-to-end performance of a complete hierarchical IDS**, nor does it demonstrate production-ready security or real-time remediation. Full hierarchical integration and provenance auditing remain subject to subsequent development phases.

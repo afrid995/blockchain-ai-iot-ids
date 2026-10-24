@@ -12,7 +12,7 @@
 
 Phase 7B implemented, trained, and empirically evaluated a Stage 2 attack-type multiclass classifier for the UNSW-NB15 dataset. Operating strictly on attack flows ($45,332$ training, $119,341$ testing across 9 categories), two model configurations were benchmarked: Standard Random Forest (Model A) and Balanced Random Forest (Model B).
 
-Model B (`class_weight="balanced"`) was decisively selected based on Macro F1 ($53.06\%$ vs $52.27\%$), Balanced Accuracy ($53.41\%$ vs $51.04\%$), and its ability to prevent complete detection collapse on minority attack categories such as `Analysis` (recovering from $0.00\%$ to $3.72\%$ F1).
+Model B was selected according to the predefined primary metric (Macro F1: $53.06\%$ vs $52.27\%$), with supporting improvement in balanced accuracy ($53.41\%$ vs $51.04\%$) and recovery from complete Analysis-category detection failure observed with Model A (recovering from $0.00\%$ to $3.72\%$ F1). Both models exhibit very similar weighted F1 (Model A is higher by 0.13 percentage points: $77.63\%$ vs $77.50\%$).
 
 The complete pipeline (preprocessing + classifier) was serialized to `ml/artifacts/attack_classifier.joblib` with cryptographic digest `596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208`.
 
@@ -41,10 +41,12 @@ The complete pipeline (preprocessing + classifier) was serialized to `ml/artifac
 | **Weighted F1** | 77.63% | 77.50% | -0.13 pp | Model A |
 | **Bootstrap Macro F1 95% CI**| N/A | [52.008%, 54.069%] | N/A | **Model B** |
 
+*Note on Weighted F1: Both models exhibit very similar weighted F1; Model A is higher by 0.13 percentage points ($77.63\%$ vs $77.50\%$).*
+
 ### 2.4. Selected Model
 - **Selected Model ID**: `model_b_balanced_rf`
 - **Algorithm**: `RandomForestClassifier` with `class_weight="balanced"`
-- **Selection Rationale**: Driven by Macro F1 ($53.06\%$), Balanced Accuracy ($53.41\%$), and recovery of minority category detection (`Analysis` F1 $> 0$, `Worms` F1 increased from $21.48\%$ to $24.24\%$, `DoS` recall increased from $59.84\%$ to $67.68\%$).
+- **Selection Rationale**: Model B was selected according to the predefined primary metric (Macro F1: $53.06\%$ vs $52.27\%$), with supporting improvement in balanced accuracy ($53.41\%$ vs $51.04\%$) and recovery from complete Analysis-category detection failure observed with Model A (`Analysis` F1 recovered to $3.72\%$, `Worms` F1 increased from $21.48\%$ to $24.24\%$, `DoS` recall increased from $59.84\%$ to $67.68\%$). No claims of statistical superiority are asserted.
 
 ---
 
