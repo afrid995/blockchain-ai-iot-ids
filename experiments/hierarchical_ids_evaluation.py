@@ -876,7 +876,7 @@ def main() -> None:
                 "routing_rate": eval_results["category_routing_analysis"]["Shellcode"]["routing_rate"],
                 "stage2_recall_routed": eval_results["category_routing_analysis"]["Shellcode"]["stage2_recall_among_routed"],
                 "end_to_end_recall": eval_results["category_routing_analysis"]["Shellcode"]["end_to_end_recall"],
-                "conclusion": "Moderate routing rate (85.97%) and robust Stage 2 recall (73.82%); achieves 63.46% end-to-end recall.",
+                "conclusion": "Shellcode achieves 63.46% end-to-end recall in this evaluation. The experiment does not isolate the contribution of class weighting or individual feature groups to this result.",
             },
             "Worms": {
                 "support": eval_results["category_routing_analysis"]["Worms"]["total_true"],

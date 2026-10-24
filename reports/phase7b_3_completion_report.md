@@ -96,7 +96,7 @@ Neither artifact was retrained, modified, or regenerated.
 ### Minority Class Observations:
 1. **Fuzzers Filtering Bottleneck:** 13,520 of 18,184 Fuzzers flows (74.35%) are misclassified as Benign by Stage 1, bounding end-to-end recall to 14.83% despite 57.80% accuracy among routed flows.
 2. **Analysis and Worms Deficits:** Analysis achieves only 2.95% end-to-end recall (59/2,000 detected); Worms achieves 15.38% (20/130 detected) due to acute training data scarcity.
-3. **Shellcode Detection:** Achieves 63.46% end-to-end recall despite minority status ($N=1,133$).
+3. **Shellcode Detection:** Shellcode achieves 63.46% end-to-end recall in this evaluation ($N=1,133$). The experiment does not isolate the contribution of class weighting or individual feature groups to this result.
 
 ---
 
@@ -109,7 +109,7 @@ Neither artifact was retrained, modified, or regenerated.
 | **L3: Hierarchical (Conditional)** | **32.06 ms** | **35.90 ms** | 17.65 ms | 48.92 ms | 10.42 ms |
 | **L4: Unconditional Reference** | 43.31 ms | 43.12 ms | 38.12 ms | 56.78 ms | 3.89 ms |
 
-- **Conditional Speedup:** Conditional invocation yields a 26.0% latency reduction compared to unconditional double-inference (L4).
+- **Conditional Speedup:** Conditional invocation yielded a 26.0% measured mean-latency reduction relative to the unconditional double-inference reference in the evaluated benchmark (L4).
 - **Per-Flow Blockchain Queries:** Verified strictly **0**.
 
 ---
@@ -146,7 +146,7 @@ Neither artifact was retrained, modified, or regenerated.
 1. **Error Cascading:** 15,730 true attack flows missed by Stage 1 never reach Stage 2; Fuzzers is disproportionately affected (74.35% missed).
 2. **False Positive Contamination:** 1,282 benign flows misclassified by Stage 1 enter Stage 2 and trigger false attack alarms.
 3. **Zero Automated Remediation:** No defensive intervention (blocking, quarantine, iptables, packet drop) is implemented.
-4. **Zero-Day Limitation:** Provenance guarantees artifact authenticity against tampering; it does not protect against distribution shifts or zero-day exploits.
+4. **Zero-Day Limitation:** Cryptographic provenance verification establishes whether the observed model artifact exactly matches the SHA-256 digest registered for the specified model identity and version. It does not protect against distribution shifts, adversarial evasion, or zero-day exploits.
 
 ---
 

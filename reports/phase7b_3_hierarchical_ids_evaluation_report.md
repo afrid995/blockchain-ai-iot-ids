@@ -224,7 +224,7 @@ Detailed empirical tracking of each of the nine attack categories reveals substa
    - **Analysis:** Exhibits both low routing admission (73.40%) and near-zero Stage 2 recall (4.02%), resulting in a negligible end-to-end recall of **2.95%** (only 59 of 2,000 instances detected).
    - **Backdoor:** Successfully passes Stage 1 routing (99.43% admitted), but Stage 2 exhibits extreme confusion with DoS and Exploits, yielding only **11.57%** end-to-end recall.
    - **Worms:** High Stage 1 admission (97.69%), but limited training support ($N=130$) constrains end-to-end recall to **15.38%** (20 of 130 instances).
-3. **Shellcode Resiliency:** Despite being a minority class ($N=1,133$), Shellcode achieves **63.46%** end-to-end recall due to balanced tree weighting and distinct packet-size characteristics.
+3. **Shellcode Resiliency:** Shellcode achieves **63.46%** end-to-end recall in this evaluation. The experiment does not isolate the contribution of class weighting or individual feature groups to this result.
 
 ---
 
@@ -279,7 +279,7 @@ Inference latency was benchmarked across $N = 100$ individual flows on the evalu
 | **L4: Unconditional Reference** | Both models executed on every flow | 43.31 ms | 43.12 ms | 38.12 ms | 56.78 ms | 3.89 ms |
 
 ### Latency Findings:
-1. **Conditional Bypassing Advantage:** For flows predicted as Benign by Stage 1, total latency equals L1 (~20 ms). When Stage 1 predicts an Attack, total latency equals L1 + L2 (~43 ms). In the evaluated sample, L3 averaged **32.06 ms**, achieving a **26.0% computation reduction** compared to unconditional double-execution (L4: 43.31 ms).
+1. **Conditional Bypassing Advantage:** For flows predicted as Benign by Stage 1, total latency equals L1 (~20 ms). When Stage 1 predicts an Attack, total latency equals L1 + L2 (~43 ms). In the evaluated sample, L3 averaged **32.06 ms**; conditional invocation yielded a **26.0% measured mean-latency reduction relative to the unconditional double-inference reference in the evaluated benchmark** (L4: 43.31 ms).
 2. **Computational Scoping:** These measurements reflect local, non-vectorized Python execution on CPU. They demonstrate that hierarchical filtering avoids invoking Stage 2 for benign flows, but no claims of "wire-speed", "real-time", or universal latency bounds are made.
 
 ---
@@ -297,7 +297,7 @@ $$\text{Per-Flow Blockchain Calls} \equiv 0$$
 
 ## 17. Security Interpretation
 
-1. **Tamper-Evident Integrity vs. Model Safety:** Cryptographic provenance registration guarantees that the loaded model artifact precisely matches the authorized binary artifact compiled by the training authority. It prevents silent artifact tampering, unauthorized substitution, or bit-rot.
+1. **Tamper-Evident Integrity vs. Model Safety:** Cryptographic provenance verification establishes whether the observed model artifact exactly matches the SHA-256 digest registered for the specified model identity and version. A digest mismatch is therefore detectable by the evaluated verification mechanism. This does not establish that the registered artifact is safe, benign, or free from pre-registration compromise.
 2. **No Autonomous Defense:** This research phase does NOT implement automated remediation. The system outputs predictive intelligence (Normal or Attack Category); it does not manipulate iptables, issue TCP resets, drop packets, or isolate hosts.
 3. **No Inherent Security Immunity:** Provenance verification does not protect against adversarial evasion, training data poisoning present prior to digest computation, or zero-day attack vectors absent from the UNSW-NB15 training distribution.
 

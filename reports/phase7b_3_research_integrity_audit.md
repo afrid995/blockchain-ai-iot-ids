@@ -75,7 +75,7 @@ This research-integrity audit rigorously verifies that Phase 7B.3 adheres to the
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Analysis** | 2,000 | 73.40% | 4.02% | **2.95%** | Severe minority class deficit explicitly highlighted; only 59 instances detected. |
 | **Backdoor** | 1,746 | 99.43% | 11.64% | **11.57%** | Extreme category confusion with DoS/Exploits documented honestly. |
-| **Shellcode** | 1,133 | 85.97% | 73.82% | **63.46%** | Accurately reported as resilient minority class due to packet-size features. |
+| **Shellcode** | 1,133 | 85.97% | 73.82% | **63.46%** | Shellcode achieves 63.46% end-to-end recall in this evaluation. The experiment does not isolate the contribution of class weighting or individual feature groups to this result. |
 | **Worms** | 130 | 97.69% | 15.75% | **15.38%** | Severe training limitation ($N=130$) and low detection rate (20 instances) acknowledged. |
 
 **Audit Conclusion:** Poor minority-class performance is completely transparent and prominently featured in reports, figures, and JSON exports. Zero attempt was made to hide or smooth over minority-class limitations.
@@ -89,7 +89,7 @@ This research-integrity audit rigorously verifies that Phase 7B.3 adheres to the
 | **Per-Flow Blockchain Overhead** | Per-flow blockchain calls = 0 | Verified: `hierarchical_ids.per_flow_blockchain_calls == 0` | **PASSED** |
 | **Architectural Separation** | Blockchain operates as pre-load gate, not per-packet filter | Verified: Contract authenticates model artifacts once during startup | **PASSED** |
 | **No Universal Blockchain Claims** | Do not claim "zero blockchain interaction" globally | Accurately stated: *"The evaluated per-flow hierarchical inference path performed no blockchain registry lookup"* | **PASSED** |
-| **Local Environment Scoping** | EVM benchmarks scoped to local Ethereum test environment | Scoped strictly to local Hardhat/Anvil EVM test execution | **PASSED** |
+| **Local Environment Scoping** | EVM benchmarks scoped to local Ethereum test environment | Scoped strictly to local EthereumTesterProvider backed by py-evm | **PASSED** |
 
 ---
 

@@ -900,7 +900,7 @@
       "routing_rate": 0.8596646072374228,
       "stage2_recall_routed": 0.7381930184804928,
       "end_to_end_recall": 0.6345984112974404,
-      "conclusion": "Moderate routing rate (85.97%) and robust Stage 2 recall (73.82%); achieves 63.46% end-to-end recall."
+      "conclusion": "Shellcode achieves 63.46% end-to-end recall in this evaluation. The experiment does not isolate the contribution of class weighting or individual feature groups to this result."
     },
     "Worms": {
       "support": 130,
