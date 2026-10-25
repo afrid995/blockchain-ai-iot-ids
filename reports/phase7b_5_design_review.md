@@ -160,7 +160,7 @@ To empirically validate the integrated system, Phase 7B.5 must execute an explic
 ## 7. Provenance Evaluation Design (Layer A)
 
 The provenance evaluation verifies model integrity prior to loading:
-- **On-Chain Reference:** Queries the `ModelRegistry.sol` smart contract on the local `EthereumTesterProvider` (backed by `py-evm`) for `getModel(model_id, version)`.
+- **On-Chain Reference:** Queries the `ModelRegistry.sol` smart contract on the local `EthereumTesterProvider` (backed by `py-evm`) via `getModelRecord(model_id, version)` (or `isModelRegistered(model_id, version)`).
 - **Integrity Check:** Recomputes the local SHA-256 digest and performs binary equality check:
   $$\text{Verified} \iff \text{SHA256}(\text{local\_artifact}) == \text{bytes32\_to\_hex}(\text{on\_chain\_hash})$$
 - **Metrics to Measure:**
@@ -258,7 +258,7 @@ The role of the blockchain in the final architecture is rigorously bounded:
    - Advisory response recommendation mapping.
    - SQLite security audit event logs.
 3. **Rationale for Decoupling:**
-   - Network flow rates in IoT gateways can reach thousands of packets per second. Querying an Ethereum smart contract per flow would introduce prohibitive consensus and RPC latency (inherent to on-chain operations) alongside unsustainable transaction gas costs.
+   - The evaluated architecture intentionally places blockchain registry verification outside the per-flow inference path. Phase 7B.5 will instrument the runtime inference path and verify that no blockchain registry lookups occur per flow. Blockchain performance measurements are restricted to the evaluated local EthereumTesterProvider/py-evm environment and are not extrapolated to public blockchain networks.
    - Storing high-velocity flow data on-chain creates irreversible public exposure of private network topology.
    - Decoupled pre-inference gating provides tamper-evidence before execution while avoiding per-flow on-chain registry lookups.
 
@@ -312,7 +312,7 @@ The final report must prominently feature the propagation of classification erro
 
 The design acknowledges explicit dataset constraints:
 1. **UNSW-NB15 Benchmark Scope:** Created in 2015 using the IXIA PerfectStorm tool in a synthetic testbed environment. Flow features reflect historical attack configurations; modern IoT protocol behaviors (MQTT, CoAP, BLE, Zigbee) are not natively captured.
-2. **Class Imbalance:** Extreme 428.89:1 imbalance between Generic ($N=40,000$ in train) and Worms ($N=130$) fundamentally restricts minority-class representation despite balanced class weighting.
+2. **Class Imbalance:** Extreme attack-only training imbalance exists between Generic ($N=18,871$) and Worms ($N=44$), corresponding to a 428.89:1 ratio. This severely limits the empirical representation of the rare Worms category despite the use of balanced class weighting.
 3. **Synthetic Ground Truth:** Ground-truth category labels in UNSW-NB15 contain documented labelling anomalies and duplicate records that bound achievable generalization.
 
 ---

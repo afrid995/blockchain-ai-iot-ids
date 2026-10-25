@@ -32,6 +32,7 @@ The design review established the authoritative experiment matrix (E1–E7), eva
 | `reports/figures/figure15_final_architecture.png` | PNG (300 DPI) | Complete | High-resolution architectural diagram illustrating decoupled startup provenance gating, runtime hierarchical inference, advisory mitigation guidance, and local audit persistence. |
 | `reports/phase7b_5_completion_report.md` | Markdown | Complete | Formal phase sign-off and regression verification summary. |
 | `reports/phase7b_5_1_research_integrity_reconciliation.md` | Markdown | Complete | Research-integrity reconciliation report reconciling historical Stage 2 Model A metrics and EVM latency wording. |
+| `reports/phase7b_5_2_design_api_consistency_reconciliation.md` | Markdown | Complete | Research-integrity reconciliation report reconciling ModelRegistry API, FastAPI endpoints, class imbalance counts, and blockchain boundary claims. |
 
 ---
 
@@ -56,7 +57,7 @@ The implementation plan defines seven targeted experiments across four evaluatio
 4. **E4 (Advisory Guidance Distribution):** Verify 100% deterministic schema coverage and map contextual volume across all 10 output categories.
 5. **E5 (End-to-End Latency Profiling):** Profile component-level latency breakdown (Stage 1, Stage 2, Advisory, SQLite Audit) to verify decoupling from blockchain consensus.
 6. **E6 (Audit Trail Integrity):** Verify hash consistency, event capture, and verify that raw flow vectors remain excluded from SQLite storage.
-7. **E7 (Backward Compatibility & Regression):** Verify that legacy endpoints (`GET /model/info`, `POST /predict`) remain completely unaffected.
+7. **E7 (Backward Compatibility & Regression):** Verify that legacy endpoints (`GET /model/status`, `POST /predict`) remain completely unaffected.
 
 ---
 
