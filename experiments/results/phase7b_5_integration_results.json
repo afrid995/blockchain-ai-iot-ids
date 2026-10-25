@@ -1,0 +1,227 @@
+{
+  "metadata": {
+    "phase": "Phase 7B.5.3 \u2014 Final End-to-End Hierarchical Integration",
+    "project": "Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection",
+    "timestamp": "2026-10-25T08:10:16.625047+00:00",
+    "python_version": "3.12.4 (tags/v3.12.4:8e8a4ba, Jun  6 2024, 19:30:16) [MSC v.1940 64 bit (AMD64)]",
+    "evm_provider": "EthereumTesterProvider (in-process py-evm)",
+    "contract_address": "0xF2E246BB76DF876Cef8b38ae84130F4F55De395b",
+    "invariants": {
+      "stage1_model_sha": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+      "stage2_model_sha": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+      "training_data_sha": "734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559",
+      "testing_data_sha": "bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa"
+    }
+  },
+  "experiments": {
+    "E1": {
+      "status": "PASS",
+      "gate_status": "VERIFIED",
+      "startup_gate_latency_ms": 580.3804,
+      "benign_routing_verified": true,
+      "attack_routing_verified": true,
+      "per_flow_blockchain_queries": 0
+    },
+    "E2": {
+      "status": "PASS",
+      "detected_status": "HASH_MISMATCH",
+      "loading_blocked": true,
+      "canonical_artifact_unaltered": true
+    },
+    "E3": {
+      "status": "PASS",
+      "detected_status": "HASH_MISMATCH",
+      "loading_blocked": true,
+      "canonical_artifact_unaltered": true
+    },
+    "E4": {
+      "status": "PASS",
+      "detected_status": "NOT_REGISTERED",
+      "loading_blocked": true
+    },
+    "E5": {
+      "status": "PASS",
+      "detected_status": "FILE_NOT_FOUND",
+      "loading_blocked": true
+    },
+    "E6": {
+      "status": "PASS",
+      "total_flows": 175341,
+      "stage1_benign": 70448,
+      "stage1_attack": 104893,
+      "stage2_routed": 104893,
+      "stage1_metrics": {
+        "accuracy": 0.903,
+        "precision": 0.9878,
+        "recall": 0.8682,
+        "f1": 0.9241,
+        "specificity": 0.9771,
+        "fpr": 0.0229
+      },
+      "cascade_error_propagation": {
+        "true_attacks_total": 119341,
+        "true_attacks_reaching_stage2": 103611,
+        "true_attacks_missed_stage1_fn": 15730,
+        "true_benign_misrouted_stage1_fp": 1282,
+        "correct_category_attribution": 76870,
+        "incorrect_category_attribution": 26741
+      },
+      "routed_attacks_metrics": {
+        "macro_f1": 0.5143,
+        "balanced_accuracy": 0.512
+      },
+      "per_category_analysis": {
+        "Analysis": {
+          "total_support": 2000,
+          "routed_to_stage2": 1468,
+          "routed_rate": 0.734,
+          "correct_attributions": 59,
+          "routed_recall": 0.0402,
+          "end_to_end_recall": 0.0295
+        },
+        "Backdoor": {
+          "total_support": 1746,
+          "routed_to_stage2": 1736,
+          "routed_rate": 0.9943,
+          "correct_attributions": 202,
+          "routed_recall": 0.1164,
+          "end_to_end_recall": 0.1157
+        },
+        "DoS": {
+          "total_support": 12264,
+          "routed_to_stage2": 12059,
+          "routed_rate": 0.9833,
+          "correct_attributions": 8284,
+          "routed_recall": 0.687,
+          "end_to_end_recall": 0.6755
+        },
+        "Exploits": {
+          "total_support": 33393,
+          "routed_to_stage2": 32409,
+          "routed_rate": 0.9705,
+          "correct_attributions": 17958,
+          "routed_recall": 0.5541,
+          "end_to_end_recall": 0.5378
+        },
+        "Fuzzers": {
+          "total_support": 18184,
+          "routed_to_stage2": 4664,
+          "routed_rate": 0.2565,
+          "correct_attributions": 2696,
+          "routed_recall": 0.578,
+          "end_to_end_recall": 0.1483
+        },
+        "Generic": {
+          "total_support": 40000,
+          "routed_to_stage2": 39959,
+          "routed_rate": 0.999,
+          "correct_attributions": 39223,
+          "routed_recall": 0.9816,
+          "end_to_end_recall": 0.9806
+        },
+        "Reconnaissance": {
+          "total_support": 10491,
+          "routed_to_stage2": 10215,
+          "routed_rate": 0.9737,
+          "correct_attributions": 7709,
+          "routed_recall": 0.7547,
+          "end_to_end_recall": 0.7348
+        },
+        "Shellcode": {
+          "total_support": 1133,
+          "routed_to_stage2": 974,
+          "routed_rate": 0.8597,
+          "correct_attributions": 719,
+          "routed_recall": 0.7382,
+          "end_to_end_recall": 0.6346
+        },
+        "Worms": {
+          "total_support": 130,
+          "routed_to_stage2": 127,
+          "routed_rate": 0.9769,
+          "correct_attributions": 20,
+          "routed_recall": 0.1575,
+          "end_to_end_recall": 0.1538
+        }
+      },
+      "advisory_recommendation_volume": {
+        "Normal": 70448,
+        "Analysis": 1171,
+        "Backdoor": 2952,
+        "DoS": 24538,
+        "Exploits": 21725,
+        "Fuzzers": 4242,
+        "Generic": 40344,
+        "Reconnaissance": 8698,
+        "Shellcode": 1189,
+        "Worms": 34
+      }
+    },
+    "E7": {
+      "status": "PASS",
+      "total_events": 12,
+      "event_types": [
+        "MODEL_VERIFICATION",
+        "MODEL_LOAD",
+        "ADVISORY_RECOMMENDATION",
+        "PREDICTION"
+      ],
+      "raw_features_excluded": true
+    }
+  },
+  "latency_profiling": {
+    "N_latency_samples": 100,
+    "T_gate_pre_load": {
+      "mean": 70.9822,
+      "median": 70.6218,
+      "min": 56.7868,
+      "max": 81.8213,
+      "std": 5.7418
+    },
+    "T_L1_binary": {
+      "mean": 23.4012,
+      "median": 21.8913,
+      "min": 16.0354,
+      "max": 58.2146,
+      "std": 6.946
+    },
+    "T_L2_multiclass": {
+      "mean": 23.1111,
+      "median": 22.5374,
+      "min": 16.2843,
+      "max": 38.3029,
+      "std": 5.1025
+    },
+    "T_rec_advisory": {
+      "mean": 0.0193,
+      "median": 0.0178,
+      "min": 0.0119,
+      "max": 0.0838,
+      "std": 0.0097
+    },
+    "T_hier_conditional": {
+      "mean": 41.1628,
+      "median": 43.3654,
+      "min": 16.1744,
+      "max": 85.9261,
+      "std": 13.811
+    },
+    "T_unconditional": {
+      "mean": 46.5316,
+      "median": 44.4303,
+      "min": 32.373,
+      "max": 85.9261,
+      "std": 10.0296
+    },
+    "measured_mean_latency_reduction_pct": 11.54,
+    "environment_qualification": "Local EthereumTesterProvider (py-evm); timings are host-specific and not representative of public mainnet networks."
+  },
+  "per_flow_blockchain_queries_measured": 0,
+  "conclusions": {
+    "overall_status": "PASS",
+    "per_flow_blockchain_decoupling_verified": true,
+    "fail_closed_gating_verified": true,
+    "backward_compatibility_verified": true,
+    "remediation_boundaries_preserved": true
+  }
+}

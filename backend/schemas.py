@@ -94,6 +94,27 @@ class NetworkFlowPredictionResponse(BaseModel):
     timestamp: str
 
 
+class HierarchicalPredictionResponse(BaseModel):
+    """Hierarchical two-stage ML inference result with advisory response recommendations."""
+    final_prediction: str = Field(..., description="Final output category: 'Normal' or one of 9 attack categories")
+    stage1_prediction: str = Field(..., description="Stage 1 binary outcome: 'Attack' or 'Benign'")
+    stage1_code: int = Field(..., description="1 for Attack, 0 for Benign")
+    stage1_confidence: float = Field(..., description="Stage 1 classification confidence [0.0 - 1.0]")
+    stage2_invoked: bool = Field(..., description="True if Stage 1 predicted Attack, invoking Stage 2; False if Benign")
+    stage2_prediction: Optional[str] = Field(None, description="Stage 2 predicted attack category if invoked; None if Benign")
+    stage2_confidence: Optional[float] = Field(None, description="Stage 2 classification confidence [0.0 - 1.0] if invoked; None if Benign")
+    advisory_recommendation: Dict[str, Any] = Field(..., description="Structured deterministic advisory guidance for human operators")
+    stage1_model_id: str
+    stage1_model_version: str
+    stage2_model_id: str
+    stage2_model_version: str
+    verification_status: str
+    event_id: str
+    inference_latency_ms: float = Field(..., description="Total isolated inference duration in milliseconds")
+    per_flow_blockchain_queries: int = Field(default=0, description="Instrumented count of blockchain queries during per-flow inference (must be 0)")
+    timestamp: str
+
+
 class SecurityEventSchema(BaseModel):
     """Record of an audited security or operational event."""
     event_id: str

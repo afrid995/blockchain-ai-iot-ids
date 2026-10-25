@@ -33,6 +33,17 @@ class Settings:
         self.MODEL_VERSION = os.getenv("MODEL_VERSION", "v1.0.0")
         self.ALGORITHM = os.getenv("MODEL_ALGORITHM", "RandomForestClassifier")
 
+        # Stage 2 Model configuration (Attack-Category Multiclass Classifier)
+        self.STAGE2_MODEL_PATH = Path(
+            os.getenv("STAGE2_MODEL_PATH", self.PROJECT_ROOT / "ml" / "artifacts" / "attack_classifier.joblib")
+        )
+        self.STAGE2_PROVENANCE_PATH = Path(
+            os.getenv("STAGE2_PROVENANCE_PATH", self.PROJECT_ROOT / "ml" / "artifacts" / "attack_classifier_provenance_record.json")
+        )
+        self.STAGE2_MODEL_ID = os.getenv("STAGE2_MODEL_ID", "iot-ids-attack-classifier")
+        self.STAGE2_MODEL_VERSION = os.getenv("STAGE2_MODEL_VERSION", "v1.0.0")
+        self.STAGE2_ALGORITHM = os.getenv("STAGE2_ALGORITHM", "RandomForestClassifier")
+
         # Blockchain configuration
         self.RPC_URL = os.getenv("BLOCKCHAIN_RPC_URL", "http://127.0.0.1:8545")
         self.CONTRACT_ARTIFACT_PATH = Path(

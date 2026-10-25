@@ -21,6 +21,7 @@ from fastapi.responses import JSONResponse
 from backend.config import settings
 from backend.schemas import (
     HealthResponse,
+    HierarchicalPredictionResponse,
     ModelStatusResponse,
     ModelVerifyResponse,
     NetworkFlowPredictionRequest,
@@ -29,6 +30,7 @@ from backend.schemas import (
     SecurityEventsListResponse,
 )
 from backend.services.audit_service import AuditService
+from backend.services.hierarchical_service import HierarchicalService
 from backend.services.model_service import ModelService
 from backend.services.prediction_service import ModelNotReadyError, PredictionService
 from backend.services.verification_service import VerificationService
@@ -71,9 +73,24 @@ def create_app(
         audit_service=audit_service,
     )
 
+    stage2_model_service = ModelService(
+        model_path=settings.STAGE2_MODEL_PATH,
+        model_id=settings.STAGE2_MODEL_ID,
+        model_version=settings.STAGE2_MODEL_VERSION,
+        algorithm=settings.STAGE2_ALGORITHM,
+        audit_service=audit_service,
+    )
+
     prediction_service = PredictionService(
         model_service=model_service,
         audit_service=audit_service,
+    )
+
+    hierarchical_service = HierarchicalService(
+        stage1_model_service=model_service,
+        stage2_model_service=stage2_model_service,
+        audit_service=audit_service,
+        blockchain_client=effective_client,
     )
 
     should_auto_verify = (
@@ -86,6 +103,10 @@ def create_app(
         if should_auto_verify:
             try:
                 model_service.verify_and_load(verification_service)
+                try:
+                    stage2_model_service.verify_and_load(verification_service)
+                except Exception:
+                    pass
             except Exception as e:
                 # App still starts so operator can inspect status via /health and /model/status
                 audit_service.log_event(
@@ -98,6 +119,7 @@ def create_app(
         yield
         # Shutdown phase
         model_service.unload_model()
+        stage2_model_service.unload_model()
 
     app = FastAPI(
         title="IoT Intrusion Detection — Blockchain Provenance & Audit API",
@@ -113,7 +135,9 @@ def create_app(
     app.state.audit_service = audit_service
     app.state.verification_service = verification_service
     app.state.model_service = model_service
+    app.state.stage2_model_service = stage2_model_service
     app.state.prediction_service = prediction_service
+    app.state.hierarchical_service = hierarchical_service
     app.state.blockchain_client = effective_client
 
     # CORS configuration
@@ -223,6 +247,46 @@ def create_app(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Inference pipeline execution error: {e}",
+            )
+
+    @app.post(
+        "/predict/hierarchical",
+        response_model=HierarchicalPredictionResponse,
+        tags=["Intrusion Detection"],
+    )
+    async def predict_hierarchical_intrusion(request: NetworkFlowPredictionRequest):
+        """Execute two-stage hierarchical inference (Binary -> Multiclass) with advisory mitigation recommendations.
+
+        Stage 1 classifies traffic as Benign or Attack.
+        If Benign, returns category 'Normal' with zero Stage 2 invocation.
+        If Attack, conditionally invokes Stage 2 to classify into one of 9 UNSW-NB15 attack categories.
+        Attaches deterministic human-in-the-loop advisory guidance.
+        Off-chain execution: exactly 0 per-flow blockchain lookups.
+        """
+        features = request.extract_features()
+        if not features:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Request body does not contain valid network flow features.",
+            )
+
+        try:
+            prediction_result = hierarchical_service.predict(features)
+            return HierarchicalPredictionResponse(**prediction_result)
+        except ModelNotReadyError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(e),
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Feature value or structure error: {e}",
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Hierarchical inference execution error: {e}",
             )
 
     @app.get("/audit/events", response_model=SecurityEventsListResponse, tags=["Security Audit"])

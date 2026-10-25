@@ -61,10 +61,19 @@ class BlockchainRegistryClient:
         self.bytecode = ""
 
         self._load_artifact()
+        self.query_count: int = 0
 
         if self.contract_address and self.abi:
             checksummed = Web3.to_checksum_address(self.contract_address)
             self.contract = self.w3.eth.contract(address=checksummed, abi=self.abi)
+
+    def get_query_count(self) -> int:
+        """Return total count of on-chain read queries performed."""
+        return self.query_count
+
+    def reset_query_counter(self) -> None:
+        """Reset the query counter to zero."""
+        self.query_count = 0
 
     def _init_web3(
         self,
@@ -198,6 +207,7 @@ class BlockchainRegistryClient:
         """Query contract to determine whether model_id:version exists."""
         if not self.contract:
             raise RuntimeError("ModelRegistry contract is not loaded or deployed.")
+        self.query_count += 1
         return bool(self.contract.functions.isModelRegistered(model_id, version).call())
 
     def get_model(self, model_id: str, version: str) -> Dict[str, Any]:
@@ -205,6 +215,7 @@ class BlockchainRegistryClient:
         if not self.contract:
             raise RuntimeError("ModelRegistry contract is not loaded or deployed.")
 
+        self.query_count += 1
         t_start = time.perf_counter()
         record = self.contract.functions.getModelRecord(model_id, version).call()
         read_latency_ms = (time.perf_counter() - t_start) * 1000.0
