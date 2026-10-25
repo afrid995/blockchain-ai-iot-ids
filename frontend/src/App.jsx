@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api, ApiError } from './api/client';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
+import { SecuritySolutionOverview } from './components/SecuritySolutionOverview';
 import { Dashboard } from './components/Dashboard';
 import { IntrusionDetection } from './components/IntrusionDetection';
 import { ModelSecurity } from './components/ModelSecurity';
@@ -11,8 +12,8 @@ import { ResearchResults } from './components/ResearchResults';
 import { AlertBanner } from './components/AlertBanner';
 
 export function App() {
-  // Navigation state (Default is Dashboard for a true production SOC console)
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Navigation state (Default is Security Solution for coherent end-to-end demonstration)
+  const [activeTab, setActiveTab] = useState('solution');
 
   // System states
   const [health, setHealth] = useState(null);
@@ -198,10 +199,30 @@ export function App() {
           />
         )}
 
-        {/* 6-Tab Operations Navigation */}
+        {/* 7-Tab Operations Navigation */}
         <Navigation activeTab={activeTab} onSelectTab={setActiveTab} />
 
-        {/* PAGE 1: OPERATIONS DASHBOARD (DEFAULT) */}
+        {/* PAGE 0: SECURITY SOLUTION OVERVIEW (DEFAULT PRIMARY WORKFLOW) */}
+        <div style={{ display: activeTab === 'solution' ? 'block' : 'none' }}>
+          <SecuritySolutionOverview
+            health={health}
+            modelStatus={modelStatus}
+            stage2Status={stage2Status}
+            isModelLoaded={isModelLoaded}
+            isVerifying={isVerifying}
+            onVerify={handleVerify}
+            onLoadModel={handleLoadModel}
+            isPredicting={isPredicting}
+            onPredict={handlePredict}
+            predictionResult={predictionResult}
+            predictionError={predictionError}
+            auditEvents={auditEvents}
+            onRefreshStatus={loadAll}
+            onNavigate={setActiveTab}
+          />
+        </div>
+
+        {/* PAGE 1: OPERATIONS DASHBOARD */}
         <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
           <Dashboard
             health={health}

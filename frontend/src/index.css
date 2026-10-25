@@ -2497,3 +2497,34 @@ textarea.form-control:focus {
 .footer-text {
   line-height: 1.6;
 }
+
+/* Phase 7C End-to-End Solution Demonstrator Styles */
+.pipeline-step-box {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.pipeline-step-box.step-active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.pipeline-step-box.step-locked {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.workflow-modes-bar .btn {
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.workflow-modes-bar .btn:hover {
+  filter: brightness(1.1);
+}

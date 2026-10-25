@@ -1,6 +1,7 @@
 import React from 'react';
 
 export const CONSOLE_TABS = [
+  { id: 'solution', label: 'Security Solution', icon: '🎯', subtitle: 'End-to-End Problem & Workflow' },
   { id: 'dashboard', label: 'Dashboard', icon: '📊', subtitle: 'System Overview & Session Summary' },
   { id: 'detection', label: 'Intrusion Detection', icon: '⚡', subtitle: 'Network-Flow Analysis' },
   { id: 'model-security', label: 'Model Security', icon: '🛡️', subtitle: 'Provenance & Integrity Gate' },
