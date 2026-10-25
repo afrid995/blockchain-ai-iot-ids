@@ -4,13 +4,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from '../App';
 import { api, BASE_URL } from '../api/client';
 
-describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
+describe('Phase 7B.6 Production-Style IDS Operations Console Tests', () => {
   const mockHealth = {
     status: 'healthy',
     application_status: 'running',
     blockchain_status: 'connected',
     model_status: 'loaded',
-    timestamp: '2026-10-25T10:00:00Z',
+    timestamp: '2026-10-25T12:00:00Z',
   };
 
   const mockModelStatusVerified = {
@@ -21,14 +21,24 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
     registered_sha256: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
     verification_status: 'VERIFIED',
     is_loaded: true,
-    last_verified_at: '2026-10-25T10:05:00Z',
-    read_latency_ms: 12.34,
+    last_verified_at: '2026-10-25T12:05:00Z',
+    read_latency_ms: 15.65,
   };
 
   const mockModelStatusUnverified = {
     ...mockModelStatusVerified,
     verification_status: 'UNVERIFIED',
     is_loaded: false,
+  };
+
+  const mockStage2Status = {
+    model_id: 'iot-ids-attack-classifier',
+    model_version: 'v1.0.0',
+    algorithm: 'RandomForestClassifier',
+    local_sha256: '596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208',
+    registered_sha256: '596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208',
+    verification_status: 'VERIFIED',
+    is_loaded: true,
   };
 
   const mockHierarchicalAttackResponse = {
@@ -59,7 +69,7 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
     event_id: 'evt-hier-001',
     inference_latency_ms: 41.25,
     per_flow_blockchain_queries: 0,
-    timestamp: '2026-10-25T10:10:00Z',
+    timestamp: '2026-10-25T12:10:00Z',
   };
 
   const mockHierarchicalBenignResponse = {
@@ -90,7 +100,7 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
     event_id: 'evt-hier-002',
     inference_latency_ms: 22.45,
     per_flow_blockchain_queries: 0,
-    timestamp: '2026-10-25T10:11:00Z',
+    timestamp: '2026-10-25T12:11:00Z',
   };
 
   const mockAuditData = {
@@ -100,13 +110,25 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
     events: [
       {
         event_id: 'audit-001',
-        timestamp: '2026-10-25T10:10:00Z',
+        timestamp: '2026-10-25T12:10:00Z',
         event_type: 'PREDICTION',
         status: 'SUCCESS',
         model_id: 'iot-ids-rf',
         model_version: 'v1.0.0',
         verification_status: 'VERIFIED',
+        prediction: 'Attack',
+        inference_latency_ms: 41.25,
         details: { final_category: 'DoS', stage1_prediction: 'Attack' },
+      },
+      {
+        event_id: 'audit-002',
+        timestamp: '2026-10-25T12:05:00Z',
+        event_type: 'MODEL_VERIFICATION',
+        status: 'SUCCESS',
+        model_id: 'iot-ids-rf',
+        model_version: 'v1.0.0',
+        verification_status: 'VERIFIED',
+        details: { cryptographic_integrity: 'MATCH', action_taken: 'AUTHORIZED_AND_LOADED' },
       },
     ],
   };
@@ -115,8 +137,8 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
     vi.clearAllMocks();
   });
 
-  // 1. Initial state shows Model Trust Gate
-  it('1. Initial state renders Model Trust & Integrity Gate as primary screen', async () => {
+  // 1. DASHBOARD: Operational landing page renders by default
+  it('1. Default landing page is Dashboard with system status and telemetry', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
@@ -124,79 +146,15 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('model-provenance-card')).toBeInTheDocument();
-      expect(screen.getByText(/Model Trust & Integrity Gate/i)).toBeInTheDocument();
-      expect(screen.getByText(/System Architecture & Execution Flow/i)).toBeInTheDocument();
+      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+      expect(screen.getByText(/Security Operations Dashboard/i)).toBeInTheDocument();
+      expect(screen.getByTestId('header-telemetry')).toBeInTheDocument();
+      expect(screen.getByTestId('header-verification-status')).toHaveTextContent(/VERIFIED/i);
     });
   });
 
-  // 2. Network Flow stage is locked before model verification
-  it('2. Network Flow stage shows locked state when model is unverified/unloaded', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue({ ...mockHealth, model_status: 'unloaded' });
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusUnverified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue({ total: 0, events: [] });
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('flow-locked-placeholder')).toBeInTheDocument();
-      const loadBtn = screen.getByTestId('load-model-btn');
-      expect(loadBtn).toBeDisabled();
-    });
-  });
-
-  // 3. Model verification success unlocks model loading
-  it('3. Model verification success authorizes model loading', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue({ ...mockHealth, model_status: 'unloaded' });
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusUnverified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue({ total: 0, events: [] });
-    vi.spyOn(api, 'verifyModel').mockResolvedValue({
-      verified: true,
-      status: 'VERIFIED',
-      model_id: 'iot-ids-rf',
-      version: 'v1.0.0',
-    });
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('verify-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('verify-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('load-model-btn')).not.toBeDisabled();
-    });
-  });
-
-  // 4. Model verification failure keeps downstream stages locked
-  it('4. Model verification failure keeps downstream stages locked (fail-closed)', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue({ ...mockHealth, model_status: 'unloaded (HASH_MISMATCH)' });
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue({ ...mockModelStatusUnverified, verification_status: 'HASH_MISMATCH' });
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue({ total: 0, events: [] });
-    vi.spyOn(api, 'verifyModel').mockResolvedValue({
-      verified: false,
-      status: 'HASH_MISMATCH',
-      message: 'Local SHA-256 does not match blockchain digest.',
-    });
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('verify-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('verify-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('load-model-btn')).toBeDisabled();
-      expect(screen.getByText(/Verification Failed \(HASH_MISMATCH\)/i)).toBeInTheDocument();
-    });
-  });
-
-  // 5. Successful model loading unlocks network-flow analysis
-  it('5. Successful model loading unlocks network-flow analysis', async () => {
+  // 2. DASHBOARD: System status grid reflects actual health and model status
+  it('2. Dashboard displays real system status and detection engine gating', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
@@ -204,13 +162,78 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('model-loaded-banner')).toBeInTheDocument();
-      expect(screen.getByText(/Stage 1: READY | Stage 2: READY/i)).toBeInTheDocument();
+      expect(screen.getByTestId('status-card-app')).toHaveTextContent(/RUNNING/i);
+      expect(screen.getByTestId('status-card-blockchain')).toHaveTextContent(/CONNECTED/i);
+      expect(screen.getByTestId('dashboard-verification-status')).toHaveTextContent('VERIFIED');
+      expect(screen.getByTestId('dashboard-model-id')).toHaveTextContent('iot-ids-rf:v1.0.0');
     });
   });
 
-  // 6. Benign prediction produces Normal and does not invoke Stage 2
-  it('6. Benign prediction produces Normal and does not invoke Stage 2', async () => {
+  // 3. DASHBOARD: Detection summary aggregates and recent events rendered
+  it('3. Dashboard displays session aggregates and recent events table', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('detection-summary-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('recent-events-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('summary-total-predictions')).toHaveTextContent('1');
+      expect(screen.getByTestId('summary-attack-count')).toHaveTextContent('1');
+      expect(screen.getByTestId('recent-events-table')).toBeInTheDocument();
+    });
+  });
+
+  // 4. DETECTION: Network-flow input panel and preset selection
+  it('4. Intrusion Detection page provides authentic network-flow input presets', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-detection'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('prediction-card')).toBeInTheDocument();
+      expect(screen.getByTestId('preset-dropdown')).toBeInTheDocument();
+      expect(screen.getByTestId('predict-btn')).toBeInTheDocument();
+      expect(screen.getByText(/Network-Flow Input Record/i)).toBeInTheDocument();
+    });
+  });
+
+  // 5. DETECTION: Hierarchical Attack prediction invokes Stage 2 and displays advisory
+  it('5. Hierarchical attack prediction invokes Stage 2 classification and displays response advisory', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-detection'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('predict-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('predict-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stage1-result-box')).toBeInTheDocument();
+      expect(screen.getByTestId('prediction-label')).toHaveTextContent(/Attack/i);
+      expect(screen.getByTestId('stage2-result-box')).toBeInTheDocument();
+      expect(screen.getByTestId('stage2-category')).toHaveTextContent('DoS');
+      expect(screen.getByTestId('advisory-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('advisory-recommended-action')).toHaveTextContent(/Inspect traffic volume and rate anomalies/i);
+      expect(screen.getByTestId('advisory-operator-guidance')).toHaveTextContent(/Review source IP distribution/i);
+    });
+  });
+
+  // 6. DETECTION: Benign prediction produces Normal and bypasses Stage 2
+  it('6. Benign flow produces Normal verdict and bypasses Stage 2 attack classification', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
@@ -218,28 +241,7 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
 
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('predict-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('predict-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('prediction-result')).toBeInTheDocument();
-      expect(screen.getByTestId('stage2-bypassed-explanation')).toBeInTheDocument();
-      expect(screen.getByText(/Stage 2 Classification Was Not Invoked/i)).toBeInTheDocument();
-      expect(screen.getByText(/Final Classification: NORMAL/i)).toBeInTheDocument();
-    });
-  });
-
-  // 7. Attack prediction invokes Stage 2
-  it('7. Attack prediction invokes Stage 2 conditionally', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
-
-    render(<App />);
+    fireEvent.click(screen.getByTestId('tab-detection'));
 
     await waitFor(() => {
       expect(screen.getByTestId('predict-btn')).toBeInTheDocument();
@@ -248,13 +250,14 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
     fireEvent.click(screen.getByTestId('predict-btn'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('stage2-results-container')).toBeInTheDocument();
-      expect(screen.getByText(/INTRUSION DETECTED — CONDITIONAL STAGE 2 TRIGGERED/i)).toBeInTheDocument();
+      expect(screen.getByTestId('prediction-label')).toHaveTextContent(/Benign/i);
+      expect(screen.getByText(/Stage 2 Multiclass Classifier: Bypassed/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('stage2-category')).not.toBeInTheDocument();
     });
   });
 
-  // 8. Stage 2 category is displayed correctly
-  it('8. Stage 2 category is displayed correctly (DoS)', async () => {
+  // 7. DETECTION: Advisory flags enforce human approval and disabled automated remediation
+  it('7. Advisory response explicitly discloses human approval requirement and disabled automated remediation', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
@@ -262,269 +265,102 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
 
     render(<App />);
 
+    fireEvent.click(screen.getByTestId('tab-detection'));
     fireEvent.click(screen.getByTestId('predict-btn'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('stage2-category-value')).toHaveTextContent('DoS');
-      expect(screen.getByTestId('stage2-category-pill')).toHaveTextContent('DoS');
+      expect(screen.getByText(/Human operator approval strictly required/i)).toBeInTheDocument();
+      expect(screen.getByText(/Automated remediation is disabled/i)).toBeInTheDocument();
     });
   });
 
-  // 9. Advisory recommendation is displayed
-  it('9. Advisory recommendation is displayed with tactical action and guidance', async () => {
+  // 8. DETECTION: Unloaded model shows fail-closed warning
+  it('8. Unloaded/unverified model displays fail-closed warning banner and locked status', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue({ ...mockHealth, model_status: 'unloaded' });
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusUnverified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue({ total: 0, events: [] });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-detection'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('flow-locked-placeholder')).toBeInTheDocument();
+      expect(screen.getByTestId('detection-engine-state')).toHaveTextContent(/ENGINE LOCKED/i);
+    });
+  });
+
+  // 9. MODEL SECURITY: Renders identity and cryptographic hashes
+  it('9. Model Security page renders model identity and dual SHA-256 digests', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
 
     render(<App />);
 
-    fireEvent.click(screen.getByTestId('predict-btn'));
+    fireEvent.click(screen.getByTestId('tab-model-security'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('advisory-card')).toBeInTheDocument();
-      expect(screen.getByTestId('advisory-action')).toHaveTextContent(/Inspect traffic volume and rate anomalies/i);
-      expect(screen.getByTestId('advisory-guidance')).toHaveTextContent(/Review source IP distribution/i);
-    });
-  });
-
-  // 10. is_advisory === true
-  it('10. Displays prominent "ADVISORY ONLY" badge', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('predict-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('badge-advisory')).toHaveTextContent(/ADVISORY ONLY/i);
-    });
-  });
-
-  // 11. requires_human_approval === true
-  it('11. Displays prominent "HUMAN APPROVAL REQUIRED" badge', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('predict-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('badge-human-approval')).toHaveTextContent(/HUMAN APPROVAL REQUIRED/i);
-    });
-  });
-
-  // 12. automated_remediation_enabled === false
-  it('12. Displays prominent "AUTOMATED REMEDIATION DISABLED" badge', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('predict-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('badge-remediation-disabled')).toHaveTextContent(/AUTOMATED REMEDIATION DISABLED/i);
-    });
-  });
-
-  // 13. Tampered Stage 1 blocks downstream execution
-  it('13. Tampered Stage 1 security scenario triggers fail-closed block', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-    vi.spyOn(api, 'runSecurityScenario').mockResolvedValue({
-      scenario: 'tampered_stage1',
-      status: 'HASH_MISMATCH',
-      verified: false,
-      model_id: 'iot-ids-rf',
-      version: 'v1.0.0',
-      action_taken: 'MODEL_LOAD_BLOCKED',
-      downstream_state: 'LOCKED',
-      message: 'Tampered Stage 1 model rejected (HASH_MISMATCH). Loading blocked fail-closed.',
-    });
-
-    render(<App />);
-
-    // Switch to Security Test tab
-    fireEvent.click(screen.getByRole('tab', { name: /Security Test/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Fail-Closed Model Integrity Testing/i)).toBeInTheDocument();
-    });
-
-    // Run Tampered Stage 1 simulation
-    const btn = screen.getByRole('button', { name: /RUN TEST TAMPERED STAGE 1/i });
-    fireEvent.click(btn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/GATE STATUS: HASH_MISMATCH/i)).toBeInTheDocument();
-      expect(screen.getAllByText(/MODEL_LOAD_BLOCKED/i).length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  // 14. Tampered Stage 2 is fail-closed
-  it('14. Tampered Stage 2 security scenario blocks Stage 2 fail-closed', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-    vi.spyOn(api, 'runSecurityScenario').mockResolvedValue({
-      scenario: 'tampered_stage2',
-      status: 'HASH_MISMATCH',
-      verified: false,
-      model_id: 'iot-ids-attack-classifier',
-      version: 'v1.0.0',
-      action_taken: 'STAGE2_LOAD_BLOCKED',
-      downstream_state: 'LOCKED',
-      message: 'Tampered Stage 2 model rejected (HASH_MISMATCH). Stage 2 loading blocked fail-closed.',
-    });
-
-    render(<App />);
-
-    fireEvent.click(screen.getByRole('tab', { name: /Security Test/i }));
-
-    const btn = screen.getByRole('button', { name: /RUN TEST TAMPERED STAGE 2/i });
-    fireEvent.click(btn);
-
-    await waitFor(() => {
-      expect(screen.getAllByText(/STAGE2_LOAD_BLOCKED/i).length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  // 15. Existing /predict compatibility remains intact
-  it('15. Existing /predict legacy endpoint compatibility remains functional', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-    vi.spyOn(api, 'predict').mockResolvedValue({
-      prediction: 'Attack',
-      prediction_code: 1,
-      confidence: 0.92,
-      model_id: 'iot-ids-rf',
-      model_version: 'v1.0.0',
-      verification_status: 'VERIFIED',
-      inference_latency_ms: 35.12,
-      timestamp: '2026-10-25T10:20:00Z',
-    });
-
-    render(<App />);
-
-    // Switch to Live Test tab
-    fireEvent.click(screen.getByRole('tab', { name: /Live Test/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Direct Inference & Endpoint Testing/i)).toBeInTheDocument();
-    });
-
-    // Select legacy endpoint
-    fireEvent.click(screen.getByText(/POST \/predict \(Legacy Binary Baseline\)/i));
-
-    // Submit prediction
-    const submitBtn = screen.getByRole('button', { name: /SUBMIT TO LEGACY ENDPOINT/i });
-    fireEvent.click(submitBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Binary Prediction/i)).toBeInTheDocument();
-      expect(screen.getByText('92.0%')).toBeInTheDocument();
-    });
-  });
-
-  // 16. Existing /model/status compatibility remains intact
-  it('16. /model/status endpoint response contract preserved', async () => {
-    const getModelStatusSpy = vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(getModelStatusSpy).toHaveBeenCalled();
+      expect(screen.getByTestId('model-provenance-card')).toBeInTheDocument();
       expect(screen.getByTestId('model-id')).toHaveTextContent('iot-ids-rf');
       expect(screen.getByTestId('model-version')).toHaveTextContent('v1.0.0');
+      expect(screen.getByTestId('local-hash')).toHaveTextContent(/dc5e16889ea247a4/);
+      expect(screen.getByTestId('registered-hash')).toHaveTextContent(/dc5e16889ea247a4/);
+      expect(screen.getByTestId('verified-success-box')).toBeInTheDocument();
     });
   });
 
-  // 17. Architecture state reflects actual backend response
-  it('17. Architecture workflow reflects pipeline status', async () => {
+  // 10. MODEL SECURITY: Verification action queries EVM and updates status
+  it('10. Verification action executes POST /model/verify and confirms consensus match', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+    const verifySpy = vi.spyOn(api, 'verifyModel').mockResolvedValue({
+      verified: true,
+      status: 'VERIFIED',
+      local_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-model-security'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('verify-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('verify-btn'));
+
+    await waitFor(() => {
+      expect(verifySpy).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('status-badge')).toHaveTextContent(/Verified/i);
+    });
+  });
+
+  // 11. MODEL SECURITY: Failed verification displays HASH_MISMATCH and locked gate
+  it('11. Failed verification displays HASH_MISMATCH and fail-closed notice', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue({ ...mockHealth, model_status: 'unloaded (HASH_MISMATCH)' });
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue({
+      ...mockModelStatusVerified,
+      verification_status: 'HASH_MISMATCH',
+      is_loaded: false,
+    });
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
 
     render(<App />);
 
+    fireEvent.click(screen.getByTestId('tab-model-security'));
+
     await waitFor(() => {
-      expect(screen.getByText(/System Architecture & Execution Flow/i)).toBeInTheDocument();
-      expect(screen.getByText(/CONTROL PLANE ONLY/i)).toBeInTheDocument();
-      expect(screen.getByText(/Per-flow registry lookups:/i)).toBeInTheDocument();
+      expect(screen.getByTestId('status-badge')).toHaveTextContent(/Hash Mismatch/i);
+      expect(screen.getByTestId('verified-mismatch-box')).toBeInTheDocument();
+      expect(screen.getByText(/Unloaded \(Inference Blocked\)/i)).toBeInTheDocument();
     });
   });
 
-  // 18. No raw 42-feature vector is persisted by frontend behavior
-  it('18. Frontend does not persist raw 42-feature vectors in audit records', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-
-    render(<App />);
-
-    // Audit trace component shows event metadata without raw flow feature lists
-    expect(screen.queryByTestId('raw-feature-vector-payload')).not.toBeInTheDocument();
-  });
-
-  // 19. No direct blockchain RPC calls originate from React
-  it('19. Frontend communicates strictly via REST API (no direct Web3 RPC)', () => {
-    // Assert BASE_URL targets REST backend, not Ethereum RPC port 8545
-    expect(BASE_URL).toMatch(/http:\/\/(127\.0\.0\.1|localhost):8000/);
-    expect(window.ethereum).toBeUndefined();
-  });
-
-  // 20. Research Metrics and Audit sections remain accessible
-  it('20. Research Metrics and Audit sections remain fully accessible via navigation tabs', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-
-    render(<App />);
-
-    // Test Research Metrics tab
-    fireEvent.click(screen.getByRole('tab', { name: /Research Metrics/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/Research Metrics & Performance Statistics/i)).toBeInTheDocument();
-      expect(screen.getByText(/The Fuzzers Bottleneck:/i)).toBeInTheDocument();
-    });
-
-    // Test Audit Trail tab
-    fireEvent.click(screen.getByRole('tab', { name: /Audit Trail/i }));
-    await waitFor(() => {
-      expect(screen.getByTestId('audit-log-card')).toBeInTheDocument();
-    });
-  });
-
-  // 21. Simulator: Normal state renders Attack Simulator controls & Evaluator Box
-  it('21. Architecture view renders Model Replacement Attack Simulator controls and Evaluator Box', async () => {
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('simulate-replacement-btn')).toBeInTheDocument();
-      expect(screen.getByTestId('simulate-unregistered-btn')).toBeInTheDocument();
-      expect(screen.getByTestId('evaluator-explanation-box')).toBeInTheDocument();
-    });
-  });
-
-  // 22. Simulator: Triggering replacement shows mismatch and 8-step timeline
-  it('22. Simulating model replacement reveals hash mismatch, blocked status, and 8-step timeline', async () => {
+  // 12. SECURITY TESTING: Controlled model replacement test triggers HASH_MISMATCH
+  it('12. Security Testing facility executes controlled model replacement test', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
@@ -536,25 +372,17 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
       model_id: 'iot-ids-rf',
       version: 'v1.0.0',
       registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
-      observed_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      observed_hash: 'a7fc43063d36f359bc6c4f14a98bf233d3a1bdebbc2d7a98e1e67a872624cf65',
       action_taken: 'MODEL_LOAD_BLOCKED',
       downstream_state: 'LOCKED',
       message: 'Model replacement detected. Observed SHA-256 does not match on-chain registered digest. Model loading blocked fail-closed.',
-      timeline: [
-        { step: 1, name: 'Original model identified', status: 'COMPLETED', detail: 'iot-ids-rf:v1.0.0' },
-        { step: 2, name: 'Temporary demonstration copy created', status: 'COMPLETED', detail: 'Segregated ephemeral temp buffer' },
-        { step: 3, name: 'Temporary artifact modified', status: 'COMPLETED', detail: 'Controlled byte perturbation applied at offset 500' },
-        { step: 4, name: 'SHA-256 recalculated', status: 'COMPLETED', detail: 'Observed: e3b0c44298fc1c14...' },
-        { step: 5, name: 'Compared with registered digest', status: 'COMPLETED', detail: 'Queried ModelRegistry.sol digest' },
-        { step: 6, name: 'Integrity check evaluated', status: 'HASH_MISMATCH', detail: 'Observed digest does not match on-chain digest' },
-        { step: 7, name: 'Model loading blocked', status: 'COMPLETED', detail: 'Memory deserialization aborted fail-closed' },
-        { step: 8, name: 'Downstream inference locked', status: 'COMPLETED', detail: 'Network flow analysis disabled' },
-      ],
     };
 
     const simSpy = vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockSimResponse);
 
     render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-security-testing'));
 
     await waitFor(() => {
       expect(screen.getByTestId('simulate-replacement-btn')).toBeInTheDocument();
@@ -564,32 +392,18 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
 
     await waitFor(() => {
       expect(simSpy).toHaveBeenCalledTimes(1);
-      expect(screen.getByTestId('hash-comparison-box')).toBeInTheDocument();
+      expect(screen.getByTestId('tamper-detected-alert')).toBeInTheDocument();
       expect(screen.getByTestId('mismatch-badge')).toBeInTheDocument();
-      expect(screen.getByTestId('simulation-timeline')).toBeInTheDocument();
-      expect(screen.getByTestId('restore-model-btn')).toBeInTheDocument();
+      expect(screen.getByText(/SIMULATED MODEL REPLACEMENT DETECTED/i)).toBeInTheDocument();
+      expect(screen.getByText(/DISABLED \(HTTP 503 Fail-Closed\)/i)).toBeInTheDocument();
     });
   });
 
-  // 23. Simulator: Restoring model resets state and unlocks downstream workflow
-  it('23. Restoring model resets state to VERIFIED and re-authorizes downstream inference', async () => {
+  // 13. SECURITY TESTING: Restoration resets state to VERIFIED
+  it('13. Restoring model resets state to VERIFIED and unblocks inference', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
-
-    const mockSimResponse = {
-      scenario: 'model_replacement',
-      status: 'HASH_MISMATCH',
-      verified: false,
-      model_id: 'iot-ids-rf',
-      version: 'v1.0.0',
-      registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
-      observed_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-      action_taken: 'MODEL_LOAD_BLOCKED',
-      downstream_state: 'LOCKED',
-      message: 'Model replacement detected.',
-      timeline: [],
-    };
 
     const mockResetResponse = {
       scenario: 'model_replacement_reset',
@@ -604,16 +418,11 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
       message: 'Canonical model verified against on-chain registry and restored to memory. Inference authorized.',
     };
 
-    vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockSimResponse);
     const resetSpy = vi.spyOn(api, 'resetModelReplacement').mockResolvedValue(mockResetResponse);
 
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('simulate-replacement-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('simulate-replacement-btn'));
+    fireEvent.click(screen.getByTestId('tab-security-testing'));
 
     await waitFor(() => {
       expect(screen.getByTestId('restore-model-btn')).toBeInTheDocument();
@@ -623,13 +432,13 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
 
     await waitFor(() => {
       expect(resetSpy).toHaveBeenCalledTimes(1);
-      expect(screen.getByText(/CANONICAL MODEL RESTORED/i)).toBeInTheDocument();
-      expect(screen.queryByTestId('mismatch-badge')).not.toBeInTheDocument();
+      expect(screen.getByTestId('restored-banner')).toBeInTheDocument();
+      expect(screen.getByText(/CANONICAL MODEL RESTORED & VERIFIED/i)).toBeInTheDocument();
     });
   });
 
-  // 24. Simulator: Unregistered version test demonstrates NOT_REGISTERED rejection
-  it('24. Testing unregistered version candidate triggers fail-closed rejection', async () => {
+  // 14. SECURITY TESTING: Unregistered version candidate rejection
+  it('14. Testing unregistered version candidate triggers fail-closed rejection', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
@@ -651,6 +460,8 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
 
     render(<App />);
 
+    fireEvent.click(screen.getByTestId('tab-security-testing'));
+
     await waitFor(() => {
       expect(screen.getByTestId('simulate-unregistered-btn')).toBeInTheDocument();
     });
@@ -659,8 +470,103 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
 
     await waitFor(() => {
       expect(unregSpy).toHaveBeenCalledTimes(1);
-      expect(screen.getByText(/REJECTED: NOT_REGISTERED/i)).toBeInTheDocument();
-      expect(screen.getByTestId('restore-model-btn')).toBeInTheDocument();
+      expect(screen.getByText(/REJECTED: NOT_REGISTERED \(v9.9.9\)/i)).toBeInTheDocument();
     });
+  });
+
+  // 15. AUDIT LOG: Table renders events and pagination controls
+  it('15. Audit Log displays operational events table with pagination and filter', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-audit'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('audit-log-card')).toBeInTheDocument();
+      expect(screen.getByTestId('audit-table')).toBeInTheDocument();
+      expect(screen.getByTestId('event-type-filter')).toBeInTheDocument();
+      expect(screen.getByTestId('prev-page-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('next-page-btn')).toBeInTheDocument();
+    });
+  });
+
+  // 16. AUDIT LOG: Filter change triggers API query
+  it('16. Audit Log filter dropdown queries backend with eventType parameter', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    const auditSpy = vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-audit'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('event-type-filter')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId('event-type-filter'), { target: { value: 'PREDICTION' } });
+
+    await waitFor(() => {
+      expect(auditSpy).toHaveBeenCalledWith(10, 0, 'PREDICTION');
+    });
+  });
+
+  // 17. RESEARCH RESULTS: Authoritative metrics rendered
+  it('17. Research Results tab renders authoritative UNSW-NB15 benchmark metrics', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-research-results'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('research-results-page')).toBeInTheDocument();
+      expect(screen.getByText(/Stage 1: Binary IDS \(Random Forest\)/i)).toBeInTheDocument();
+      expect(screen.getByText('90.30%')).toBeInTheDocument();
+      expect(screen.getByText('98.78%')).toBeInTheDocument();
+      expect(screen.getByText('86.82%')).toBeInTheDocument();
+      expect(screen.getByText('92.41%')).toBeInTheDocument();
+      expect(screen.getByText(/Stage 2: Attack Classifier \(Multiclass RF\)/i)).toBeInTheDocument();
+      expect(screen.getByText('53.06%')).toBeInTheDocument();
+      expect(screen.getByText('51.43%')).toBeInTheDocument();
+    });
+  });
+
+  // 18. RESEARCH RESULTS: Important limitation disclosure is explicitly rendered
+  it('18. Research Results tab explicitly discloses Stage 2 cascade error limitation', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-research-results'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Important Research Limitation:/i)).toBeInTheDocument();
+      expect(screen.getByText(/Stage 2 performance is affected by upstream Stage 1 false negatives/i)).toBeInTheDocument();
+    });
+  });
+
+  // 19. REST API ISOLATION: Frontend communicates strictly via REST API (no direct Web3 RPC)
+  it('19. Frontend communicates strictly via REST API (no direct Web3 RPC)', () => {
+    expect(BASE_URL).toMatch(/http:\/\/(127\.0\.0\.1|localhost):8000/);
+    expect(window.ethereum).toBeUndefined();
+  });
+
+  // 20. PRIVACY BOUNDARY: No raw 42-feature vectors in audit records
+  it('20. Frontend does not persist raw 42-feature vectors in audit records', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    expect(screen.queryByTestId('raw-feature-vector-payload')).not.toBeInTheDocument();
   });
 });

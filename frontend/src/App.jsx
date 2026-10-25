@@ -2,16 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api, ApiError } from './api/client';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
-import { ArchitectureDemo } from './components/ArchitectureDemo';
-import { LiveTest } from './components/LiveTest';
-import { SecurityDemo } from './components/SecurityDemo';
-import { ResearchMetrics } from './components/ResearchMetrics';
+import { Dashboard } from './components/Dashboard';
+import { IntrusionDetection } from './components/IntrusionDetection';
+import { ModelSecurity } from './components/ModelSecurity';
+import { SecurityTesting } from './components/SecurityTesting';
 import { AuditLog } from './components/AuditLog';
+import { ResearchResults } from './components/ResearchResults';
 import { AlertBanner } from './components/AlertBanner';
 
 export function App() {
-  // Navigation state (Default is Architecture)
-  const [activeTab, setActiveTab] = useState('architecture');
+  // Navigation state (Default is Dashboard for a true production SOC console)
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   // System states
   const [health, setHealth] = useState(null);
@@ -25,7 +26,7 @@ export function App() {
   const [verificationError, setVerificationError] = useState(null);
   const [lastVerifyResult, setLastVerifyResult] = useState(null);
 
-  // Loading states
+  // Engine loading state
   const [isModelLoaded, setIsModelLoaded] = useState(false);
 
   // Prediction states
@@ -42,14 +43,14 @@ export function App() {
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   const [auditError, setAuditError] = useState(null);
 
-  // Analytics states (Phase 5B)
+  // Analytics states
   const [analyticsEvents, setAnalyticsEvents] = useState([]);
   const [analyticsTotal, setAnalyticsTotal] = useState(0);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [analyticsError, setAnalyticsError] = useState(null);
 
-  // Fetch audit records for paginated table
-  const loadAuditEvents = useCallback(async (limit, offset, filter) => {
+  // Fetch audit records for table & aggregates
+  const loadAuditEvents = useCallback(async (limit = 10, offset = 0, filter = '') => {
     setIsLoadingAudit(true);
     setAuditError(null);
     try {
@@ -78,7 +79,7 @@ export function App() {
     }
   }, []);
 
-  // Fetch all system data
+  // Fetch all system telemetry
   const loadAll = useCallback(async () => {
     setIsRefreshing(true);
     setGeneralError(null);
@@ -95,24 +96,26 @@ export function App() {
         const s2Data = await api.getModelStatus('stage2');
         setStage2Status(s2Data);
       } catch {
-        // Fallback if stage 2 status not independently queryable
+        // Stage 2 may not be standalone queryable in all configurations
       }
 
-      await loadAnalytics();
+      await Promise.all([
+        loadAnalytics(),
+        loadAuditEvents(auditLimit, auditOffset, auditFilter),
+      ]);
     } catch (err) {
       setGeneralError(
-        `Backend Connection Alert: ${err.message}. Please verify that the FastAPI backend server is running on http://127.0.0.1:8000.`
+        `Backend Connection Alert: ${err.message}. Verify that the FastAPI backend server is running on http://127.0.0.1:8000.`
       );
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadAnalytics]);
+  }, [loadAnalytics, loadAuditEvents, auditLimit, auditOffset, auditFilter]);
 
   // Initial load
   useEffect(() => {
     loadAll();
-    loadAuditEvents(auditLimit, auditOffset, auditFilter);
-  }, [loadAll, loadAuditEvents, auditLimit, auditOffset, auditFilter]);
+  }, [loadAll]);
 
   // Handle explicit verification
   const handleVerify = async (target = 'stage1') => {
@@ -123,18 +126,9 @@ export function App() {
     try {
       const result = await api.verifyModel(target);
       setLastVerifyResult(result);
-      // Refresh status and audit events
-      await Promise.all([
-        api.getModelStatus('stage1').then((data) => {
-          setModelStatus(data);
-          setIsModelLoaded(Boolean(data?.is_loaded));
-        }),
-        api.getHealth().then(setHealth),
-        loadAuditEvents(auditLimit, auditOffset, auditFilter),
-        loadAnalytics(),
-      ]);
+      await loadAll();
     } catch (err) {
-      setVerificationError(err.message || 'Verification failed unexpectedly.');
+      setVerificationError(err.message || 'Verification request failed.');
     } finally {
       setIsVerifying(false);
     }
@@ -147,36 +141,38 @@ export function App() {
       setIsModelLoaded(true);
       await loadAll();
     } catch (err) {
-      setVerificationError(err.message || 'Model load blocked.');
+      setVerificationError(err.message || 'Model load blocked fail-closed.');
     }
   };
 
-  // Handle flow prediction (uses hierarchical endpoint)
-  const handlePredict = async (features) => {
+  // Handle flow prediction (uses hierarchical endpoint by default)
+  const handlePredict = async (features, mode = 'hierarchical') => {
     setIsPredicting(true);
     setPredictionError(null);
     setPredictionResult(null);
 
     try {
       let result;
-      try {
-        // Primary Phase 7 Hierarchical Endpoint
-        result = await api.predictHierarchical(features);
-      } catch (hierErr) {
-        // Fallback to legacy binary predict if hierarchical endpoint unavailable
+      if (mode === 'legacy') {
         result = await api.predict(features);
+      } else {
+        try {
+          result = await api.predictHierarchical(features);
+        } catch (hierErr) {
+          result = await api.predict(features);
+        }
       }
       setPredictionResult(result);
-      // Automatically refresh audit events and analytics
+      // Refresh audit logs
       loadAuditEvents(auditLimit, auditOffset, auditFilter);
       loadAnalytics();
     } catch (err) {
       if (err instanceof ApiError && err.status === 503) {
         setPredictionError(
-          `Inference Blocked (HTTP 503): Model failed the cryptographic verification gate. Reason: ${err.message}`
+          `Inference Blocked (HTTP 503): Fail-closed verification gate active. Model is unverified or unloaded.`
         );
       } else {
-        setPredictionError(err.message || 'Prediction request failed.');
+        setPredictionError(err.message || 'Inference execution failed.');
       }
     } finally {
       setIsPredicting(false);
@@ -185,7 +181,13 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <Header health={health} isRefreshing={isRefreshing} onRefresh={loadAll} />
+      {/* Compact SOC Application Header */}
+      <Header
+        health={health}
+        modelStatus={modelStatus}
+        isRefreshing={isRefreshing}
+        onRefresh={loadAll}
+      />
 
       <main className="container">
         {generalError && (
@@ -196,12 +198,36 @@ export function App() {
           />
         )}
 
-        {/* Primary Navigation Bar */}
+        {/* 6-Tab Operations Navigation */}
         <Navigation activeTab={activeTab} onSelectTab={setActiveTab} />
 
-        {/* TAB 1: ARCHITECTURE DEMONSTRATOR (DEFAULT) */}
-        <div style={{ display: activeTab === 'architecture' ? 'block' : 'none' }}>
-          <ArchitectureDemo
+        {/* PAGE 1: OPERATIONS DASHBOARD (DEFAULT) */}
+        <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
+          <Dashboard
+            health={health}
+            modelStatus={modelStatus}
+            stage2Status={stage2Status}
+            auditEvents={auditEvents}
+            auditTotal={auditTotal}
+            onNavigate={setActiveTab}
+          />
+        </div>
+
+        {/* PAGE 2: INTRUSION DETECTION (PRIMARY WORKBENCH) */}
+        <div style={{ display: activeTab === 'detection' ? 'block' : 'none' }}>
+          <IntrusionDetection
+            isModelLoaded={isModelLoaded}
+            isPredicting={isPredicting}
+            onPredict={handlePredict}
+            predictionResult={predictionResult}
+            predictionError={predictionError}
+            modelStatus={modelStatus}
+          />
+        </div>
+
+        {/* PAGE 3: MODEL SECURITY & PROVENANCE */}
+        <div style={{ display: activeTab === 'model-security' ? 'block' : 'none' }}>
+          <ModelSecurity
             health={health}
             modelStatus={modelStatus}
             stage2Status={stage2Status}
@@ -210,36 +236,16 @@ export function App() {
             verifyResult={lastVerifyResult}
             onLoadModel={handleLoadModel}
             isModelLoaded={isModelLoaded}
-            isPredicting={isPredicting}
-            onPredict={handlePredict}
-            predictionResult={predictionResult}
-            predictionError={predictionError}
-            auditEvents={auditEvents}
+            verificationError={verificationError}
           />
         </div>
 
-        {/* TAB 2: LIVE TEST INFERENCE WORKBENCH */}
-        <div style={{ display: activeTab === 'live-test' ? 'block' : 'none' }}>
-          <LiveTest isModelLoaded={isModelLoaded} />
+        {/* PAGE 4: SECURITY TESTING FACILITY */}
+        <div style={{ display: activeTab === 'security-testing' ? 'block' : 'none' }}>
+          <SecurityTesting onModelStatusRefresh={loadAll} />
         </div>
 
-        {/* TAB 3: SECURITY DEMONSTRATION MODE (FAIL-CLOSED) */}
-        <div style={{ display: activeTab === 'security-test' ? 'block' : 'none' }}>
-          <SecurityDemo onModelStatusRefresh={loadAll} />
-        </div>
-
-        {/* TAB 4: RESEARCH METRICS & STATISTICAL EVIDENCE */}
-        <div style={{ display: activeTab === 'research-metrics' ? 'block' : 'none' }}>
-          <ResearchMetrics
-            events={analyticsEvents}
-            totalEventsCount={analyticsTotal}
-            isLoading={isLoadingAnalytics}
-            error={analyticsError}
-            onRefresh={loadAnalytics}
-          />
-        </div>
-
-        {/* TAB 5: OPERATIONAL SECURITY AUDIT LOG */}
+        {/* PAGE 5: LOCAL OPERATIONAL AUDIT LOG */}
         <div style={{ display: activeTab === 'audit' ? 'block' : 'none' }}>
           <AuditLog
             events={auditEvents}
@@ -250,38 +256,39 @@ export function App() {
             onFilterChange={(newFilter) => {
               setAuditFilter(newFilter);
               setAuditOffset(0);
+              loadAuditEvents(auditLimit, 0, newFilter);
             }}
-            onPageChange={(newOffset) => setAuditOffset(newOffset)}
+            onPageChange={(newOffset) => {
+              setAuditOffset(newOffset);
+              loadAuditEvents(auditLimit, newOffset, auditFilter);
+            }}
+            onRefresh={() => loadAuditEvents(auditLimit, auditOffset, auditFilter)}
             isLoading={isLoadingAudit}
             error={auditError}
           />
         </div>
 
-        {/* Evaluator Research Disclosures */}
-        <footer className="research-notice">
-          <strong>Research Prototype Disclosures:</strong>
-          <ul style={{ marginTop: '0.5rem', paddingLeft: '1.25rem' }}>
-            <li>
-              <strong>Architecture Decoupling:</strong> The React frontend communicates strictly with the FastAPI REST API.
-              Direct blockchain RPC access, model deserialization, and ML inference are strictly executed on the backend.
-            </li>
-            <li>
-              <strong>Cryptographic Verification:</strong> SHA-256 verification establishes exact binary correspondence with
-              the registered on-chain digest in <code>ModelRegistry.sol</code>. It does not establish model correctness,
-              adversarial robustness, or absence of training-data poisoning.
-            </li>
-            <li>
-              <strong>Per-Flow Blockchain Invariant:</strong> The evaluated per-flow inference path performs zero blockchain registry lookups.
-            </li>
-            <li>
-              <strong>Advisory Response Boundary:</strong> The advisory attack recommendation layer does not perform autonomous remediation.
-              Human operator review and approval are strictly required.
-            </li>
-            <li>
-              <strong>Audit Logging:</strong> Events are recorded in an append-oriented SQLite store for operational tracking;
-              raw 42-feature vectors are strictly excluded from persistent storage to protect telemetry privacy.
-            </li>
-          </ul>
+        {/* PAGE 6: EMPIRICAL RESEARCH RESULTS */}
+        <div style={{ display: activeTab === 'research-results' ? 'block' : 'none' }}>
+          <ResearchResults
+            events={analyticsEvents}
+            totalEventsCount={analyticsTotal}
+            isLoading={isLoadingAnalytics}
+            error={analyticsError}
+            onRefresh={loadAnalytics}
+          />
+        </div>
+
+        {/* Operational Console Footer Notice */}
+        <footer className="console-footer">
+          <div className="footer-content">
+            <span className="footer-title">IoT Intrusion Detection Operations Console</span>
+            <p className="footer-text font-xs text-muted">
+              <strong>Research Prototype Disclosures:</strong> Blockchain-backed model provenance enforces pre-load verification against <code>ModelRegistry.sol</code>.
+              Per-flow network intrusion classification is executed strictly off-chain with zero per-flow blockchain lookups.
+              Response recommendations are advisory only; human operator approval is required for all mitigation workflows.
+            </p>
+          </div>
         </footer>
       </main>
     </div>
