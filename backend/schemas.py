@@ -66,6 +66,35 @@ class SecurityTestScenarioRequest(BaseModel):
     )
 
 
+class ModelReplacementSimulationResponse(BaseModel):
+    """Response payload for the model replacement attack simulation."""
+    scenario: str
+    status: str
+    verified: bool
+    model_id: str
+    version: str
+    registered_hash: Optional[str] = None
+    observed_hash: Optional[str] = None
+    action_taken: str
+    downstream_state: str
+    message: str
+    timeline: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class ModelReplacementResetResponse(BaseModel):
+    """Response payload for restoring verified canonical model state."""
+    scenario: str
+    status: str
+    verified: bool
+    model_id: str
+    version: str
+    canonical_hash: str
+    registered_hash: str
+    action_taken: str
+    downstream_state: str
+    message: str
+
+
 class NetworkFlowPredictionRequest(BaseModel):
     """Network-flow feature record for IoT intrusion detection inference.
 

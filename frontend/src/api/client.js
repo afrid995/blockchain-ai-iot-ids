@@ -78,6 +78,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ scenario }),
     }),
+  simulateModelReplacement: () => request('/demo/model-replacement', { method: 'POST' }),
+  resetModelReplacement: () => request('/demo/model-replacement/reset', { method: 'POST' }),
+  simulateUnregisteredVersion: () => request('/demo/unregistered-version', { method: 'POST' }),
   getAuditEvents: (limit = 20, offset = 0, eventType = null) => {
     let query = `?limit=${limit}&offset=${offset}`;
     if (eventType) {

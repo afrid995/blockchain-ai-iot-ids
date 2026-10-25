@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import datetime
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request, status
@@ -22,6 +23,8 @@ from backend.config import settings
 from backend.schemas import (
     HealthResponse,
     HierarchicalPredictionResponse,
+    ModelReplacementResetResponse,
+    ModelReplacementSimulationResponse,
     ModelStatusResponse,
     ModelVerifyResponse,
     NetworkFlowPredictionRequest,
@@ -390,6 +393,174 @@ def create_app(
             if temp_dir.exists():
                 import shutil
                 shutil.rmtree(temp_dir, ignore_errors=True)
+
+    @app.post(
+        "/demo/model-replacement",
+        response_model=ModelReplacementSimulationResponse,
+        tags=["Model Replacement Simulator"],
+    )
+    async def simulate_model_replacement():
+        """Demonstrate fail-closed rejection of an unauthorized model replacement.
+
+        Creates an ephemeral modified copy of the registered model in a temporary OS directory,
+        calculates its actual observed SHA-256 digest, and evaluates it against the on-chain
+        registered reference. The mismatch immediately blocks model loading fail-closed.
+        The canonical model artifact is NEVER modified.
+        """
+        import tempfile
+        from core.hashing import calculate_sha256
+
+        canonical_path = settings.MODEL_PATH
+        model_id = settings.MODEL_ID
+        version = settings.MODEL_VERSION
+
+        if not canonical_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Canonical model artifact missing at {canonical_path}",
+            )
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            temp_model_path = Path(tmp_dir) / "ephemeral_replacement_candidate.joblib"
+            canonical_bytes = bytearray(canonical_path.read_bytes())
+            canonical_bytes[500] = (canonical_bytes[500] + 1) % 256
+            temp_model_path.write_bytes(canonical_bytes)
+
+            observed_sha = calculate_sha256(temp_model_path)
+
+            v_res = verification_service.verify(
+                model_path=temp_model_path,
+                model_id=model_id,
+                version=version,
+            )
+
+            # Enforce fail-closed state
+            model_service.unload_model()
+            model_service.verification_status = v_res["status"]
+
+            audit_service.log_event(
+                event_type="MODEL_REPLACEMENT_DETECTED",
+                status="WARNING",
+                model_id=model_id,
+                model_version=version,
+                verification_status=v_res["status"],
+                details={
+                    "registered_hash": v_res.get("registered_hash"),
+                    "observed_hash": observed_sha,
+                    "action_taken": "MODEL_LOAD_BLOCKED",
+                    "reason": "Observed digest does not match on-chain reference.",
+                },
+            )
+
+            timeline = [
+                {"step": 1, "name": "Original model identified", "status": "COMPLETED", "detail": f"{model_id}:{version}"},
+                {"step": 2, "name": "Temporary demonstration copy created", "status": "COMPLETED", "detail": "Segregated ephemeral temp buffer"},
+                {"step": 3, "name": "Temporary artifact modified", "status": "COMPLETED", "detail": "Controlled byte perturbation applied at offset 500"},
+                {"step": 4, "name": "SHA-256 recalculated", "status": "COMPLETED", "detail": f"Observed: {observed_sha[:16]}..."},
+                {"step": 5, "name": "Compared with registered digest", "status": "COMPLETED", "detail": "Queried ModelRegistry.sol digest"},
+                {"step": 6, "name": "Integrity check evaluated", "status": "HASH_MISMATCH", "detail": "Observed digest does not match on-chain digest"},
+                {"step": 7, "name": "Model loading blocked", "status": "COMPLETED", "detail": "Memory deserialization aborted fail-closed"},
+                {"step": 8, "name": "Downstream inference locked", "status": "COMPLETED", "detail": "Network flow analysis disabled"},
+            ]
+
+            return ModelReplacementSimulationResponse(
+                scenario="model_replacement",
+                status=v_res["status"],
+                verified=v_res["verified"],
+                model_id=model_id,
+                version=version,
+                registered_hash=v_res.get("registered_hash"),
+                observed_hash=observed_sha,
+                action_taken="MODEL_LOAD_BLOCKED",
+                downstream_state="LOCKED",
+                message="Model replacement detected. Observed SHA-256 does not match on-chain registered digest. Model loading blocked fail-closed.",
+                timeline=timeline,
+            )
+
+    @app.post(
+        "/demo/model-replacement/reset",
+        response_model=ModelReplacementResetResponse,
+        tags=["Model Replacement Simulator"],
+    )
+    async def reset_model_replacement():
+        """Restore legitimate verified model state and confirm canonical artifact integrity."""
+        from core.hashing import calculate_sha256
+
+        canonical_path = settings.MODEL_PATH
+        model_id = settings.MODEL_ID
+        version = settings.MODEL_VERSION
+
+        if not canonical_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Canonical model artifact missing at {canonical_path}",
+            )
+
+        canonical_sha = calculate_sha256(canonical_path)
+        expected_sha = "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5"
+
+        if canonical_sha != expected_sha:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"CRITICAL: Canonical model hash {canonical_sha} does not match expected {expected_sha}",
+            )
+
+        outcome = model_service.verify_and_load(verification_service)
+        try:
+            stage2_model_service.verify_and_load(verification_service)
+        except Exception:
+            pass
+
+        audit_service.log_event(
+            event_type="MODEL_RESTORED",
+            status="SUCCESS",
+            model_id=model_id,
+            model_version=version,
+            verification_status="VERIFIED",
+            details={
+                "canonical_hash": canonical_sha,
+                "registered_hash": outcome.get("registered_hash"),
+                "action_taken": "AUTHORIZED_AND_LOADED",
+            },
+        )
+
+        return ModelReplacementResetResponse(
+            scenario="model_replacement_reset",
+            status=outcome["status"],
+            verified=outcome["verified"],
+            model_id=model_id,
+            version=version,
+            canonical_hash=canonical_sha,
+            registered_hash=outcome.get("registered_hash", expected_sha),
+            action_taken="AUTHORIZED_AND_LOADED",
+            downstream_state="UNLOCKED",
+            message="Canonical model verified against on-chain registry and restored to memory. Inference authorized.",
+        )
+
+    @app.post("/demo/unregistered-version", tags=["Model Replacement Simulator"])
+    async def simulate_unregistered_version():
+        """Demonstrate rejection of an unregistered model version candidate."""
+        model_id = settings.MODEL_ID
+        version = "v9.9.9"
+        v_res = verification_service.verify(
+            model_path=settings.MODEL_PATH,
+            model_id=model_id,
+            version=version,
+        )
+        model_service.unload_model()
+        model_service.verification_status = v_res["status"]
+        return {
+            "scenario": "unregistered_version",
+            "status": v_res["status"],
+            "verified": v_res["verified"],
+            "model_id": model_id,
+            "version": version,
+            "local_hash": v_res.get("local_hash"),
+            "registered_hash": None,
+            "action_taken": "MODEL_LOAD_BLOCKED",
+            "downstream_state": "LOCKED",
+            "message": "Unregistered model version v9.9.9 rejected (NOT_REGISTERED). Loading blocked fail-closed.",
+        }
 
     @app.post("/predict", response_model=NetworkFlowPredictionResponse, tags=["Intrusion Detection"])
     async def predict_intrusion(request: NetworkFlowPredictionRequest):

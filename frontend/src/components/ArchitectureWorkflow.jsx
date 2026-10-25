@@ -17,6 +17,7 @@ export function ArchitectureWorkflow({
   stage2Invoked,     // false | true
   stage2Result,      // null | string
   advisoryResult,    // null | object
+  isReplacementSimulated = false, // boolean flag for attack simulation
 }) {
   // Determine node states
   const getNodeState = (stageNum) => {
@@ -211,6 +212,16 @@ export function ArchitectureWorkflow({
           Blockchain consensus and cryptographic verification occur strictly at application startup / pre-load gating.
         </span>
       </div>
+
+      {isReplacementSimulated && (
+        <div className="attack-stop-banner alert-box danger" data-testid="attack-stopped-banner" style={{ marginTop: '1rem', display: 'flex', alignItems: 'center' }}>
+          <span className="stop-icon" style={{ fontSize: '1.5rem', marginRight: '0.75rem' }}>🛑</span>
+          <div>
+            <strong>ATTACK STOPPED BEFORE INFERENCE:</strong> Model replacement candidate rejected at the provenance gate (HASH_MISMATCH).
+            Memory loading is blocked fail-closed and all downstream IDS inference stages remain locked.
+          </div>
+        </div>
+      )}
     </section>
   );
 }

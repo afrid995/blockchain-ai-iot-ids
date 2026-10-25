@@ -507,4 +507,160 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
       expect(screen.getByTestId('audit-log-card')).toBeInTheDocument();
     });
   });
+
+  // 21. Simulator: Normal state renders Attack Simulator controls & Evaluator Box
+  it('21. Architecture view renders Model Replacement Attack Simulator controls and Evaluator Box', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('simulate-replacement-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('simulate-unregistered-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('evaluator-explanation-box')).toBeInTheDocument();
+    });
+  });
+
+  // 22. Simulator: Triggering replacement shows mismatch and 8-step timeline
+  it('22. Simulating model replacement reveals hash mismatch, blocked status, and 8-step timeline', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    const mockSimResponse = {
+      scenario: 'model_replacement',
+      status: 'HASH_MISMATCH',
+      verified: false,
+      model_id: 'iot-ids-rf',
+      version: 'v1.0.0',
+      registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      observed_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      action_taken: 'MODEL_LOAD_BLOCKED',
+      downstream_state: 'LOCKED',
+      message: 'Model replacement detected. Observed SHA-256 does not match on-chain registered digest. Model loading blocked fail-closed.',
+      timeline: [
+        { step: 1, name: 'Original model identified', status: 'COMPLETED', detail: 'iot-ids-rf:v1.0.0' },
+        { step: 2, name: 'Temporary demonstration copy created', status: 'COMPLETED', detail: 'Segregated ephemeral temp buffer' },
+        { step: 3, name: 'Temporary artifact modified', status: 'COMPLETED', detail: 'Controlled byte perturbation applied at offset 500' },
+        { step: 4, name: 'SHA-256 recalculated', status: 'COMPLETED', detail: 'Observed: e3b0c44298fc1c14...' },
+        { step: 5, name: 'Compared with registered digest', status: 'COMPLETED', detail: 'Queried ModelRegistry.sol digest' },
+        { step: 6, name: 'Integrity check evaluated', status: 'HASH_MISMATCH', detail: 'Observed digest does not match on-chain digest' },
+        { step: 7, name: 'Model loading blocked', status: 'COMPLETED', detail: 'Memory deserialization aborted fail-closed' },
+        { step: 8, name: 'Downstream inference locked', status: 'COMPLETED', detail: 'Network flow analysis disabled' },
+      ],
+    };
+
+    const simSpy = vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockSimResponse);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('simulate-replacement-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('simulate-replacement-btn'));
+
+    await waitFor(() => {
+      expect(simSpy).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('hash-comparison-box')).toBeInTheDocument();
+      expect(screen.getByTestId('mismatch-badge')).toBeInTheDocument();
+      expect(screen.getByTestId('simulation-timeline')).toBeInTheDocument();
+      expect(screen.getByTestId('restore-model-btn')).toBeInTheDocument();
+    });
+  });
+
+  // 23. Simulator: Restoring model resets state and unlocks downstream workflow
+  it('23. Restoring model resets state to VERIFIED and re-authorizes downstream inference', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    const mockSimResponse = {
+      scenario: 'model_replacement',
+      status: 'HASH_MISMATCH',
+      verified: false,
+      model_id: 'iot-ids-rf',
+      version: 'v1.0.0',
+      registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      observed_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      action_taken: 'MODEL_LOAD_BLOCKED',
+      downstream_state: 'LOCKED',
+      message: 'Model replacement detected.',
+      timeline: [],
+    };
+
+    const mockResetResponse = {
+      scenario: 'model_replacement_reset',
+      status: 'VERIFIED',
+      verified: true,
+      model_id: 'iot-ids-rf',
+      version: 'v1.0.0',
+      canonical_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      action_taken: 'AUTHORIZED_AND_LOADED',
+      downstream_state: 'UNLOCKED',
+      message: 'Canonical model verified against on-chain registry and restored to memory. Inference authorized.',
+    };
+
+    vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockSimResponse);
+    const resetSpy = vi.spyOn(api, 'resetModelReplacement').mockResolvedValue(mockResetResponse);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('simulate-replacement-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('simulate-replacement-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('restore-model-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('restore-model-btn'));
+
+    await waitFor(() => {
+      expect(resetSpy).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(/CANONICAL MODEL RESTORED/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('mismatch-badge')).not.toBeInTheDocument();
+    });
+  });
+
+  // 24. Simulator: Unregistered version test demonstrates NOT_REGISTERED rejection
+  it('24. Testing unregistered version candidate triggers fail-closed rejection', async () => {
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    const mockUnregisteredResponse = {
+      scenario: 'unregistered_version',
+      status: 'NOT_REGISTERED',
+      verified: false,
+      model_id: 'iot-ids-rf',
+      version: 'v9.9.9',
+      local_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      registered_hash: null,
+      action_taken: 'MODEL_LOAD_BLOCKED',
+      downstream_state: 'LOCKED',
+      message: 'Unregistered model version v9.9.9 rejected (NOT_REGISTERED). Loading blocked fail-closed.',
+    };
+
+    const unregSpy = vi.spyOn(api, 'simulateUnregisteredVersion').mockResolvedValue(mockUnregisteredResponse);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('simulate-unregistered-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('simulate-unregistered-btn'));
+
+    await waitFor(() => {
+      expect(unregSpy).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(/REJECTED: NOT_REGISTERED/i)).toBeInTheDocument();
+      expect(screen.getByTestId('restore-model-btn')).toBeInTheDocument();
+    });
+  });
 });
