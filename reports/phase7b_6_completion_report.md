@@ -13,7 +13,7 @@
 Phase 7B.6 has successfully transitioned the project frontend from a conceptual architecture poster into an authentic, production-style **Cybersecurity Security Operations Center (SOC) IDS Operations Console**.
 
 The redesigned console delivers a credible operational user experience organized into six modular workspaces:
-1. **Operations Dashboard:** System telemetry, high-level operational status, session aggregates, and recent security events.
+1. **Operations Dashboard:** Current backend status, high-level operational indicators, session aggregates, and recent security events.
 2. **Intrusion Detection Workbench:** UNSW-NB15 flow presets, JSON feature editing, hierarchical inference execution, Stage 1 binary IDS verdict, conditional Stage 2 multiclass attack classification, and human-in-the-loop response advisory.
 3. **Model Security & Provenance:** Side-by-side local vs. on-chain SHA-256 hash comparison, model verification trigger, and fail-closed operational state gating.
 4. **Security Testing Facility:** Ephemeral model replacement simulation, unregistered candidate rejection, and model restoration in segregated temporary environments without altering canonical artifacts.
@@ -25,7 +25,7 @@ The redesigned console delivers a credible operational user experience organized
 ## 2. Deliverables Summary
 
 ### 2.1 Frontend Component Implementations
-- [`frontend/src/components/Header.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/components/Header.jsx): High-density SOC header with operational provenance badge (`● VERIFIED`), EVM status (`Blockchain: CONNECTED`), model gate status (`Model: LOADED`), and instant telemetry refresh.
+- [`frontend/src/components/Header.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/components/Header.jsx): High-density SOC header with operational provenance badge (`● VERIFIED`), EVM status (`Blockchain: CONNECTED`), model gate status (`Model: LOADED`), and instant status refresh.
 - [`frontend/src/components/Navigation.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/components/Navigation.jsx): 6-tab operational navigation bar supporting `dashboard`, `detection`, `model-security`, `security-testing`, `audit`, and `research-results`.
 - [`frontend/src/components/Dashboard.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/components/Dashboard.jsx): Default landing view featuring a 4-card status matrix, audit-derived session metrics, and recent security events table with navigation shortcuts.
 - [`frontend/src/components/IntrusionDetection.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/components/IntrusionDetection.jsx): Primary network-flow analysis workbench with authentic UNSW-NB15 presets, JSON feature editor, feature specification drawer, hierarchical inference execution, Stage 1 result card, conditional Stage 2 result card, operator advisory response panel, and fail-closed error alerts.
@@ -33,7 +33,7 @@ The redesigned console delivers a credible operational user experience organized
 - [`frontend/src/components/SecurityTesting.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/components/SecurityTesting.jsx): Controlled security testing facility with ephemeral model replacement attack test (`POST /demo/model-replacement`), unregistered version test (`POST /demo/unregistered-version`), model restoration action (`POST /demo/model-replacement/reset`), step-by-step audit timeline, and safety disclaimers.
 - [`frontend/src/components/AuditLog.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/components/AuditLog.jsx): Filterable operational audit log table with event type filtering, pagination, JSON modal drawer, and SQLite storage boundary notice.
 - [`frontend/src/components/ResearchResults.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/components/ResearchResults.jsx): Authoritative empirical results view presenting Stage 1 and Stage 2 evaluation metrics, Fuzzers cascade error analysis, latency benchmarks, and session analytics.
-- [`frontend/src/App.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/App.jsx): Root console shell coordinating views, managing global telemetry, and hosting operational disclosures.
+- [`frontend/src/App.jsx`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/App.jsx): Root console shell coordinating views, managing global operational state, and hosting operational disclosures.
 - [`frontend/src/index.css`](file:///c:/Users/Shaik%20Afrid/OneDrive/Desktop/major_project/frontend/src/index.css): Comprehensive dark cybersecurity theme with terminal cards, status pills, high-contrast badges, and responsive grids.
 
 ### 2.2 Test Suites & Verification

@@ -22,8 +22,8 @@ The redesign was strictly confined to presentation and user interaction layers. 
 |---|---|---|---|---|:---:|
 | 1 | Stage 1 Artifact SHA-256 | SHA-256 hash of `ml/artifacts/ids_model.joblib` | `dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5` | `dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5` | **PASS** |
 | 2 | Stage 2 Artifact SHA-256 | SHA-256 hash of `ml/artifacts/attack_classifier.joblib` | `596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208` | `596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208` | **PASS** |
-| 3 | Smart Contract Immutability | Hash of `contracts/ModelRegistry.sol` | Identical to Phase 7B.5.2 | Untouched | **PASS** |
-| 4 | On-Chain Registration Integrity | Contract state query `getModelDetails("iot-ids-rf", "v1.0.0")` | Registered hash equals Stage 1 digest | Verified on Ganache node | **PASS** |
+| 3 | Smart Contract Source Stability | ModelRegistry.sol source and contract implementation were not modified during this frontend phase | Identical to Phase 7B.5.2 | Untouched | **PASS** |
+| 4 | On-Chain Registration Integrity | Contract state query `getModelRecord("iot-ids-rf", "v1.0.0")` / `getModelHash("iot-ids-rf", "v1.0.0")` | Registered hash equals Stage 1 digest | Verified on Ganache node | **PASS** |
 | 5 | Per-Flow Blockchain Queries | `/predict/hierarchical` code inspection & response check | `per_flow_blockchain_queries == 0` | `0` queries observed | **PASS** |
 | 6 | Fail-Closed Gating | Response when model unverified or tampered | HTTP 503 / UI Lockout | Enforced fail-closed | **PASS** |
 | 7 | Advisory Scope Enforcement | Response recommendations schema check | `is_advisory=True`, `requires_human_approval=True`, `automated_remediation_enabled=False` | Strictly enforced | **PASS** |
@@ -50,9 +50,9 @@ Rather than obscuring the lower recall on specific subcategories, the new `Resea
 
 ### 3.4 Decoupled Blockchain Architecture
 The user interface explicitly informs the operator of the system's performance characteristics:
-- Model provenance verification occurs once at startup or on operator request (pre-load gate mean $20.31\text{ ms}$ on local EVM).
+- Model provenance verification occurs during model initialization/pre-load or when explicitly requested by the operator (pre-load gate mean $20.31\text{ ms}$ on local EVM). The verification gate runs before authorized model loading; successful verification permits the model to be loaded for inference.
 - Per-flow network traffic evaluation occurs purely off-chain at native scikit-learn speeds (mean $32.06\text{ ms}$ hierarchical conditional inference on CPU).
-- Zero blockchain transactions are generated per network flow, preventing network latency degradation and EVM gas exhaustion.
+- No per-flow blockchain queries were observed in the evaluated `/predict/hierarchical` inference path. Blockchain interaction remains outside the measured per-flow inference path. This demonstrates the implemented architectural separation; it does not constitute a universal guarantee about latency or blockchain performance.
 
 ---
 

@@ -19,9 +19,9 @@ $$\text{\textbf{The frontend is an operational interface to the existing IDS sys
 
 The implementation adheres to strict research-integrity constraints:
 1. **Zero backend architectural restructuring:** The frontend interfaces directly with the established FastAPI backend endpoints without modifying machine learning models, smart contracts, or hashing pipelines.
-2. **Authentic data representation:** No synthetic or mock telemetry is fabricated. All metrics, counts, and states are dynamically derived from live backend health, model status, and the SQLite audit log.
+2. **Authentic data representation:** No synthetic or mock metrics are fabricated. All metrics, counts, and states are dynamically derived from live backend health, model status, and the SQLite audit log.
 3. **Preserved research boundaries:** Advisory recommendations strictly enforce `is_advisory: true`, `requires_human_approval: true`, and `automated_remediation_enabled: false`. No automated network blocking or autonomous mitigation is simulated.
-4. **Decoupled execution plane:** The console prominently affirms that per-flow blockchain transactions are zero ($0$), maintaining low-latency inference throughput while preserving on-chain integrity verification at model load time.
+4. **Decoupled execution plane:** The console prominently affirms that no per-flow blockchain queries were observed in the evaluated `/predict/hierarchical` inference path. Blockchain interaction remains outside the measured per-flow inference path while preserving on-chain integrity verification at model load time. This demonstrates the implemented architectural separation; it does not constitute a universal guarantee about latency or blockchain performance.
 
 ---
 
@@ -31,7 +31,7 @@ The redesigned frontend organizes system capabilities into six distinct, task-or
 
 ```mermaid
 graph TD
-    App[App Shell & Header Telemetry] --> Dash[1. Operations Dashboard]
+    App[App Shell & Header Status Indicators] --> Dash[1. Operations Dashboard]
     App --> Det[2. Intrusion Detection Workbench]
     App --> MSec[3. Model Security & Provenance]
     App --> STest[4. Security Testing Facility]
@@ -43,11 +43,11 @@ graph TD
 The console header provides immediate, high-density operational situational awareness:
 - **System Branding:** `Blockchain-Backed IoT Intrusion Detection` with `OPERATIONS CONSOLE` tag.
 - **Active Model Identifier:** Display of currently loaded model (`iot-ids-rf:v1.0.0`).
-- **Telemetry Indicators:**
+- **Operational Status Indicators:**
   - `● VERIFIED` / `⚠️ HASH_MISMATCH` badge linked to on-chain cryptographic provenance.
   - `Blockchain: CONNECTED` indicator confirming Ethereum EVM node connectivity.
   - `Model: LOADED` gate indicator reflecting inference engine memory readiness.
-  - `↻ Refresh` button for instantaneous polling of backend telemetry.
+  - `↻ Refresh` button for instantaneous polling of current backend status.
 
 ### 2.2 Operations Dashboard (Landing View)
 Serving as the default entry point (`/dashboard`), this view presents:
@@ -91,14 +91,14 @@ A local operational event log interface:
 - **Audit Table:** Filterable by event type (`All`, `PREDICTION`, `VERIFICATION`, `MODEL_LOADED`, `SECURITY_ALERT`, `MODEL_REPLACEMENT_DETECTED`).
 - **Pagination Controls:** Responsive pagination supporting browsing of complete session audit history.
 - **Payload Inspection Modal:** Clickable event inspection displaying exact JSON audit records.
-- **Storage Boundary Notice:** Explicit disclaimer clarifying that audit records are securely stored in the local operational SQLite database (`backend/data/audit.db`) rather than on-chain, preventing gas exhaustion and feature leakage.
+- **Storage Boundary Notice:** Explicit disclaimer clarifying that audit records are securely stored in the local operational SQLite database (`backend/data/audit.db`) rather than on-chain, maintaining an architectural separation between high-frequency local logging and on-chain reference registries while preventing raw feature exposure.
 
 ### 2.7 Empirical Research Results
 A comprehensive presentation of authoritative experimental findings:
 - **Stage 1 Binary Performance:** Random Forest accuracy ($90.30\%$), precision ($98.78\%$), recall ($86.82\%$), and binary F1 score ($92.41\%$).
 - **Stage 2 Multiclass Performance:** Selected standalone classifier accuracy ($76.18\%$), standalone Macro F1 ($53.06\%$), operational hierarchical routed Macro F1 ($51.43\%$), and operational routed Balanced Accuracy ($51.20\%$).
 - **Fuzzers Cascade Bottleneck Disclosure:** Transparent disclosure that Stage 1 routed 4,664 of 18,184 Fuzzer flows to Stage 2 ($25.65\%$), leaving 13,520 Fuzzer flows as false negatives ($85.95\%$ of all Stage 1 false negatives were Fuzzers), with an operational hierarchical E2E Fuzzers recall of $14.83\%$.
-- **EVM Control Plane Latency & Zero Overhead:** Profiling data confirming SHA + blockchain pre-load verification gate latency (mean $20.31\text{ ms}$ in the evaluated local environment; hierarchical conditional inference mean $32.06\text{ ms}$ on CPU) and proving per-flow blockchain transactions equal zero ($0$).
+- **Control Plane vs Inference Latency:** Profiling data confirming SHA + blockchain pre-load verification gate latency (mean $20.31\text{ ms}$ in the evaluated local EVM testbed; hierarchical conditional inference mean $32.06\text{ ms}$ on local CPU) and confirming that no per-flow blockchain queries occur during inference.
 - **Session Metrics:** Dynamic analytics tracking total recorded classifications, attack ratios, and average inference latency.
 
 ---
@@ -122,7 +122,7 @@ The 20 integration tests in `architecture_workflow.test.jsx` rigorously validate
 1. Default landing page renders the Operations Dashboard.
 2. 4-card status metrics render correctly.
 3. Navigation switching between all 6 console tabs.
-4. Header telemetry displays verified model and connection status.
+4. Header indicators display verified model and connection status.
 5. Intrusion detection flow preset loading.
 6. Benign traffic bypasses Stage 2.
 7. Attack traffic conditionally routes to Stage 2 multiclass classification.
