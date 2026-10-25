@@ -1,0 +1,280 @@
+{
+  "metadata": {
+    "phase": "Phase 7B.4",
+    "title": "Advisory Attack Response Recommendation Layer Evaluation",
+    "timestamp_utc": "2026-10-25T07:07:45.613889+00:00",
+    "python_version": "3.12.4 (tags/v3.12.4:8e8a4ba, Jun  6 2024, 19:30:16) [MSC v.1940 64 bit (AMD64)]",
+    "architecture": "Hierarchical Two-Stage Classification with Downstream Advisory Response Mapping"
+  },
+  "provenance": {
+    "stage1_model_sha256": "dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5",
+    "stage2_model_sha256": "596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208",
+    "training_dataset_sha256": "734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559",
+    "testing_dataset_sha256": "bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa"
+  },
+  "taxonomy_evaluation": {
+    "total_supported_categories": 10,
+    "attack_categories_count": 9,
+    "has_normal": true,
+    "schema_fields_verified": [
+      "category",
+      "severity",
+      "recommended_action",
+      "investigation_priority",
+      "operator_guidance",
+      "rationale",
+      "limitations",
+      "is_advisory",
+      "requires_human_approval",
+      "automated_remediation_enabled"
+    ],
+    "determinism_verified": true,
+    "unknown_category_rejection_verified": true,
+    "safety_violations_count": 0
+  },
+  "taxonomy": {
+    "Normal": {
+      "category": "Normal",
+      "severity": "Informational",
+      "investigation_priority": "Low",
+      "recommended_action": "No immediate defensive intervention required. Maintain continuous telemetry collection and routine anomaly-detection baseline updates.",
+      "operator_guidance": "Continue standard baseline monitoring. Audit periodic false-negative rates and ensure logging infrastructure operates without dropped packets.",
+      "rationale": "Flow statistical features correspond to established non-malicious baseline communication profiles within the evaluated network topology.",
+      "limitations": "Advisory classification. Normal attribution does not guarantee the complete absence of subtle, stealthy, or novel evasion techniques (Stage 1 false-negative rate is 13.18%).",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    },
+    "Analysis": {
+      "category": "Analysis",
+      "severity": "Medium",
+      "investigation_priority": "Medium",
+      "recommended_action": "Inspect unusual protocol and port-probing behavior. Correlate with firewall and DNS query telemetry, and review potential reconnaissance or port-scan indicators.",
+      "operator_guidance": "Review originating host IP connection patterns, port sweep frequencies, protocol header anomalies, and correlation with known vulnerability-scanning tools.",
+      "rationale": "Analysis-classified traffic typically reflects automated vulnerability scanning, port probing, or protocol fingerprinting preceding active intrusion attempts.",
+      "limitations": "Advisory only. Stage 2 multiclass classification demonstrates acute minority-class limitations for Analysis (2.95% end-to-end recall). Misclassifications with benign administration traffic or other probe types are frequent.",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    },
+    "Backdoor": {
+      "category": "Backdoor",
+      "severity": "High",
+      "investigation_priority": "High",
+      "recommended_action": "Investigate unexpected persistence or remote-access mechanisms on the target endpoint. Review authentication logs, unusual process creation, and recent system configuration changes.",
+      "operator_guidance": "Examine endpoint process trees, listening sockets, outbound reverse-shell connections, and user logon records for the destination host.",
+      "rationale": "Backdoor traffic characteristics indicate covert remote administrative channels, reverse TCP tunnels, or unauthorized persistent access mechanisms.",
+      "limitations": "Advisory only. Stage 2 exhibits substantial confusion between Backdoor instances and DoS/Exploits (11.57% end-to-end recall). Manual endpoint telemetry verification is required prior to concluding host compromise.",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    },
+    "DoS": {
+      "category": "DoS",
+      "severity": "High",
+      "investigation_priority": "High",
+      "recommended_action": "Inspect traffic volume and connection-rate anomalies. Consider operator-approved rate limiting, connection throttling, or upstream packet filtering, while actively monitoring service availability.",
+      "operator_guidance": "Review source IP distribution, TCP SYN or UDP flood characteristics, interface queue depths, and application response latencies on the target server.",
+      "rationale": "Denial-of-Service flow characteristics reflect high-frequency packet transmission aimed at exhaustively consuming network bandwidth, socket tables, or CPU resources.",
+      "limitations": "Advisory only. Legitimate traffic spikes (flash crowds) or transient network congestion can match DoS statistical signatures. Does not independently prove malicious intent.",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    },
+    "Exploits": {
+      "category": "Exploits",
+      "severity": "High",
+      "investigation_priority": "High",
+      "recommended_action": "Inspect targeted application and daemon service logs. Review known vulnerability and patch status, and investigate suspicious payload or malformed request patterns.",
+      "operator_guidance": "Correlate payload signatures with CVE advisories, inspect web server and database query logs for injection or buffer-overflow attempts, and verify application integrity.",
+      "rationale": "Exploit traffic exhibits structural or payload traits consistent with weaponized attempts to compromise known software vulnerabilities in exposed network services.",
+      "limitations": "Advisory only. Does not confirm that an exploit payload succeeded or that the target service was vulnerable. Stage 2 achieved 53.78% end-to-end recall on Exploits.",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    },
+    "Fuzzers": {
+      "category": "Fuzzers",
+      "severity": "Medium",
+      "investigation_priority": "Medium",
+      "recommended_action": "Inspect malformed or out-of-specification request patterns. Review application parser error logs, and consider input-validation hardening and rate-limiting controls.",
+      "operator_guidance": "Check application crash telemetry, exception logs, protocol syntax violations, and high-frequency parameter mutation sequences directed at input handlers.",
+      "rationale": "Fuzzing involves injecting semi-random, boundary-condition, or malformed data streams to trigger software faults or identify unhandled parsing exceptions.",
+      "limitations": "Advisory only. Stage 1 has a severe false-negative filtering bottleneck on Fuzzers (74.35% missed at Stage 1, yielding 14.83% end-to-end recall). Flows reaching this recommendation represent only a fraction of true fuzzing attempts.",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    },
+    "Generic": {
+      "category": "Generic",
+      "severity": "Medium",
+      "investigation_priority": "Medium",
+      "recommended_action": "Perform secondary incident triage. Correlate network flow evidence with endpoint and security information logs, and investigate source and destination operational context.",
+      "operator_guidance": "Review cryptographic protocol consistency, destination IP reputation scores, and traffic volume against baseline profiles to identify the specific threat vector.",
+      "rationale": "Generic classifications capture cryptographic block-cipher collisions and generalized signature matches across broad attack templates.",
+      "limitations": "Advisory only. Generic serves as a broad umbrella classification (98.06% end-to-end recall), meaning secondary investigation is necessary to determine the precise underlying attack type.",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    },
+    "Reconnaissance": {
+      "category": "Reconnaissance",
+      "severity": "Medium",
+      "investigation_priority": "Medium",
+      "recommended_action": "Inspect scanning and sweep activity. Review source IP behavior across multiple destination ports and services, and evaluate network perimeter monitoring policies.",
+      "operator_guidance": "Analyze horizontal port sweeps, ICMP ping sweeps, banner grabbing attempts, and firewall drop counters associated with the originating IP address.",
+      "rationale": "Reconnaissance traffic seeks to map network topology, active host addresses, and listening service versions to prepare for targeted secondary intrusion attempts.",
+      "limitations": "Advisory only. Authorized network administration tasks, internal asset inventory scanners, and monitoring probes produce flow profiles identical to malicious reconnaissance.",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    },
+    "Shellcode": {
+      "category": "Shellcode",
+      "severity": "Critical",
+      "investigation_priority": "Critical",
+      "recommended_action": "Inspect endpoint process, memory, and host-level security telemetry. Investigate possible code-execution payloads, and review affected service binary and memory integrity.",
+      "operator_guidance": "Examine memory execution logs, abnormal child processes spawned by network services, in-memory payload staging, and outbound command-and-control beacons.",
+      "rationale": "Shellcode traffic carries compact machine-code instructions intended to hijack program control flow and spawn an interactive command shell upon exploitation.",
+      "limitations": "Advisory only. Shellcode achieved 63.46% end-to-end recall in the benchmark evaluation. The recommendation does not confirm that memory execution occurred or that the target host was successfully compromised.",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    },
+    "Worms": {
+      "category": "Worms",
+      "severity": "Critical",
+      "investigation_priority": "Critical",
+      "recommended_action": "Investigate possible lateral propagation across network nodes. Inspect east-west communication patterns, and evaluate network segmentation and containment options with human authorization.",
+      "operator_guidance": "Audit internal lateral traffic for uniform scanning and payload replication patterns, inspect adjacent subnet activity, and verify endpoint patch levels for wormable vulnerabilities.",
+      "rationale": "Worms self-propagate autonomously across network vulnerabilities, posing immediate compounding risk to interconnected IoT devices and internal subnets.",
+      "limitations": "Advisory only. The underlying UNSW-NB15 training distribution contained only 130 Worms instances, creating high classification uncertainty (15.38% end-to-end recall). Requires rapid human validation.",
+      "is_advisory": true,
+      "requires_human_approval": true,
+      "automated_remediation_enabled": false
+    }
+  },
+  "empirical_recommendation_volume": {
+    "total_test_flows": 175341,
+    "recommendation_distribution": {
+      "Normal": {
+        "severity": "Informational",
+        "investigation_priority": "Low",
+        "recommendation_count": 70448,
+        "percentage_of_test_flows": 40.178,
+        "ground_truth_support": 56000,
+        "correctly_attributed_recommendations": 54718,
+        "mismatched_recommendations": 15730
+      },
+      "Analysis": {
+        "severity": "Medium",
+        "investigation_priority": "Medium",
+        "recommendation_count": 1171,
+        "percentage_of_test_flows": 0.668,
+        "ground_truth_support": 2000,
+        "correctly_attributed_recommendations": 59,
+        "mismatched_recommendations": 1112
+      },
+      "Backdoor": {
+        "severity": "High",
+        "investigation_priority": "High",
+        "recommendation_count": 2952,
+        "percentage_of_test_flows": 1.684,
+        "ground_truth_support": 1746,
+        "correctly_attributed_recommendations": 202,
+        "mismatched_recommendations": 2750
+      },
+      "DoS": {
+        "severity": "High",
+        "investigation_priority": "High",
+        "recommendation_count": 24538,
+        "percentage_of_test_flows": 13.994,
+        "ground_truth_support": 12264,
+        "correctly_attributed_recommendations": 8284,
+        "mismatched_recommendations": 16254
+      },
+      "Exploits": {
+        "severity": "High",
+        "investigation_priority": "High",
+        "recommendation_count": 21725,
+        "percentage_of_test_flows": 12.39,
+        "ground_truth_support": 33393,
+        "correctly_attributed_recommendations": 17958,
+        "mismatched_recommendations": 3767
+      },
+      "Fuzzers": {
+        "severity": "Medium",
+        "investigation_priority": "Medium",
+        "recommendation_count": 4242,
+        "percentage_of_test_flows": 2.419,
+        "ground_truth_support": 18184,
+        "correctly_attributed_recommendations": 2696,
+        "mismatched_recommendations": 1546
+      },
+      "Generic": {
+        "severity": "Medium",
+        "investigation_priority": "Medium",
+        "recommendation_count": 40344,
+        "percentage_of_test_flows": 23.009,
+        "ground_truth_support": 40000,
+        "correctly_attributed_recommendations": 39223,
+        "mismatched_recommendations": 1121
+      },
+      "Reconnaissance": {
+        "severity": "Medium",
+        "investigation_priority": "Medium",
+        "recommendation_count": 8698,
+        "percentage_of_test_flows": 4.961,
+        "ground_truth_support": 10491,
+        "correctly_attributed_recommendations": 7709,
+        "mismatched_recommendations": 989
+      },
+      "Shellcode": {
+        "severity": "Critical",
+        "investigation_priority": "Critical",
+        "recommendation_count": 1189,
+        "percentage_of_test_flows": 0.678,
+        "ground_truth_support": 1133,
+        "correctly_attributed_recommendations": 719,
+        "mismatched_recommendations": 470
+      },
+      "Worms": {
+        "severity": "Critical",
+        "investigation_priority": "Critical",
+        "recommendation_count": 34,
+        "percentage_of_test_flows": 0.019,
+        "ground_truth_support": 130,
+        "correctly_attributed_recommendations": 20,
+        "mismatched_recommendations": 14
+      }
+    },
+    "error_propagation_impact": {
+      "true_attacks_receiving_normal_guidance": 15730,
+      "true_attacks_receiving_normal_guidance_pct": 13.18,
+      "true_benign_receiving_attack_guidance": 1282,
+      "true_benign_receiving_attack_guidance_pct": 2.29,
+      "true_attacks_receiving_mismatched_attack_guidance": 26741,
+      "true_attacks_receiving_mismatched_attack_guidance_pct": 22.41,
+      "true_attacks_receiving_correct_category_guidance": 76870,
+      "true_attacks_receiving_correct_category_guidance_pct": 64.41
+    }
+  },
+  "figures": {
+    "figure14": "reports\\figures\\figure14_attack_response_taxonomy.png"
+  },
+  "safety_and_boundaries": {
+    "automated_remediation_implemented": false,
+    "autonomous_defense_claimed": false,
+    "per_flow_blockchain_calls": 0,
+    "model_artifacts_modified": false,
+    "datasets_modified": false,
+    "statement": "The evaluated advisory response recommendation layer maps predicted categories to static, structured guidance objects. It implements zero automated remediation, executes zero system or firewall commands, and introduces zero per-flow blockchain calls."
+  },
+  "limitations": [
+    "Recommendation quality is strictly bounded by upstream classification accuracy.",
+    "15,730 true attack flows (primarily Fuzzers) misclassified as Normal receive benign monitoring guidance.",
+    "1,282 true benign flows misclassified by Stage 1 receive false-alarm attack investigation guidance.",
+    "Minority classes (Analysis: 2.95% recall, Worms: 15.38% recall) produce limited and uncertain recommendations.",
+    "Advisory nature requires manual human validation prior to initiating any defensive intervention."
+  ]
+}
