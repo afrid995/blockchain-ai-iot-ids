@@ -96,6 +96,6 @@ Neither classifier was retrained, regenerated, or modified. Zero bytes of benchm
 
 - **No Automated Remediation:** Zero active defense, connection termination, or firewall rules were implemented.
 - **No Performance Inflation:** The report explicitly disclaims that the recommendation layer improves IDS classification accuracy or prevents attacks.
-- **Decoupled Architecture:** Zero per-flow blockchain calls were introduced.
+- **Decoupled Architecture:** The evaluated recommendation layer performs zero per-flow blockchain registry lookups and does not alter model artifacts or API endpoints. Zero per-flow blockchain calls were introduced.
 - **Self-Reference Rule:** In accordance with repository conventions, the final commit SHA is omitted from this file and reported externally in the completion response.
 - **Scope Boundary:** Phase 7B.4 is strictly complete. Phase 7B.5 has **NOT** been started.

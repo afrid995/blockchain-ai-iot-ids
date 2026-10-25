@@ -12,7 +12,7 @@
 
 The objective of Phase 7B.4 is to design, implement, and evaluate a deterministic **advisory response recommendation layer** that maps output classifications from the hierarchical intrusion detection system (Stage 1 Binary IDS + Stage 2 Multiclass Attack Classifier) into structured mitigation guidance.
 
-This layer bridges raw predictive classifications (`Normal` or one of nine attack categories) with actionable operator guidance without introducing autonomous defensive actions, without altering firewall or system states, and without incurring per-flow blockchain overhead.
+This layer bridges raw predictive classifications (`Normal` or one of nine attack categories) with actionable operator guidance without introducing autonomous defensive actions, without altering firewall or system states, and without performing per-flow blockchain lookups.
 
 ---
 
@@ -59,7 +59,7 @@ Stage 1 Binary IDS (ids_model.joblib)
 
 ### Architectural Properties:
 - **Decoupled Execution:** The recommendation layer is implemented as a pure, stateless mapping function in `core/response_recommendations.py`.
-- **Zero Blockchain Overhead:** Per-flow blockchain calls remain verified at **0**.
+- **No Per-Flow Blockchain Lookup:** Per-flow blockchain calls remain verified at **0**.
 - **Human-in-the-Loop Constraint:** Every recommendation mandates human review (`requires_human_approval = True`) and explicitly disclaims automated mitigation (`automated_remediation_enabled = False`).
 
 ---
@@ -217,4 +217,4 @@ Key findings include:
 - **Complete and Deterministic Taxonomy:** All 10 supported categories (Normal + 9 attack types) map deterministically to structured guidance adhering to a 10-field schema.
 - **Safety Enforcement:** The layer contains zero executable command strings, disclaims autonomous mitigation, and mandates human review for all recommendations.
 - **Transparent Error Context:** The analysis demonstrated that downstream recommendation quality is bounded by upstream classification accuracy, specifically highlighting the impact of Stage 1 false negatives (15,730 missed attacks) and Stage 2 category confusion.
-- **Zero Runtime Overhead:** Operates with zero per-flow blockchain lookups and zero alterations to model artifacts or API endpoints.
+- **No Per-Flow Blockchain Lookup:** The evaluated recommendation layer performs zero per-flow blockchain registry lookups and does not alter the model artifacts or API endpoints.
