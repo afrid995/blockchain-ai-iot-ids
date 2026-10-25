@@ -28,7 +28,7 @@ The redesign was strictly confined to presentation and user interaction layers. 
 | 6 | Fail-Closed Gating | Response when model unverified or tampered | HTTP 503 / UI Lockout | Enforced fail-closed | **PASS** |
 | 7 | Advisory Scope Enforcement | Response recommendations schema check | `is_advisory=True`, `requires_human_approval=True`, `automated_remediation_enabled=False` | Strictly enforced | **PASS** |
 | 8 | Feature Vector Confidentiality | Inspection of `audit_events` payload storage | No raw 42-feature dictionary stored in database | Feature summary/hash only | **PASS** |
-| 9 | Empirical Performance Disclosure | Frontend Research Results comparison with Phase 7B benchmarks | RF: 90.30% Acc / Multiclass: 51.43% Macro F1 / Fuzzers: 19.06% | Accurately displayed | **PASS** |
+| 9 | Empirical Performance Disclosure | Frontend Research Results comparison with Phase 7B benchmarks | RF: 90.30% Acc, 92.41% F1 / Stage 2: 76.18% Acc, 53.06% Macro F1 / Hierarchical: 51.43% Macro F1 / Fuzzers E2E: 14.83% | Accurately displayed | **PASS** |
 | 10 | Security Simulator Ephemerality | Disk inspection before and after attack simulation | Temporary directory only; zero changes to canonical artifact | Canonical file byte-exact | **PASS** |
 
 ---
@@ -43,14 +43,15 @@ The console explicitly labels all defensive recommendations as operator advisori
 
 ### 3.3 Transparent Cascade Bottleneck Disclosure
 Rather than obscuring the lower recall on specific subcategories, the new `Research Results` console view prominently presents the **Fuzzers cascade bottleneck analysis**:
-- Explains why Stage 1 Random Forest detected only $19.06\%$ of Fuzzers flows due to behavioral overlap with benign traffic patterns.
-- Notes that of the flows that reached Stage 2, $92.68\%$ were correctly identified as Fuzzers.
+- Explains that Stage 1 routed 4,664 of 18,184 Fuzzer flows to Stage 2 ($25.65\%$), leaving 13,520 Fuzzer flows as Stage 1 false negatives.
+- Notes that $85.95\%$ of all Stage 1 false negatives were Fuzzers due to behavioral overlap with benign traffic patterns.
+- Reports that across the complete hierarchy, the operational hierarchical E2E recall for Fuzzers was $14.83\%$.
 - Highlights this trade-off as a crucial finding in IoT intrusion detection research rather than an error to hide.
 
 ### 3.4 Decoupled Blockchain Architecture
 The user interface explicitly informs the operator of the system's performance characteristics:
-- Model provenance verification occurs once at startup or on operator request ($\approx 32\text{ ms}$).
-- Per-flow network traffic evaluation occurs purely off-chain at native scikit-learn speeds ($\approx 20\text{--}40\text{ ms}$).
+- Model provenance verification occurs once at startup or on operator request (pre-load gate mean $20.31\text{ ms}$ on local EVM).
+- Per-flow network traffic evaluation occurs purely off-chain at native scikit-learn speeds (mean $32.06\text{ ms}$ hierarchical conditional inference on CPU).
 - Zero blockchain transactions are generated per network flow, preventing network latency degradation and EVM gas exhaustion.
 
 ---

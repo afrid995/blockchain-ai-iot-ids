@@ -907,7 +907,7 @@ export function ArchitectureDemo({
             <div className="stage-title-wrap">
               <h3 className="stage-title">Execution Lifecycle Audit Trail</h3>
               <p className="stage-subtitle">
-                Immutable operational audit log recorded in SQLite (raw 42-feature vectors strictly excluded).
+                Local operational audit log recorded in SQLite (raw 42-feature vectors strictly excluded).
               </p>
             </div>
           </div>

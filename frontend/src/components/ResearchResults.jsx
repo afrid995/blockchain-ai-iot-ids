@@ -4,7 +4,7 @@ import { AnalyticsSection } from './AnalyticsSection';
 /**
  * Page 6 — Research Results:
  * Empirical benchmark evidence from experimental evaluations on UNSW-NB15.
- * Clearly separated from real-time operational IDS console workflows.
+ * Clearly separated from session-based operational IDS console workflows.
  */
 export function ResearchResults({
   events = [],
@@ -111,6 +111,16 @@ export function ResearchResults({
             </thead>
             <tbody>
               <tr>
+                <td>Standalone Accuracy</td>
+                <td className="font-mono text-success" style={{ textAlign: 'right' }}>76.18%</td>
+                <td className="font-xs text-muted">Selected balanced classifier (Phase 7B.1)</td>
+              </tr>
+              <tr>
+                <td>Standalone Weighted F1</td>
+                <td className="font-mono text-success" style={{ textAlign: 'right' }}>77.50%</td>
+                <td className="font-xs text-muted">Attack-only evaluation subset</td>
+              </tr>
+              <tr>
                 <td>Oracle Attack Macro F1</td>
                 <td className="font-mono" style={{ textAlign: 'right' }}>53.06%</td>
                 <td className="font-xs text-muted">Isolated attack subset test</td>
@@ -123,7 +133,7 @@ export function ResearchResults({
               <tr>
                 <td>Hierarchical Routed Macro F1</td>
                 <td className="font-mono text-warning" style={{ textAlign: 'right' }}>51.43%</td>
-                <td className="font-xs text-muted">Operational Stage 1 $\to$ Stage 2 pipeline</td>
+                <td className="font-xs text-muted">Operational Stage 1 &rarr; Stage 2 pipeline</td>
               </tr>
               <tr>
                 <td>Hierarchical Balanced Accuracy</td>
@@ -153,25 +163,25 @@ export function ResearchResults({
       {/* Provenance Evaluation & Latency Profiling */}
       <div className="console-card" style={{ marginBottom: '1.5rem' }}>
         <div className="card-header">
-          <h3 className="card-title">Provenance Verification Latency Profiling</h3>
-          <span className="badge badge-secondary">Pre-Load Gating vs Ingestion</span>
+          <h3 className="card-title">Provenance Verification &amp; Inference Latency Profiling</h3>
+          <span className="badge badge-secondary">Measured Benchmarks (Local CPU)</span>
         </div>
 
         <div className="summary-metrics-row">
           <div className="summary-metric-box">
             <span className="summary-label">SHA-256 HASHING</span>
-            <span className="summary-number font-mono text-success">1.09 ms</span>
-            <span className="summary-subtext">Direct artifact digest</span>
+            <span className="summary-number font-mono text-success">5.65 ms</span>
+            <span className="summary-subtext">Direct artifact digest (N=30)</span>
           </div>
           <div className="summary-metric-box">
-            <span className="summary-label">ON-CHAIN VERIFICATION</span>
-            <span className="summary-number font-mono text-info">15.65 ms</span>
-            <span className="summary-subtext">ModelRegistry.sol read query</span>
+            <span className="summary-label">PRE-LOAD VERIFICATION GATE</span>
+            <span className="summary-number font-mono text-info">20.31 ms</span>
+            <span className="summary-subtext">SHA + ModelRegistry read (N=30)</span>
           </div>
           <div className="summary-metric-box">
-            <span className="summary-label">PRE-LOAD TOTAL GATE</span>
-            <span className="summary-number font-mono">70.98 ms</span>
-            <span className="summary-subtext">Startup / pre-load gating only</span>
+            <span className="summary-label">HIERARCHICAL INFERENCE</span>
+            <span className="summary-number font-mono">32.06 ms</span>
+            <span className="summary-subtext">Mean conditional inference (N=100)</span>
           </div>
           <div className="summary-metric-box">
             <span className="summary-label">PER-FLOW ON-CHAIN QUERIES</span>
@@ -181,7 +191,7 @@ export function ResearchResults({
         </div>
 
         <div className="font-xs text-muted" style={{ marginTop: '0.75rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem' }}>
-          *Note: Blockchain verification latency evaluated on local Ganache / EthereumTester EVM testbed. Measurements do not reflect public Ethereum mainnet gas or transaction congestion.
+          *Note: Provenance verification latency (mean 20.31 ms) evaluated on local Ganache / EthereumTester EVM testbed. Hierarchical inference latency (mean 32.06 ms; Stage 1 alone 21.04 ms, Stage 2 alone 23.09 ms) evaluated on local CPU. Measurements do not reflect public Ethereum mainnet gas or transaction congestion.
         </div>
       </div>
 
@@ -193,7 +203,7 @@ export function ResearchResults({
         </div>
         <div className="cascade-summary-text" style={{ fontSize: '0.85rem', lineHeight: '1.6', color: '#cbd5e1' }}>
           <p style={{ marginBottom: '0.5rem' }}>
-            <strong>The Fuzzers Bottleneck:</strong> Stage 1 misclassifies 13,520 out of 18,184 Fuzzers attacks (74.35%) as Benign. Across all 119,341 true attacks in the UNSW-NB15 test set, Stage 1 incurs 15,730 false negatives that exit early as "Normal" and never reach Stage 2.
+            <strong>The Fuzzers Bottleneck:</strong> Stage 1 routed 4,664 of 18,184 Fuzzer flows to Stage 2 (25.65%), leaving 13,520 Fuzzer flows as Stage 1 false negatives. In fact, 85.95% of all Stage 1 false negatives were Fuzzers. Across the complete hierarchy, the operational hierarchical E2E recall for Fuzzers was 14.83%.
           </p>
           <p style={{ marginBottom: '0.5rem' }}>
             <strong>Operational Routing Breakdown:</strong> Stage 1 evaluates 175,341 test flows, predicting 70,448 Benign and 104,893 Attack. All 104,893 predicted attacks are routed to Stage 2 (103,611 true attacks + 1,282 benign false positives).
@@ -207,7 +217,7 @@ export function ResearchResults({
         </div>
       </div>
 
-      {/* Live Operational Session Analytics */}
+      {/* Operational Session Analytics */}
       <AnalyticsSection
         events={events}
         totalEventsCount={totalEventsCount}

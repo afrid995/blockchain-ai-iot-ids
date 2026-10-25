@@ -21,7 +21,7 @@ The implementation adheres to strict research-integrity constraints:
 1. **Zero backend architectural restructuring:** The frontend interfaces directly with the established FastAPI backend endpoints without modifying machine learning models, smart contracts, or hashing pipelines.
 2. **Authentic data representation:** No synthetic or mock telemetry is fabricated. All metrics, counts, and states are dynamically derived from live backend health, model status, and the SQLite audit log.
 3. **Preserved research boundaries:** Advisory recommendations strictly enforce `is_advisory: true`, `requires_human_approval: true`, and `automated_remediation_enabled: false`. No automated network blocking or autonomous mitigation is simulated.
-4. **Decoupled execution plane:** The console prominently affirms that per-flow blockchain transactions are zero ($0$), maintaining real-time inference viability while preserving on-chain integrity verification at model load time.
+4. **Decoupled execution plane:** The console prominently affirms that per-flow blockchain transactions are zero ($0$), maintaining low-latency inference throughput while preserving on-chain integrity verification at model load time.
 
 ---
 
@@ -39,7 +39,7 @@ graph TD
     App --> Res[6. Empirical Research Results]
 ```
 
-### 2.1 Header & Real-Time Telemetry Bar
+### 2.1 Header & Operational Status Bar
 The console header provides immediate, high-density operational situational awareness:
 - **System Branding:** `Blockchain-Backed IoT Intrusion Detection` with `OPERATIONS CONSOLE` tag.
 - **Active Model Identifier:** Display of currently loaded model (`iot-ids-rf:v1.0.0`).
@@ -57,7 +57,7 @@ Serving as the default entry point (`/dashboard`), this view presents:
   - High-Severity Detections.
   - Integrity Check Count.
   - System Alert Frequency.
-- **Recent Security Events:** Live tabular stream of the most recent audit events with severity coloring, model versioning, and direct shortcut links to the Intrusion Detection workbench and Model Security views.
+- **Recent Security Events:** Tabular stream of the most recent audit events with severity coloring, model versioning, and direct shortcut links to the Intrusion Detection workbench and Model Security views.
 
 ### 2.3 Intrusion Detection Workbench
 The primary operational workspace for evaluating network traffic:
@@ -95,11 +95,11 @@ A local operational event log interface:
 
 ### 2.7 Empirical Research Results
 A comprehensive presentation of authoritative experimental findings:
-- **Stage 1 Binary Performance:** Random Forest accuracy ($90.30\%$) and binary F1 score ($91.89\%$).
-- **Stage 2 Multiclass Performance:** 9-class attack classification Macro F1 ($51.43\%$) and overall accuracy ($78.36\%$).
-- **Fuzzers Cascade Bottleneck Disclosure:** Transparent disclosure of Stage 1 Fuzzers detection rate ($19.06\%$), documenting the real-world challenge of synthetic boundary ambiguity in IoT traffic.
-- **EVM Control Plane Latency & Zero Overhead:** Profiling data confirming verification latency ($\approx 32\text{ ms}$) and proving per-flow blockchain transactions equal zero ($0$).
-- **Live Session Metrics:** Dynamic analytics tracking total live classifications, attack ratios, and average inference latency.
+- **Stage 1 Binary Performance:** Random Forest accuracy ($90.30\%$), precision ($98.78\%$), recall ($86.82\%$), and binary F1 score ($92.41\%$).
+- **Stage 2 Multiclass Performance:** Selected standalone classifier accuracy ($76.18\%$), standalone Macro F1 ($53.06\%$), operational hierarchical routed Macro F1 ($51.43\%$), and operational routed Balanced Accuracy ($51.20\%$).
+- **Fuzzers Cascade Bottleneck Disclosure:** Transparent disclosure that Stage 1 routed 4,664 of 18,184 Fuzzer flows to Stage 2 ($25.65\%$), leaving 13,520 Fuzzer flows as false negatives ($85.95\%$ of all Stage 1 false negatives were Fuzzers), with an operational hierarchical E2E Fuzzers recall of $14.83\%$.
+- **EVM Control Plane Latency & Zero Overhead:** Profiling data confirming SHA + blockchain pre-load verification gate latency (mean $20.31\text{ ms}$ in the evaluated local environment; hierarchical conditional inference mean $32.06\text{ ms}$ on CPU) and proving per-flow blockchain transactions equal zero ($0$).
+- **Session Metrics:** Dynamic analytics tracking total recorded classifications, attack ratios, and average inference latency.
 
 ---
 
@@ -136,7 +136,7 @@ The 20 integration tests in `architecture_workflow.test.jsx` rigorously validate
 15. Audit log renders event records and supports event-type filtering.
 16. Research results page displays authoritative empirical evaluation metrics.
 17. Research results page discloses Fuzzers cascade bottleneck.
-18. Live session metrics update dynamically.
+18. Session metrics update dynamically.
 19. Zero per-flow blockchain queries confirmed in UI.
 20. Raw 42-feature vectors are excluded from audit records.
 
@@ -168,4 +168,4 @@ Direct SHA-256 digests of the on-disk model artifacts confirm zero corruption:
 
 ## 4. Conclusion
 
-Phase 7B.6 achieves a complete transformation of the research frontend into an authentic, production-grade cybersecurity SOC console. Evaluators and operators can now experience the full depth of the blockchain-backed hierarchical IDS through a realistic operational interface that honors all scientific boundaries, preserves complete backward compatibility, and enforces fail-closed cryptographic security.
+Phase 7B.6 achieves a complete transformation of the research frontend into an authentic, production-style IDS Operations Console. Evaluators and operators can now experience the full depth of the blockchain-backed hierarchical IDS through a realistic operational interface that honors all scientific boundaries, preserves complete backward compatibility, and enforces fail-closed cryptographic security.

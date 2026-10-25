@@ -37,7 +37,7 @@ export function AuditLog({
         <div>
           <h2 className="console-title">Local Operational Audit Trail</h2>
           <p className="console-subtitle">
-            Immutable operational security event log recorded off-chain in local SQLite storage.
+            Operational security event log recorded off-chain in local SQLite storage.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
