@@ -155,7 +155,7 @@ export function ArchitectureWorkflow({
             <span className="node-name">STAGE 1: BINARY IDS</span>
           </div>
           <div className="node-body">
-            <div className="node-desc">LightGBM Gatekeeper</div>
+            <div className="node-desc">Random Forest Gatekeeper</div>
             <div className="node-detail">
               {stage1Result ? `Prediction: ${stage1Result.toUpperCase()}` : 'Benign vs Attack Filter'}
             </div>

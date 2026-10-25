@@ -31,7 +31,7 @@ export function ArchitectureDemo({
   const availableModels = [
     {
       id: 'iot-ids-rf',
-      name: 'Stage 1: Binary Intrusion Detector (LightGBM)',
+      name: 'Stage 1: Binary Intrusion Detection (Random Forest)',
       version: 'v1.0.0',
       algorithm: modelStatus?.algorithm || 'RandomForestClassifier',
       role: 'Binary gatekeeper (Benign vs Attack)',
@@ -91,20 +91,20 @@ export function ArchitectureDemo({
   // Evaluator Q&A Content
   const faqs = [
     {
-      q: 'What is the first step in this architecture?',
-      a: 'The first step is the Model Trust Gate: computing the SHA-256 digest of the local serialized model artifact and comparing it byte-for-byte against the immutable digest registered on-chain in ModelRegistry.sol.',
-    },
-    {
       q: 'Why use a blockchain in this IDS system?',
-      a: 'To provide a decentralized, tamper-evident control-plane reference for model provenance. If an unauthorized entity tampers with or swaps the model artifact on disk, the discrepancy is immediately detected.',
+      a: 'To provide an on-chain model provenance registry and tamper-evident audit trail. Cryptographic SHA-256 verification anchors model identity before loading.',
     },
     {
-      q: 'What happens after cryptographic verification succeeds?',
-      a: 'The verified model is authorized for memory loading. The server deserializes the model pipeline and unlocks downstream network flow inference.',
+      q: 'Is the blockchain queried for every incoming network flow?',
+      a: 'No. The evaluated architecture places blockchain registry verification in the startup/model-initialization control path rather than the per-flow inference path. Runtime instrumentation measured zero blockchain registry lookups during per-flow inference.',
     },
     {
       q: 'What does Stage 1 do?',
-      a: 'Stage 1 acts as a rapid binary gatekeeper, classifying incoming network flows as either Benign or Attack with high precision (98.78% precision baseline).',
+      a: 'Binary classification: Stage 1 acts as a rapid binary gatekeeper (Random Forest), classifying incoming network flows as either Benign or Attack (baseline: 90.30% accuracy, 98.78% precision, 86.82% recall, 92.41% F1).',
+    },
+    {
+      q: 'What happens after cryptographic verification succeeds?',
+      a: 'The verified artifact is authorized for loading and inference. In the backend implementation, /model/verify executes on-chain verification followed by gated memory loading, unlocking downstream network flow inference.',
     },
     {
       q: 'What happens if Stage 1 classifies a flow as Benign?',
@@ -112,19 +112,19 @@ export function ArchitectureDemo({
     },
     {
       q: 'What happens if Stage 1 classifies a flow as Attack?',
-      a: 'The flow is conditionally routed to Stage 2, which performs multiclass classification across 9 UNSW-NB15 attack categories (DoS, Exploits, Generic, Reconnaissance, etc.).',
+      a: 'The flow is conditionally routed to Stage 2, which classifies the attack category across 9 UNSW-NB15 attack categories (DoS, Exploits, Generic, Reconnaissance, etc.).',
     },
     {
       q: 'What happens next after Stage 2 classification?',
-      a: 'The system maps the identified category to a deterministic, human-in-the-loop Advisory Attack Response Recommendation with tactical priorities, operator guidance, and risk rationales.',
+      a: 'A deterministic, human-in-the-loop Advisory Attack Response Recommendation is generated with tactical priorities, operator guidance, and risk rationales.',
     },
     {
       q: 'Does the system automatically block the attacker or modify firewall rules?',
       a: 'No. Autonomous remediation is strictly disabled (is_advisory = true, requires_human_approval = true, automated_remediation_enabled = false). The recommendations guide human security operators.',
     },
     {
-      q: 'Is the blockchain queried for every incoming network flow?',
-      a: 'No. The evaluated per-flow inference path performs zero blockchain registry lookups. All blockchain queries occur strictly at application startup / pre-load gating, preserving sub-50ms inference speeds.',
+      q: 'What are the limitations of the system and recommendations?',
+      a: 'Model performance limitations, extreme class imbalance (up to 428.89:1), dataset limitations, Stage 1 false negatives (15,730 true attacks misclassified as Benign on the full UNSW-NB15 test set, notably Fuzzers), Stage 2 category confusion (26,741 misclassified attack categories), and the absolute requirement for human validation before executing operational changes.',
     },
   ];
 
@@ -431,7 +431,7 @@ export function ArchitectureDemo({
             <div className="stage-title-wrap">
               <h3 className="stage-title">Stage 1 — Binary Intrusion Detection</h3>
               <p className="stage-subtitle">
-                LightGBM gatekeeper classifies incoming flow into Benign vs Attack.
+                Random Forest gatekeeper classifies incoming flow into Benign vs Attack.
               </p>
             </div>
             <div className="stage-status-indicator">

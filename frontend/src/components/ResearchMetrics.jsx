@@ -26,7 +26,7 @@ export function ResearchMetrics({
       {/* Authoritative Model Baseline Tables */}
       <div className="metrics-baseline-grid">
         <div className="baseline-card">
-          <h4>Stage 1: Binary IDS (LightGBM)</h4>
+          <h4>Stage 1: Binary IDS (Random Forest)</h4>
           <span className="card-sub font-mono">ids_model.joblib | SHA: dc5e1688...e7c5</span>
           <div className="baseline-table-wrap">
             <table className="baseline-table">
@@ -145,10 +145,14 @@ export function ResearchMetrics({
         <div className="cascade-summary-text">
           <p>
             <strong>The Fuzzers Bottleneck:</strong> Stage 1 misclassifies 13,520 out of 18,184 Fuzzers attacks (74.35%) as Benign.
-            Consequently, these flows exit early as "Normal" and are never analyzed by Stage 2.
+            Across all 119,341 true attacks in the UNSW-NB15 test set, Stage 1 incurs 15,730 false negatives that exit early as "Normal" and never reach Stage 2.
           </p>
           <p>
-            <strong>Category Confusion:</strong> Out of 103,611 true attack flows that pass Stage 1, Stage 2 correctly attributes 76,870 flows (64.41% of all attacks) and misclassifies 26,741 flows into incorrect attack categories.
+            <strong>Operational Routing Breakdown:</strong> Stage 1 evaluates 175,341 test flows, predicting 70,448 Benign and 104,893 Attack.
+            All 104,893 predicted attacks are routed to Stage 2 (103,611 true attacks + 1,282 benign false positives).
+          </p>
+          <p>
+            <strong>Category Confusion:</strong> Out of 103,611 true attacks reaching Stage 2, 76,870 flows are correctly categorized (yielding 51.43% operational Macro F1 and 51.20% balanced accuracy on routed attacks), while 26,741 flows are assigned to an incorrect attack category.
           </p>
           <p>
             <strong>Human Oversight Necessity:</strong> These cascade error disclosures underscore why automated remediation is strictly disabled and human approval is required.

@@ -16,7 +16,7 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
   const mockModelStatusVerified = {
     model_id: 'iot-ids-rf',
     model_version: 'v1.0.0',
-    algorithm: 'LightGBMClassifier',
+    algorithm: 'RandomForestClassifier',
     local_sha256: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
     registered_sha256: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
     verification_status: 'VERIFIED',
@@ -453,7 +453,7 @@ describe('Phase 7B.5.4 Architecture Demonstration Workflow Tests', () => {
   });
 
   // 17. Architecture state reflects actual backend response
-  it('17. Architecture workflow reflects real-time pipeline status', async () => {
+  it('17. Architecture workflow reflects pipeline status', async () => {
     vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
     vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);

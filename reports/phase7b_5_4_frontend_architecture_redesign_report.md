@@ -45,7 +45,7 @@ The redesigned interface structure is partitioned into a primary **Architecture 
 The Architecture tab organizes the end-to-end detection and response lifecycle into six sequential, numbered stage cards:
 
 #### Stage 1: Model Trust & Integrity Gate
-- **Interactive Model Selector:** Switch between **Stage 1 (Binary IDS - LightGBM)** and **Stage 2 (Attack Classifier - Random Forest)**.
+- **Interactive Model Selector:** Switch between **Stage 1 (Binary IDS - Random Forest)** and **Stage 2 (Attack Classifier - Random Forest)**.
 - **Side-by-Side SHA-256 Digest Verification:**
   - Displays the local file SHA-256 computed over the on-disk joblib artifact (`ids_model.joblib` or `attack_classifier.joblib`).
   - Displays the on-chain registered SHA-256 retrieved via `ModelRegistry.sol::getModelVersion()`.
@@ -179,11 +179,11 @@ Embedded directly at the base of the Architecture tab is an **Evaluator Q&A Refe
 1. **Why does this system use blockchain?**  
    *Answer:* The blockchain provides an immutable, decentralized control-plane registry for model provenance and a tamper-evident audit log. It establishes cryptographic proof of which authorized model produced an alert without relying on trusting a central server.
 2. **Is the blockchain queried for every incoming network flow?**  
-   *Answer:* No. The evaluated per-flow inference path performs **zero blockchain registry lookups**. All blockchain queries occur strictly at application startup / pre-load gating, preserving sub-50ms inference speeds.
+   *Answer:* No. The evaluated architecture places blockchain registry verification in the startup/model-initialization control path rather than the per-flow inference path. Runtime instrumentation measured zero blockchain registry lookups during per-flow inference.
 3. **What is the difference between Stage 1 and Stage 2?**  
-   *Answer:* Stage 1 is a rapid binary gatekeeper (LightGBM) optimized for high-precision Benign vs Attack triage. Stage 2 is a specialized multiclass classifier (Random Forest) invoked only when Stage 1 detects an intrusion to attribute specific attack categories.
+   *Answer:* Stage 1 is a rapid binary gatekeeper (Random Forest) optimized for high-precision Benign vs Attack triage (90.30% accuracy, 98.78% precision baseline). Stage 2 is a specialized multiclass classifier (Random Forest) invoked only when Stage 1 detects an intrusion to attribute specific attack categories.
 4. **What happens after cryptographic verification succeeds?**  
-   *Answer:* The verified model is authorized for memory loading. The server deserializes the model pipeline and unlocks downstream network flow inference.
+   *Answer:* The verified artifact is authorized for loading and inference. In the backend implementation, `/model/verify` executes on-chain verification followed by gated memory loading, unlocking downstream network flow inference.
 5. **What happens if Stage 1 classifies a flow as Benign?**  
    *Answer:* The final result is designated as "Normal" and Stage 2 is completely bypassed. Bypassing Stage 2 reduces mean inference latency by an empirical 11.54% on benign traffic.
 6. **What happens if Stage 1 classifies a flow as Attack?**  
@@ -210,11 +210,13 @@ Embedded directly at the base of the Architecture tab is an **Evaluator Q&A Refe
 
 ### 7.3 Tab 4: Research Metrics (Empirical Performance)
 - Displays Phase 5B operational analytics (threat distribution, confidence levels, latency profiling).
-- Displays Phase 7B empirical baseline statistics:
-  - Stage 1 Binary Accuracy (98.67%) and Precision (98.78%).
-  - Stage 2 Multiclass Macro F1-Score (67.66%) and Weighted F1-Score (77.94%).
-  - Empirical Latency Delta: Benign flows (16.27 ms) vs Attack flows (18.39 ms) yielding 11.54% bypass savings.
-  - Transparent disclosure of hierarchical cascade error propagation (3 false negatives on 10,000 UNSW-NB15 test flows).
+- Displays Phase 7B authoritative empirical baseline statistics:
+  - Stage 1 Binary Accuracy (90.30%), Precision (98.78%), Recall (86.82%), F1 Score (92.41%), Specificity (97.71%), FPR (2.29%), ROC-AUC (98.60%).
+  - Stage 2 Oracle Multiclass Macro F1 (53.06%) and Balanced Accuracy (53.41%).
+  - Operational Hierarchical Routing: Stage 1 evaluated 175,341 flows (70,448 predicted Benign, 104,893 predicted Attack and routed to Stage 2).
+  - Operational Stage 2 Performance on routed true attacks: Macro F1 (51.43%) and Balanced Accuracy (51.20%).
+  - Empirical Latency Delta: Mean latency reduction of 11.54% on benign traffic via conditional Stage 2 bypass.
+  - Transparent disclosure of hierarchical cascade error propagation: 15,730 Stage 1 false negatives out of 119,341 true attacks (notably 13,520 out of 18,184 Fuzzers flows, 74.35%); 76,870 correctly categorized attacks reaching Stage 2, 26,741 category confusion misclassifications, and 1,282 benign false positives reaching Stage 2.
 
 ### 7.4 Tab 5: Audit Log (Tamper-Evident History)
 - Paginated table of historical inference and security events.

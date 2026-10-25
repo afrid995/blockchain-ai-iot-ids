@@ -47,6 +47,7 @@ describe('Phase 5A Frontend React Dashboard Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(api, 'predictHierarchical').mockRejectedValue(new Error('Endpoint not mocked'));
   });
 
   it('1. Dashboard renders with header, cards, and research disclosures', async () => {
