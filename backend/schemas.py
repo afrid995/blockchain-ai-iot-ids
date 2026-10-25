@@ -58,6 +58,14 @@ class ModelVerifyResponse(BaseModel):
     details: Dict[str, Any] = Field(default_factory=dict)
 
 
+class SecurityTestScenarioRequest(BaseModel):
+    """Request schema for executing security demonstration scenarios."""
+    scenario: str = Field(
+        ...,
+        description="Scenario to execute: 'tampered_stage1', 'tampered_stage2', 'unregistered_version', 'missing_artifact', 'legitimate'"
+    )
+
+
 class NetworkFlowPredictionRequest(BaseModel):
     """Network-flow feature record for IoT intrusion detection inference.
 

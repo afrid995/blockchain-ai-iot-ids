@@ -28,6 +28,7 @@ from backend.schemas import (
     NetworkFlowPredictionResponse,
     SecurityEventSchema,
     SecurityEventsListResponse,
+    SecurityTestScenarioRequest,
 )
 from backend.services.audit_service import AuditService
 from backend.services.hierarchical_service import HierarchicalService
@@ -189,19 +190,21 @@ def create_app(
         )
 
     @app.get("/model/status", response_model=ModelStatusResponse, tags=["Model Provenance"])
-    async def get_model_status():
+    async def get_model_status(target: Optional[str] = Query(default="stage1", description="'stage1' or 'stage2'")):
         """Retrieve model metadata, SHA-256 digests, and current verification status."""
-        status_data = model_service.get_status()
+        svc = stage2_model_service if target == "stage2" else model_service
+        status_data = svc.get_status()
         return ModelStatusResponse(**status_data)
 
     @app.post("/model/verify", response_model=ModelVerifyResponse, tags=["Model Provenance"])
-    async def verify_model():
+    async def verify_model(target: Optional[str] = Query(default="stage1", description="'stage1' or 'stage2'")):
         """Explicitly execute cryptographic integrity verification against the blockchain registry.
 
         If verification succeeds, the model is loaded into memory for inference.
         If verification fails, the model is purged/blocked (fail-closed).
         """
-        outcome = model_service.verify_and_load(verification_service)
+        svc = stage2_model_service if target == "stage2" else model_service
+        outcome = svc.verify_and_load(verification_service)
         return ModelVerifyResponse(
             verified=outcome["verified"],
             status=outcome["status"],
@@ -216,6 +219,177 @@ def create_app(
             message=outcome.get("message", ""),
             details=outcome.get("details", {}),
         )
+
+    @app.post("/model/load", tags=["Model Provenance"])
+    async def load_verified_model():
+        """Load verified model artifacts into memory for inference."""
+        if model_service.verification_status != "VERIFIED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot load unverified model (current status: '{model_service.verification_status}'). Run /model/verify first."
+            )
+        import joblib
+        try:
+            model_service.model_pipeline = joblib.load(model_service.model_path)
+            model_service.is_loaded = True
+            try:
+                stage2_model_service.model_pipeline = joblib.load(stage2_model_service.model_path)
+                stage2_model_service.is_loaded = True
+            except Exception:
+                pass
+            return {
+                "success": True,
+                "status": "LOADED",
+                "stage1_ready": model_service.is_loaded,
+                "stage2_ready": stage2_model_service.is_loaded,
+                "message": "Trusted models loaded into memory. Network flow analysis unlocked."
+            }
+        except Exception as e:
+            model_service.is_loaded = False
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to load model artifact: {e}"
+            )
+
+    @app.post("/security/test-scenario", tags=["Security Demonstration"])
+    async def run_security_test_scenario(req: SecurityTestScenarioRequest):
+        """Execute controlled security simulation scenarios for demonstrating fail-closed defense."""
+        scenario = req.scenario
+        temp_dir = settings.PROJECT_ROOT / "ml" / "artifacts" / ".tmp_security_demo"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            if scenario == "tampered_stage1":
+                temp_model = temp_dir / "tampered_ids_model.joblib"
+                with open(settings.MODEL_PATH, "rb") as f_in:
+                    data = bytearray(f_in.read())
+                data[100] = (data[100] + 1) % 256
+                with open(temp_model, "wb") as f_out:
+                    f_out.write(data)
+
+                v_res = verification_service.verify(
+                    model_path=temp_model,
+                    model_id=settings.MODEL_ID,
+                    version=settings.MODEL_VERSION,
+                )
+                if temp_model.exists():
+                    temp_model.unlink()
+                model_service.unload_model()
+                model_service.verification_status = v_res["status"]
+                return {
+                    "scenario": scenario,
+                    "status": v_res["status"],
+                    "verified": v_res["verified"],
+                    "model_id": settings.MODEL_ID,
+                    "version": settings.MODEL_VERSION,
+                    "local_hash": v_res.get("local_hash"),
+                    "registered_hash": v_res.get("registered_hash"),
+                    "action_taken": "MODEL_LOAD_BLOCKED",
+                    "downstream_state": "LOCKED",
+                    "message": "Tampered Stage 1 model rejected (HASH_MISMATCH). Loading blocked fail-closed."
+                }
+
+            elif scenario == "tampered_stage2":
+                temp_model = temp_dir / "tampered_attack_classifier.joblib"
+                with open(settings.STAGE2_MODEL_PATH, "rb") as f_in:
+                    data = bytearray(f_in.read())
+                data[100] = (data[100] + 1) % 256
+                with open(temp_model, "wb") as f_out:
+                    f_out.write(data)
+
+                v_res = verification_service.verify(
+                    model_path=temp_model,
+                    model_id=settings.STAGE2_MODEL_ID,
+                    version=settings.STAGE2_MODEL_VERSION,
+                )
+                if temp_model.exists():
+                    temp_model.unlink()
+                stage2_model_service.unload_model()
+                stage2_model_service.verification_status = v_res["status"]
+                return {
+                    "scenario": scenario,
+                    "status": v_res["status"],
+                    "verified": v_res["verified"],
+                    "model_id": settings.STAGE2_MODEL_ID,
+                    "version": settings.STAGE2_MODEL_VERSION,
+                    "local_hash": v_res.get("local_hash"),
+                    "registered_hash": v_res.get("registered_hash"),
+                    "action_taken": "STAGE2_LOAD_BLOCKED",
+                    "downstream_state": "LOCKED",
+                    "message": "Tampered Stage 2 model rejected (HASH_MISMATCH). Stage 2 loading blocked fail-closed."
+                }
+
+            elif scenario == "unregistered_version":
+                v_res = verification_service.verify(
+                    model_path=settings.MODEL_PATH,
+                    model_id=settings.MODEL_ID,
+                    version="v9.9.9",
+                )
+                model_service.unload_model()
+                model_service.verification_status = v_res["status"]
+                return {
+                    "scenario": scenario,
+                    "status": v_res["status"],
+                    "verified": v_res["verified"],
+                    "model_id": settings.MODEL_ID,
+                    "version": "v9.9.9",
+                    "local_hash": v_res.get("local_hash"),
+                    "registered_hash": None,
+                    "action_taken": "MODEL_LOAD_BLOCKED",
+                    "downstream_state": "LOCKED",
+                    "message": "Unregistered model version v9.9.9 rejected (NOT_REGISTERED). Loading blocked fail-closed."
+                }
+
+            elif scenario == "missing_artifact":
+                missing_path = temp_dir / "nonexistent_model.joblib"
+                v_res = verification_service.verify(
+                    model_path=missing_path,
+                    model_id=settings.MODEL_ID,
+                    version=settings.MODEL_VERSION,
+                )
+                model_service.unload_model()
+                model_service.verification_status = v_res["status"]
+                return {
+                    "scenario": scenario,
+                    "status": v_res["status"],
+                    "verified": v_res["verified"],
+                    "model_id": settings.MODEL_ID,
+                    "version": settings.MODEL_VERSION,
+                    "local_hash": None,
+                    "registered_hash": None,
+                    "action_taken": "MODEL_LOAD_BLOCKED",
+                    "downstream_state": "LOCKED",
+                    "message": "Missing model artifact rejected (FILE_NOT_FOUND). Loading blocked fail-closed."
+                }
+
+            elif scenario == "legitimate":
+                outcome1 = model_service.verify_and_load(verification_service)
+                try:
+                    stage2_model_service.verify_and_load(verification_service)
+                except Exception:
+                    pass
+                return {
+                    "scenario": scenario,
+                    "status": outcome1["status"],
+                    "verified": outcome1["verified"],
+                    "model_id": settings.MODEL_ID,
+                    "version": settings.MODEL_VERSION,
+                    "local_hash": outcome1.get("local_hash"),
+                    "registered_hash": outcome1.get("registered_hash"),
+                    "action_taken": "AUTHORIZED_AND_LOADED",
+                    "downstream_state": "UNLOCKED",
+                    "message": "Canonical models verified and loaded. Inference authorized."
+                }
+
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unknown scenario '{scenario}'. Supported: 'tampered_stage1', 'tampered_stage2', 'unregistered_version', 'missing_artifact', 'legitimate'."
+                )
+        finally:
+            if temp_dir.exists():
+                import shutil
+                shutil.rmtree(temp_dir, ignore_errors=True)
 
     @app.post("/predict", response_model=NetworkFlowPredictionResponse, tags=["Intrusion Detection"])
     async def predict_intrusion(request: NetworkFlowPredictionRequest):

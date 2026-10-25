@@ -60,12 +60,23 @@ async function request(endpoint, options = {}) {
 
 export const api = {
   getHealth: () => request('/health'),
-  getModelStatus: () => request('/model/status'),
-  verifyModel: () => request('/model/verify', { method: 'POST' }),
+  getModelStatus: (target = 'stage1') => request(`/model/status?target=${encodeURIComponent(target)}`),
+  verifyModel: (target = 'stage1') => request(`/model/verify?target=${encodeURIComponent(target)}`, { method: 'POST' }),
+  loadModel: () => request('/model/load', { method: 'POST' }),
   predict: (features) =>
     request('/predict', {
       method: 'POST',
       body: JSON.stringify({ features }),
+    }),
+  predictHierarchical: (features) =>
+    request('/predict/hierarchical', {
+      method: 'POST',
+      body: JSON.stringify({ features }),
+    }),
+  runSecurityScenario: (scenario) =>
+    request('/security/test-scenario', {
+      method: 'POST',
+      body: JSON.stringify({ scenario }),
     }),
   getAuditEvents: (limit = 20, offset = 0, eventType = null) => {
     let query = `?limit=${limit}&offset=${offset}`;

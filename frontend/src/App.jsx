@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api, ApiError } from './api/client';
 import { Header } from './components/Header';
-import { ModelProvenance } from './components/ModelProvenance';
-import { PredictionForm } from './components/PredictionForm';
-import { AnalyticsSection } from './components/AnalyticsSection';
+import { Navigation } from './components/Navigation';
+import { ArchitectureDemo } from './components/ArchitectureDemo';
+import { LiveTest } from './components/LiveTest';
+import { SecurityDemo } from './components/SecurityDemo';
+import { ResearchMetrics } from './components/ResearchMetrics';
 import { AuditLog } from './components/AuditLog';
 import { AlertBanner } from './components/AlertBanner';
 
 export function App() {
+  // Navigation state (Default is Architecture)
+  const [activeTab, setActiveTab] = useState('architecture');
+
   // System states
   const [health, setHealth] = useState(null);
   const [modelStatus, setModelStatus] = useState(null);
+  const [stage2Status, setStage2Status] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [generalError, setGeneralError] = useState(null);
 
@@ -18,6 +24,9 @@ export function App() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState(null);
   const [lastVerifyResult, setLastVerifyResult] = useState(null);
+
+  // Loading states
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
 
   // Prediction states
   const [isPredicting, setIsPredicting] = useState(false);
@@ -76,10 +85,19 @@ export function App() {
     try {
       const [healthData, statusData] = await Promise.all([
         api.getHealth(),
-        api.getModelStatus(),
+        api.getModelStatus('stage1'),
       ]);
       setHealth(healthData);
       setModelStatus(statusData);
+      setIsModelLoaded(Boolean(statusData?.is_loaded));
+
+      try {
+        const s2Data = await api.getModelStatus('stage2');
+        setStage2Status(s2Data);
+      } catch {
+        // Fallback if stage 2 status not independently queryable
+      }
+
       await loadAnalytics();
     } catch (err) {
       setGeneralError(
@@ -97,17 +115,20 @@ export function App() {
   }, [loadAll, loadAuditEvents, auditLimit, auditOffset, auditFilter]);
 
   // Handle explicit verification
-  const handleVerify = async () => {
+  const handleVerify = async (target = 'stage1') => {
     setIsVerifying(true);
     setVerificationError(null);
     setLastVerifyResult(null);
 
     try {
-      const result = await api.verifyModel();
+      const result = await api.verifyModel(target);
       setLastVerifyResult(result);
-      // Refresh status, audit events, and analytics to reflect new gate state
+      // Refresh status and audit events
       await Promise.all([
-        api.getModelStatus().then(setModelStatus),
+        api.getModelStatus('stage1').then((data) => {
+          setModelStatus(data);
+          setIsModelLoaded(Boolean(data?.is_loaded));
+        }),
         api.getHealth().then(setHealth),
         loadAuditEvents(auditLimit, auditOffset, auditFilter),
         loadAnalytics(),
@@ -119,14 +140,32 @@ export function App() {
     }
   };
 
-  // Handle flow prediction
+  // Handle explicit model load
+  const handleLoadModel = async () => {
+    try {
+      await api.loadModel();
+      setIsModelLoaded(true);
+      await loadAll();
+    } catch (err) {
+      setVerificationError(err.message || 'Model load blocked.');
+    }
+  };
+
+  // Handle flow prediction (uses hierarchical endpoint)
   const handlePredict = async (features) => {
     setIsPredicting(true);
     setPredictionError(null);
     setPredictionResult(null);
 
     try {
-      const result = await api.predict(features);
+      let result;
+      try {
+        // Primary Phase 7 Hierarchical Endpoint
+        result = await api.predictHierarchical(features);
+      } catch (hierErr) {
+        // Fallback to legacy binary predict if hierarchical endpoint unavailable
+        result = await api.predict(features);
+      }
       setPredictionResult(result);
       // Automatically refresh audit events and analytics
       loadAuditEvents(auditLimit, auditOffset, auditFilter);
@@ -145,7 +184,7 @@ export function App() {
   };
 
   return (
-    <div>
+    <div className="app-shell">
       <Header health={health} isRefreshing={isRefreshing} onRefresh={loadAll} />
 
       <main className="container">
@@ -157,35 +196,51 @@ export function App() {
           />
         )}
 
-        <div className="dashboard-grid">
-          {/* Section 1: Model Provenance & Cryptographic Verification Gate */}
-          <ModelProvenance
-            modelStatus={modelStatus}
-            onVerify={handleVerify}
-            isVerifying={isVerifying}
-            verificationError={verificationError}
-            lastVerifyResult={lastVerifyResult}
-          />
+        {/* Primary Navigation Bar */}
+        <Navigation activeTab={activeTab} onSelectTab={setActiveTab} />
 
-          {/* Section 2: Off-Chain Intrusion Detection Inference */}
-          <PredictionForm
-            onPredict={handlePredict}
+        {/* TAB 1: ARCHITECTURE DEMONSTRATOR (DEFAULT) */}
+        <div style={{ display: activeTab === 'architecture' ? 'block' : 'none' }}>
+          <ArchitectureDemo
+            health={health}
+            modelStatus={modelStatus}
+            stage2Status={stage2Status}
+            isVerifying={isVerifying}
+            onVerify={handleVerify}
+            verifyResult={lastVerifyResult}
+            onLoadModel={handleLoadModel}
+            isModelLoaded={isModelLoaded}
             isPredicting={isPredicting}
+            onPredict={handlePredict}
             predictionResult={predictionResult}
             predictionError={predictionError}
-            isModelLoaded={modelStatus?.is_loaded}
+            auditEvents={auditEvents}
           />
+        </div>
 
-          {/* Section 3: Dashboard Analytics & Audit Visualization (Phase 5B) */}
-          <AnalyticsSection
+        {/* TAB 2: LIVE TEST INFERENCE WORKBENCH */}
+        <div style={{ display: activeTab === 'live-test' ? 'block' : 'none' }}>
+          <LiveTest isModelLoaded={isModelLoaded} />
+        </div>
+
+        {/* TAB 3: SECURITY DEMONSTRATION MODE (FAIL-CLOSED) */}
+        <div style={{ display: activeTab === 'security-test' ? 'block' : 'none' }}>
+          <SecurityDemo onModelStatusRefresh={loadAll} />
+        </div>
+
+        {/* TAB 4: RESEARCH METRICS & STATISTICAL EVIDENCE */}
+        <div style={{ display: activeTab === 'research-metrics' ? 'block' : 'none' }}>
+          <ResearchMetrics
             events={analyticsEvents}
             totalEventsCount={analyticsTotal}
             isLoading={isLoadingAnalytics}
             error={analyticsError}
             onRefresh={loadAnalytics}
           />
+        </div>
 
-          {/* Section 4: Operational Security Audit Trail */}
+        {/* TAB 5: OPERATIONAL SECURITY AUDIT LOG */}
+        <div style={{ display: activeTab === 'audit' ? 'block' : 'none' }}>
           <AuditLog
             events={auditEvents}
             total={auditTotal}
@@ -202,6 +257,7 @@ export function App() {
           />
         </div>
 
+        {/* Evaluator Research Disclosures */}
         <footer className="research-notice">
           <strong>Research Prototype Disclosures:</strong>
           <ul style={{ marginTop: '0.5rem', paddingLeft: '1.25rem' }}>
@@ -215,13 +271,15 @@ export function App() {
               adversarial robustness, or absence of training-data poisoning.
             </li>
             <li>
-              <strong>Benchmarking Context:</strong> Evaluated using the UNSW-NB15 flow benchmark. Reported latencies reflect
-              measurements in the local evaluation environment (<code>EthereumTesterProvider</code>) and do not represent
-              public blockchain performance or physical microcontroller telemetry.
+              <strong>Per-Flow Blockchain Invariant:</strong> The evaluated per-flow inference path performs zero blockchain registry lookups.
+            </li>
+            <li>
+              <strong>Advisory Response Boundary:</strong> The advisory attack recommendation layer does not perform autonomous remediation.
+              Human operator review and approval are strictly required.
             </li>
             <li>
               <strong>Audit Logging:</strong> Events are recorded in an append-oriented SQLite store for operational tracking;
-              this local store is not by itself a decentralized blockchain ledger.
+              raw 42-feature vectors are strictly excluded from persistent storage to protect telemetry privacy.
             </li>
           </ul>
         </footer>
