@@ -48,13 +48,13 @@ The design of Phase 7B.5 builds upon verified empirical evidence compiled across
 
 ### Phase 1–6: Binary Baseline & Provenance
 - **Stage 1 Binary Performance ($N = 175,341$):** Accuracy: 90.30%, Precision: 98.78%, Recall: 86.82%, F1-Score: 92.41%, Specificity: 97.71%, False Positive Rate: 2.29%, ROC-AUC: 98.60%.
-- **Architectural Decoupling:** Pre-load blockchain verification latency (~80–90 ms on local EVM) occurs once during startup; runtime per-flow inference executes off-chain in 20.7–21.0 ms with **zero per-flow blockchain lookups**.
+- **Architectural Decoupling:** Pre-load blockchain-backed verification is performed in the local EthereumTesterProvider/py-evm evaluation environment. Its latency is environment- and operation-specific and will be freshly measured as part of the Phase 7B.5 implementation evaluation. The evaluated architecture places blockchain registry verification outside the per-flow inference path; Phase 7B.5 will instrument the runtime path to confirm zero per-flow blockchain registry lookups.
 
 ### Phase 7B & 7B.1: Multiclass Stage 2 Classifier Selection
 - Evaluated on $N = 119,341$ true attack flows.
 - Balanced Random Forest selected over Standard Random Forest based on Macro F1:
-  - Model A (Standard RF): Macro F1 = 44.59%, Balanced Accuracy = 44.75%, Accuracy = 79.99%.
-  - Model B (Balanced RF, Selected): Macro F1 = 53.06%, Balanced Accuracy = 53.41%, Accuracy = 76.18%.
+  - Model A (Standard RF): Accuracy = 77.60%, Balanced Accuracy = 51.04%, Macro Precision = 70.31%, Macro Recall = 51.04%, Macro F1 = 52.27%, Weighted F1 = 77.63%.
+  - Model B (Balanced RF, Selected): Accuracy = 76.18%, Balanced Accuracy = 53.41%, Macro Precision = 57.60%, Macro Recall = 53.41%, Macro F1 = 53.06%, Weighted F1 = 77.50%.
 
 ### Phase 7B.2: Stage 2 Blockchain Provenance Registration
 - Model identity `iot-ids-attack-classifier` v1.0.0 registered on `ModelRegistry.sol`.
@@ -258,9 +258,9 @@ The role of the blockchain in the final architecture is rigorously bounded:
    - Advisory response recommendation mapping.
    - SQLite security audit event logs.
 3. **Rationale for Decoupling:**
-   - Network flow rates in IoT gateways can reach thousands of packets per second. Querying an Ethereum smart contract per flow would introduce prohibitive network latency (~80–90 ms even on local EVM, seconds on public chains) and unsustainable gas costs.
+   - Network flow rates in IoT gateways can reach thousands of packets per second. Querying an Ethereum smart contract per flow would introduce prohibitive consensus and RPC latency (inherent to on-chain operations) alongside unsustainable transaction gas costs.
    - Storing high-velocity flow data on-chain creates irreversible public exposure of private network topology.
-   - Decoupled pre-inference gating provides tamper-evidence before execution while maintaining local inference speeds.
+   - Decoupled pre-inference gating provides tamper-evidence before execution while avoiding per-flow on-chain registry lookups.
 
 ---
 

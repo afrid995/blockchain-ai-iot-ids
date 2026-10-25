@@ -31,6 +31,7 @@ The design review established the authoritative experiment matrix (E1–E7), eva
 | `reports/phase7b_5_research_integrity_audit.md` | Markdown | Complete | Formal audit verifying 16 academic and research-integrity criteria (all marked PASS). |
 | `reports/figures/figure15_final_architecture.png` | PNG (300 DPI) | Complete | High-resolution architectural diagram illustrating decoupled startup provenance gating, runtime hierarchical inference, advisory mitigation guidance, and local audit persistence. |
 | `reports/phase7b_5_completion_report.md` | Markdown | Complete | Formal phase sign-off and regression verification summary. |
+| `reports/phase7b_5_1_research_integrity_reconciliation.md` | Markdown | Complete | Research-integrity reconciliation report reconciling historical Stage 2 Model A metrics and EVM latency wording. |
 
 ---
 

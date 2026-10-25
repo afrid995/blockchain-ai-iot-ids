@@ -41,7 +41,7 @@ This research-integrity audit evaluates the design review artifacts created for 
 ## Detailed Audit Commentary
 
 ### 1. Integrity of Architectural Decoupling
-The design review successfully preserves the core scientific thesis of the project: **decoupling cryptographic integrity verification from high-throughput runtime inference**. By placing the Ethereum `ModelRegistry` query exclusively in the startup initialization path, the design prevents blockchain network latency from contaminating per-flow inference while retaining tamper-evidence against unauthorized artifact modification.
+The design review successfully preserves the core scientific thesis of the project: **decoupling cryptographic integrity verification from runtime inference**. The evaluated architecture places blockchain registry verification outside the per-flow inference path; Phase 7B.5 will instrument the runtime path to confirm zero per-flow blockchain registry lookups while retaining tamper-evidence against unauthorized artifact modification.
 
 ### 2. Treatment of Autonomous Remediation
 The audit confirms that the advisory response recommendation layer remains strictly non-remediating. The design mandates human operator triage for all recommendations (`requires_human_approval = True`), forbids executable command strings, and acknowledges that issuing recommendations for misclassified flows can produce misleading operational advice.
