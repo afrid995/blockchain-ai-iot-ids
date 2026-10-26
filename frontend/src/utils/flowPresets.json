@@ -1,68 +1,72 @@
 {
-  "Normal": {
-    "intended_scenario": "Normal Traffic",
-    "true_category": "Normal",
+  "Flow 0001": {
+    "flow_id": "Flow 0001",
+    "dataset_id": 5,
     "summary": {
       "protocol": "tcp",
       "service": "-",
       "state": "FIN",
-      "duration": 0.121478,
-      "source_packets": 6,
-      "dest_packets": 4,
-      "source_bytes": 258,
-      "dest_bytes": 172,
-      "source_ttl": 252,
-      "dest_ttl": 254,
-      "packet_rate": 74.08749
+      "duration": 0.449454,
+      "source_packets": 10,
+      "dest_packets": 6,
+      "source_bytes": 534,
+      "dest_bytes": 268,
+      "source_ttl": 254,
+      "dest_ttl": 252,
+      "packet_rate": 33.373826
     },
     "features": {
-      "dur": 0.121478,
+      "dur": 0.449454,
       "proto": "tcp",
       "service": "-",
       "state": "FIN",
-      "spkts": 6,
-      "dpkts": 4,
-      "sbytes": 258,
-      "dbytes": 172,
-      "rate": 74.08749,
-      "sttl": 252,
-      "dttl": 254,
-      "sload": 14158.94238,
-      "dload": 8495.365234,
-      "sloss": 0,
-      "dloss": 0,
-      "sinpkt": 24.2956,
-      "dinpkt": 8.375,
-      "sjit": 30.177547,
-      "djit": 11.830604,
+      "spkts": 10,
+      "dpkts": 6,
+      "sbytes": 534,
+      "dbytes": 268,
+      "rate": 33.373826,
+      "sttl": 254,
+      "dttl": 252,
+      "sload": 8561.499023,
+      "dload": 3987.059814,
+      "sloss": 2,
+      "dloss": 1,
+      "sinpkt": 47.750333,
+      "dinpkt": 75.659602,
+      "sjit": 2415.837634,
+      "djit": 115.807,
       "swin": 255,
-      "stcpb": 621772692,
-      "dtcpb": 2202533631,
+      "stcpb": 2436137549,
+      "dtcpb": 1977154190,
       "dwin": 255,
-      "tcprtt": 0.0,
-      "synack": 0.0,
-      "ackdat": 0.0,
-      "smean": 43,
-      "dmean": 43,
+      "tcprtt": 0.128381,
+      "synack": 0.071147,
+      "ackdat": 0.057234,
+      "smean": 53,
+      "dmean": 45,
       "trans_depth": 0,
       "response_body_len": 0,
-      "ct_srv_src": 1,
-      "ct_state_ttl": 0,
-      "ct_dst_ltm": 1,
-      "ct_src_dport_ltm": 1,
+      "ct_srv_src": 43,
+      "ct_state_ttl": 1,
+      "ct_dst_ltm": 2,
+      "ct_src_dport_ltm": 2,
       "ct_dst_sport_ltm": 1,
-      "ct_dst_src_ltm": 1,
+      "ct_dst_src_ltm": 40,
       "is_ftp_login": 0,
       "ct_ftp_cmd": 0,
       "ct_flw_http_mthd": 0,
-      "ct_src_ltm": 1,
-      "ct_srv_dst": 1,
+      "ct_src_ltm": 2,
+      "ct_srv_dst": 39,
       "is_sm_ips_ports": 0
+    },
+    "ground_truth": {
+      "label": 0,
+      "attack_cat": "Normal"
     }
   },
-  "DoS": {
-    "intended_scenario": "DoS Traffic",
-    "true_category": "DoS",
+  "Flow 0002": {
+    "flow_id": "Flow 0002",
+    "dataset_id": 48166,
     "summary": {
       "protocol": "encap",
       "service": "-",
@@ -119,11 +123,15 @@
       "ct_src_ltm": 2,
       "ct_srv_dst": 2,
       "is_sm_ips_ports": 0
+    },
+    "ground_truth": {
+      "label": 1,
+      "attack_cat": "DoS"
     }
   },
-  "Fuzzers": {
-    "intended_scenario": "Fuzzers Traffic",
-    "true_category": "Fuzzers",
+  "Flow 0003": {
+    "flow_id": "Flow 0003",
+    "dataset_id": 47732,
     "summary": {
       "protocol": "tcp",
       "service": "ftp",
@@ -180,11 +188,15 @@
       "ct_src_ltm": 5,
       "ct_srv_dst": 3,
       "is_sm_ips_ports": 0
+    },
+    "ground_truth": {
+      "label": 1,
+      "attack_cat": "Fuzzers"
     }
   },
-  "Exploits": {
-    "intended_scenario": "Exploits Traffic",
-    "true_category": "Exploits",
+  "Flow 0004": {
+    "flow_id": "Flow 0004",
+    "dataset_id": 48933,
     "summary": {
       "protocol": "tcp",
       "service": "http",
@@ -241,11 +253,15 @@
       "ct_src_ltm": 1,
       "ct_srv_dst": 1,
       "is_sm_ips_ports": 0
+    },
+    "ground_truth": {
+      "label": 1,
+      "attack_cat": "Exploits"
     }
   },
-  "Reconnaissance": {
-    "intended_scenario": "Reconnaissance Traffic",
-    "true_category": "Reconnaissance",
+  "Flow 0005": {
+    "flow_id": "Flow 0005",
+    "dataset_id": 43724,
     "summary": {
       "protocol": "tcp",
       "service": "http",
@@ -302,11 +318,15 @@
       "ct_src_ltm": 1,
       "ct_srv_dst": 1,
       "is_sm_ips_ports": 0
+    },
+    "ground_truth": {
+      "label": 1,
+      "attack_cat": "Reconnaissance"
     }
   },
-  "Generic": {
-    "intended_scenario": "Generic Traffic",
-    "true_category": "Generic",
+  "Flow 0006": {
+    "flow_id": "Flow 0006",
+    "dataset_id": 52862,
     "summary": {
       "protocol": "udp",
       "service": "dns",
@@ -363,6 +383,10 @@
       "ct_src_ltm": 22,
       "ct_srv_dst": 22,
       "is_sm_ips_ports": 0
+    },
+    "ground_truth": {
+      "label": 1,
+      "attack_cat": "Generic"
     }
   }
 }

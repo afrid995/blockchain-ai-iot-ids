@@ -37,7 +37,7 @@ export function SecuritySolutionOverview({
   const [isVerifyingLocal, setIsVerifyingLocal] = useState(false);
 
   // Mode 1: Network flow input state
-  const [selectedPreset, setSelectedPreset] = useState('DoS');
+  const [selectedPreset, setSelectedPreset] = useState('Flow 0001');
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [customJson, setCustomJson] = useState('');
   const [jsonError, setJsonError] = useState(null);
@@ -48,9 +48,28 @@ export function SecuritySolutionOverview({
   const [simError, setSimError] = useState(null);
   const [showFullHashes, setShowFullHashes] = useState(false);
 
-  // Active flow preset
-  const activeFlow = flowPresetsData[selectedPreset] || flowPresetsData['DoS'];
-  const activeFeatures = activeFlow.features;
+  // Active flow record
+  const activeFlow = flowPresetsData[selectedPreset] || flowPresetsData['Flow 0001'] || Object.values(flowPresetsData)[0];
+  const activeFeatures = activeFlow?.features || {};
+
+  const formatDuration = (dur) => {
+    if (dur === undefined || dur === null) return 'N/A';
+    const num = Number(dur);
+    if (num < 0.0001) return '0.0000s (<10µs)';
+    return `${num.toFixed(4)}s`;
+  };
+
+  const formatRate = (rate, dur) => {
+    if (dur === undefined || dur === null || Number(dur) < 0.001) return 'N/A';
+    if (rate === undefined || rate === null || Number.isNaN(Number(rate))) return 'N/A';
+    return `${Number(rate).toFixed(1)} /s`;
+  };
+
+  const formatByteRate = (sbytes, dbytes, dur) => {
+    if (dur === undefined || dur === null || Number(dur) < 0.001) return 'N/A';
+    const totalBytes = Number(sbytes || 0) + Number(dbytes || 0);
+    return `${(totalBytes / Number(dur)).toFixed(1)} B/s`;
+  };
 
   // Active stage metadata derivation
   const isStage1 = selectedStage === 'stage1';
@@ -691,7 +710,7 @@ export function SecuritySolutionOverview({
               {/* Step 2: Network Flow Selection Card */}
               <div className="console-card" data-testid="solution-flow-card">
                 <div className="card-header">
-                  <h3 className="card-title">[2] Network Flow Selection</h3>
+                  <h3 className="card-title">[2] Network Traffic Record Selection</h3>
                   <span className="badge badge-secondary">UNSW-NB15 Input</span>
                 </div>
 
@@ -702,7 +721,7 @@ export function SecuritySolutionOverview({
                     onClick={() => { setIsCustomMode(false); setJsonError(null); }}
                     data-testid="solution-preset-mode-btn"
                   >
-                    Authentic UNSW-NB15 Presets
+                    Authentic UNSW-NB15 Records
                   </button>
                   <button
                     type="button"
@@ -719,54 +738,113 @@ export function SecuritySolutionOverview({
 
                 {!isCustomMode ? (
                   <>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="solution-preset-dropdown">Select Test Flow Scenario:</label>
-                      <select
-                        id="solution-preset-dropdown"
-                        className="form-control"
-                        value={selectedPreset}
-                        onChange={(e) => setSelectedPreset(e.target.value)}
-                        data-testid="solution-preset-dropdown"
-                      >
-                        {Object.keys(flowPresetsData).map((key) => (
-                          <option key={key} value={key}>
-                            {key} ({flowPresetsData[key].intended_scenario || flowPresetsData[key].true_category})
-                          </option>
-                        ))}
-                      </select>
+                    <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                        <label className="form-label" style={{ margin: 0, fontWeight: 'bold' }}>
+                          NETWORK TRAFFIC
+                        </label>
+                        <span className="font-xs text-muted">Authentic UNSW-NB15 Records</span>
+                      </div>
+
+                      {/* Quick-Select Flow Record Pills */}
+                      <div className="traffic-selector-bar" role="tablist" aria-label="Select Network Traffic Record">
+                        {Object.keys(flowPresetsData).map((key) => {
+                          const flow = flowPresetsData[key];
+                          const proto = (flow.summary?.protocol || flow.features?.proto || '').toUpperCase();
+                          const isSelected = selectedPreset === key;
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              className={`traffic-flow-btn ${isSelected ? 'active' : ''}`}
+                              onClick={() => setSelectedPreset(key)}
+                              data-testid={`solution-flow-btn-${key}`}
+                              aria-selected={isSelected}
+                              role="tab"
+                            >
+                              {key} ({proto})
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Accessible Dropdown for Flow Selection */}
+                      <div style={{ marginTop: '0.4rem' }}>
+                        <label htmlFor="solution-preset-dropdown" className="font-xs text-muted" style={{ display: 'block', marginBottom: '0.2rem' }}>
+                          Select Traffic Record:
+                        </label>
+                        <select
+                          id="solution-preset-dropdown"
+                          className="form-control font-mono font-xs"
+                          value={selectedPreset}
+                          onChange={(e) => setSelectedPreset(e.target.value)}
+                          data-testid="solution-preset-dropdown"
+                        >
+                          {Object.keys(flowPresetsData).map((key) => {
+                            const flow = flowPresetsData[key];
+                            const s = flow.summary || {};
+                            const f = flow.features || {};
+                            const proto = (s.protocol || f.proto || '').toUpperCase();
+                            const dur = formatDuration(s.duration ?? f.dur ?? 0);
+                            const pkts = (f.spkts || 0) + (f.dpkts || 0);
+                            const bytes = (f.sbytes || 0) + (f.dbytes || 0);
+                            return (
+                              <option key={key} value={key}>
+                                {key} — {proto} · {pkts} pkts · {bytes} B · {dur}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
                     </div>
 
-                    <div className="flow-spec-card">
+                    <div className="flow-spec-card" data-testid="solution-selected-flow-details">
                       <div className="flow-spec-header">
-                        <span>Flow Feature Summary</span>
+                        <span>SELECTED NETWORK FLOW</span>
                         <span className="font-mono font-xs text-secondary">
-                          Expected True Label: {activeFlow.true_category || selectedPreset}
+                          {selectedPreset} (UNSW-NB15 Record #{String(activeFlow.dataset_id || 1).padStart(6, '0')})
                         </span>
                       </div>
                       <div className="flow-spec-grid">
                         <div className="spec-item">
-                          <span className="spec-label">Proto:</span>
-                          <span className="spec-val font-mono">{activeFlow.summary?.protocol || activeFeatures.proto}</span>
+                          <span className="spec-label">Protocol:</span>
+                          <span className="spec-val font-mono">{String(activeFlow.summary?.protocol || activeFeatures.proto).toUpperCase()}</span>
                         </div>
                         <div className="spec-item">
                           <span className="spec-label">Service:</span>
-                          <span className="spec-val font-mono">{activeFlow.summary?.service || activeFeatures.service}</span>
+                          <span className="spec-val font-mono">{activeFlow.summary?.service || activeFeatures.service || '-'}</span>
+                        </div>
+                        <div className="spec-item">
+                          <span className="spec-label">Transaction State:</span>
+                          <span className="spec-val font-mono">{activeFlow.summary?.state || activeFeatures.state || '-'}</span>
                         </div>
                         <div className="spec-item">
                           <span className="spec-label">Duration:</span>
-                          <span className="spec-val font-mono">{(activeFlow.summary?.duration ?? activeFeatures.dur).toFixed(4)}s</span>
+                          <span className="spec-val font-mono">{formatDuration(activeFlow.summary?.duration ?? activeFeatures.dur)}</span>
                         </div>
                         <div className="spec-item">
                           <span className="spec-label">Packets:</span>
-                          <span className="spec-val font-mono">{activeFeatures.spkts}s / {activeFeatures.dpkts}d</span>
+                          <span className="spec-val font-mono">{activeFeatures.spkts} src / {activeFeatures.dpkts} dst</span>
                         </div>
                         <div className="spec-item">
-                          <span className="spec-label">Bytes:</span>
-                          <span className="spec-val font-mono">{activeFeatures.sbytes}s / {activeFeatures.dbytes}d</span>
+                          <span className="spec-label">Transaction Bytes:</span>
+                          <span className="spec-val font-mono">{(activeFeatures.sbytes || 0).toLocaleString()} src / {(activeFeatures.dbytes || 0).toLocaleString()} dst</span>
                         </div>
                         <div className="spec-item">
-                          <span className="spec-label">Rate:</span>
-                          <span className="spec-val font-mono">{Number(activeFeatures.rate).toFixed(1)}/s</span>
+                          <span className="spec-label">Packet Rate:</span>
+                          <span className="spec-val font-mono" data-testid="solution-packet-rate">{formatRate(activeFeatures.rate, activeFeatures.dur)}</span>
+                        </div>
+                        <div className="spec-item">
+                          <span className="spec-label">Byte Rate:</span>
+                          <span className="spec-val font-mono" data-testid="solution-byte-rate">{formatByteRate(activeFeatures.sbytes, activeFeatures.dbytes, activeFeatures.dur)}</span>
+                        </div>
+                        <div className="spec-item">
+                          <span className="spec-label">TTL (Time-to-Live):</span>
+                          <span className="spec-val font-mono">{activeFeatures.sttl} src / {activeFeatures.dttl} dst</span>
+                        </div>
+                        <div className="spec-item">
+                          <span className="spec-label">Same-Service Conns:</span>
+                          <span className="spec-val font-mono">{activeFeatures.ct_srv_src} (ct_srv_src)</span>
                         </div>
                       </div>
                     </div>
@@ -797,11 +875,11 @@ export function SecuritySolutionOverview({
                     data-testid="solution-predict-btn"
                   >
                     {isPredicting ? (
-                      <span><span className="spinner" /> Evaluating Off-Chain Hierarchical Inference...</span>
+                      <span><span className="spinner" /> Analyzing Network Flow...</span>
                     ) : isFailClosed ? (
                       '🔒 INFERENCE LOCKED (Model Unloaded / Unverified)'
                     ) : (
-                      '⚡ RUN DETECTION (Hierarchical Inference)'
+                      '⚡ ANALYZE NETWORK FLOW'
                     )}
                   </button>
                 </div>
@@ -980,6 +1058,14 @@ export function SecuritySolutionOverview({
                     <div className="font-xs text-muted" style={{ marginTop: '0.75rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem' }}>
                       Storage: Local operational audit trail in SQLite (<code>backend/data/audit.db</code>) — strictly decoupled from on-chain registry.
                     </div>
+                  </div>
+
+                  {/* Ground Truth: Research Evaluation Only */}
+                  <div className="eval-ground-truth-box font-xs" data-testid="solution-ground-truth-eval">
+                    <span className="text-muted" style={{ fontWeight: 'bold' }}>GROUND TRUTH — EVALUATION ONLY: </span>
+                    <span className="font-mono text-secondary" style={{ marginLeft: '0.4rem' }}>
+                      {activeFlow.ground_truth?.attack_cat || 'Normal'} (Label {activeFlow.ground_truth?.label ?? 0})
+                    </span>
                   </div>
                 </>
               )}

@@ -222,10 +222,30 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     });
 
     const select = screen.getByTestId('solution-preset-dropdown');
-    fireEvent.change(select, { target: { value: 'Normal' } });
 
-    expect(select.value).toBe('Normal');
-    expect(screen.getByTestId('solution-flow-card')).toHaveTextContent(/Expected True Label:\s*Normal/i);
+    // 1. Category names are not selectable as input options
+    const optionValues = Array.from(select.querySelectorAll('option')).map((o) => o.value);
+    expect(optionValues).not.toContain('Normal');
+    expect(optionValues).not.toContain('DoS');
+    expect(optionValues).not.toContain('Fuzzers');
+    expect(optionValues).not.toContain('Generic');
+    expect(optionValues).toContain('Flow 0001');
+    expect(optionValues).toContain('Flow 0002');
+
+    // 2. Network-flow records are displayed and selectable
+    fireEvent.change(select, { target: { value: 'Flow 0001' } });
+    expect(select.value).toBe('Flow 0001');
+    expect(screen.getByTestId('solution-flow-card')).toHaveTextContent(/Flow 0001/i);
+    expect(screen.getByTestId('solution-flow-card')).toHaveTextContent(/TCP/i);
+
+    // 3. Ground truth is not exposed in the input selection card
+    expect(screen.getByTestId('solution-flow-card')).not.toHaveTextContent(/Expected True Label/i);
+
+    // 4. Zero-duration flows do not produce infinite/absurd packet rates (N/A)
+    fireEvent.change(select, { target: { value: 'Flow 0002' } });
+    expect(select.value).toBe('Flow 0002');
+    expect(screen.getByTestId('solution-packet-rate')).toHaveTextContent('N/A');
+    expect(screen.getByTestId('solution-byte-rate')).toHaveTextContent('N/A');
   });
 
   it('3. Detection invokes /predict/hierarchical', async () => {

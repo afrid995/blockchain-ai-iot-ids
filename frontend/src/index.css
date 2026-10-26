@@ -2281,6 +2281,91 @@ textarea.form-control:focus {
   margin-top: 0.75rem;
 }
 
+/* Network Traffic Selector */
+.traffic-selector-bar {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.traffic-flow-btn {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.traffic-flow-btn:hover {
+  border-color: #60a5fa;
+  color: var(--text-primary);
+}
+
+.traffic-flow-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.traffic-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  max-height: 220px;
+}
+
+.traffic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.traffic-table th {
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.traffic-table td {
+  padding: 0.42rem 0.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.traffic-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.traffic-table tr.selected td {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.eval-ground-truth-box {
+  margin-top: 1rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
 .flow-spec-header {
   display: flex;
   justify-content: space-between;

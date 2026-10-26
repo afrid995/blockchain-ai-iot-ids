@@ -9,14 +9,33 @@ export function IntrusionDetection({
   predictionError,
   modelStatus,
 }) {
-  const [selectedPreset, setSelectedPreset] = useState('Normal');
+  const [selectedPreset, setSelectedPreset] = useState('Flow 0001');
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [customJson, setCustomJson] = useState('');
   const [jsonError, setJsonError] = useState(null);
   const [endpointMode, setEndpointMode] = useState('hierarchical'); // 'hierarchical' | 'legacy'
 
-  const activeFlowData = flowPresetsData[selectedPreset] || flowPresetsData['Normal'];
-  const activeFeatures = activeFlowData.features;
+  const activeFlowData = flowPresetsData[selectedPreset] || flowPresetsData['Flow 0001'] || Object.values(flowPresetsData)[0];
+  const activeFeatures = activeFlowData?.features || {};
+
+  const formatDuration = (dur) => {
+    if (dur === undefined || dur === null) return 'N/A';
+    const num = Number(dur);
+    if (num < 0.0001) return '0.0000s (<10µs)';
+    return `${num.toFixed(4)}s`;
+  };
+
+  const formatRate = (rate, dur) => {
+    if (dur === undefined || dur === null || Number(dur) < 0.001) return 'N/A';
+    if (rate === undefined || rate === null || Number.isNaN(Number(rate))) return 'N/A';
+    return `${Number(rate).toFixed(1)} /s`;
+  };
+
+  const formatByteRate = (sbytes, dbytes, dur) => {
+    if (dur === undefined || dur === null || Number(dur) < 0.001) return 'N/A';
+    const totalBytes = Number(sbytes || 0) + Number(dbytes || 0);
+    return `${(totalBytes / Number(dur)).toFixed(1)} B/s`;
+  };
 
   const handlePresetChange = (e) => {
     setSelectedPreset(e.target.value);
@@ -84,7 +103,7 @@ export function IntrusionDetection({
         {/* Left Column: Flow Ingestion & Configuration */}
         <div className="console-card">
           <div className="card-header">
-            <h3 className="card-title">Network-Flow Input Record</h3>
+            <h3 className="card-title">Network-Flow Input Record (Network Traffic)</h3>
             <span className="badge badge-secondary">UNSW-NB15 Flow Features</span>
           </div>
 
@@ -102,7 +121,7 @@ export function IntrusionDetection({
                   }}
                   data-testid="mode-preset-btn"
                 >
-                  Authentic Flow Presets
+                  Authentic UNSW-NB15 Records
                 </button>
                 <button
                   type="button"
@@ -122,57 +141,162 @@ export function IntrusionDetection({
 
             {!isCustomMode ? (
               <>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="preset-select">
-                    Select Test Flow Scenario:
-                  </label>
-                  <select
-                    id="preset-select"
-                    className="form-control"
-                    value={selectedPreset}
-                    onChange={handlePresetChange}
-                    data-testid="preset-dropdown"
-                  >
-                    {Object.keys(flowPresetsData).map((key) => (
-                      <option key={key} value={key}>
-                        {key} ({flowPresetsData[key].intended_scenario || flowPresetsData[key].true_category})
-                      </option>
-                    ))}
-                  </select>
+                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <label className="form-label" style={{ margin: 0, fontWeight: 'bold' }}>
+                      NETWORK TRAFFIC
+                    </label>
+                    <span className="font-xs text-muted">Authentic UNSW-NB15 Records</span>
+                  </div>
+
+                  {/* Flow Quick-Selection Pills */}
+                  <div className="traffic-selector-bar" role="tablist" aria-label="Select Network Traffic Record">
+                    {Object.keys(flowPresetsData).map((key) => {
+                      const flow = flowPresetsData[key];
+                      const proto = (flow.summary?.protocol || flow.features?.proto || '').toUpperCase();
+                      const isSelected = selectedPreset === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`traffic-flow-btn ${isSelected ? 'active' : ''}`}
+                          onClick={() => setSelectedPreset(key)}
+                          data-testid={`flow-btn-${key}`}
+                          aria-selected={isSelected}
+                          role="tab"
+                        >
+                          {key} ({proto})
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Flow Records Table View */}
+                  <div className="traffic-table-container">
+                    <table className="traffic-table" data-testid="traffic-records-table">
+                      <thead>
+                        <tr>
+                          <th>Flow ID</th>
+                          <th>Protocol</th>
+                          <th>Service</th>
+                          <th>State</th>
+                          <th>Duration</th>
+                          <th>Packets</th>
+                          <th>Bytes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.keys(flowPresetsData).map((key) => {
+                          const flow = flowPresetsData[key];
+                          const s = flow.summary || {};
+                          const f = flow.features || {};
+                          const proto = (s.protocol || f.proto || '').toUpperCase();
+                          const service = s.service || f.service || '-';
+                          const state = s.state || f.state || '-';
+                          const dur = s.duration ?? f.dur ?? 0;
+                          const pkts = (f.spkts || 0) + (f.dpkts || 0);
+                          const bytes = (f.sbytes || 0) + (f.dbytes || 0);
+                          const isSelected = selectedPreset === key;
+
+                          return (
+                            <tr
+                              key={key}
+                              className={isSelected ? 'selected' : ''}
+                              onClick={() => setSelectedPreset(key)}
+                              data-testid={`traffic-row-${key}`}
+                            >
+                              <td className="font-mono"><strong>{key}</strong></td>
+                              <td className="font-mono">{proto}</td>
+                              <td className="font-mono">{service}</td>
+                              <td className="font-mono">{state}</td>
+                              <td className="font-mono">{formatDuration(dur)}</td>
+                              <td className="font-mono">{pkts.toLocaleString()}</td>
+                              <td className="font-mono">{bytes.toLocaleString()}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Accessible Dropdown for Flow Selection */}
+                  <div style={{ marginTop: '0.4rem' }}>
+                    <label htmlFor="preset-select" className="font-xs text-muted" style={{ display: 'block', marginBottom: '0.2rem' }}>
+                      Select Traffic Record:
+                    </label>
+                    <select
+                      id="preset-select"
+                      className="form-control font-mono font-xs"
+                      value={selectedPreset}
+                      onChange={handlePresetChange}
+                      data-testid="preset-dropdown"
+                    >
+                      {Object.keys(flowPresetsData).map((key) => {
+                        const flow = flowPresetsData[key];
+                        const s = flow.summary || {};
+                        const f = flow.features || {};
+                        const proto = (s.protocol || f.proto || '').toUpperCase();
+                        const dur = formatDuration(s.duration ?? f.dur ?? 0);
+                        const pkts = (f.spkts || 0) + (f.dpkts || 0);
+                        const bytes = (f.sbytes || 0) + (f.dbytes || 0);
+                        return (
+                          <option key={key} value={key}>
+                            {key} — {proto} · {pkts} pkts · {bytes} B · {dur}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
                 </div>
 
-                {/* Flow Parameters Summary Card */}
-                <div className="flow-spec-card">
+                {/* Selected Flow Detail Card */}
+                <div className="flow-spec-card" data-testid="selected-flow-details">
                   <div className="flow-spec-header">
-                    <span>Selected Flow Telemetry Summary</span>
+                    <span>SELECTED NETWORK FLOW</span>
                     <span className="font-mono font-xs text-secondary">
-                      True Label: {activeFlowData.true_category || selectedPreset}
+                      {selectedPreset} (UNSW-NB15 Record #{String(activeFlowData.dataset_id || 1).padStart(6, '0')})
                     </span>
                   </div>
                   <div className="flow-spec-grid">
                     <div className="spec-item">
                       <span className="spec-label">Protocol:</span>
-                      <span className="spec-val font-mono">{activeFlowData.summary?.protocol || activeFeatures.proto}</span>
+                      <span className="spec-val font-mono">{String(activeFlowData.summary?.protocol || activeFeatures.proto).toUpperCase()}</span>
                     </div>
                     <div className="spec-item">
                       <span className="spec-label">Service:</span>
-                      <span className="spec-val font-mono">{activeFlowData.summary?.service || activeFeatures.service}</span>
+                      <span className="spec-val font-mono">{activeFlowData.summary?.service || activeFeatures.service || '-'}</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-label">Transaction State:</span>
+                      <span className="spec-val font-mono">{activeFlowData.summary?.state || activeFeatures.state || '-'}</span>
                     </div>
                     <div className="spec-item">
                       <span className="spec-label">Duration:</span>
-                      <span className="spec-val font-mono">{(activeFlowData.summary?.duration ?? activeFeatures.dur).toFixed(4)}s</span>
+                      <span className="spec-val font-mono">{formatDuration(activeFlowData.summary?.duration ?? activeFeatures.dur)}</span>
                     </div>
                     <div className="spec-item">
                       <span className="spec-label">Packets:</span>
                       <span className="spec-val font-mono">{activeFeatures.spkts} src / {activeFeatures.dpkts} dst</span>
                     </div>
                     <div className="spec-item">
-                      <span className="spec-label">Bytes:</span>
-                      <span className="spec-val font-mono">{activeFeatures.sbytes} src / {activeFeatures.dbytes} dst</span>
+                      <span className="spec-label">Transaction Bytes:</span>
+                      <span className="spec-val font-mono">{(activeFeatures.sbytes || 0).toLocaleString()} src / {(activeFeatures.dbytes || 0).toLocaleString()} dst</span>
                     </div>
                     <div className="spec-item">
                       <span className="spec-label">Packet Rate:</span>
-                      <span className="spec-val font-mono">{Number(activeFeatures.rate).toFixed(1)} /s</span>
+                      <span className="spec-val font-mono" data-testid="selected-flow-packet-rate">{formatRate(activeFeatures.rate, activeFeatures.dur)}</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-label">Byte Rate:</span>
+                      <span className="spec-val font-mono" data-testid="selected-flow-byte-rate">{formatByteRate(activeFeatures.sbytes, activeFeatures.dbytes, activeFeatures.dur)}</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-label">TTL (Time-to-Live):</span>
+                      <span className="spec-val font-mono">{activeFeatures.sttl} src / {activeFeatures.dttl} dst</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-label">Same-Service Conns:</span>
+                      <span className="spec-val font-mono">{activeFeatures.ct_srv_src} (ct_srv_src)</span>
                     </div>
                   </div>
                 </div>
@@ -234,7 +358,7 @@ export function IntrusionDetection({
                     <span className="spinner" /> Analyzing Network Flow...
                   </span>
                 ) : (
-                  '⚡ Analyze Network Flow'
+                  '⚡ ANALYZE NETWORK FLOW'
                 )}
               </button>
             </div>
@@ -257,7 +381,7 @@ export function IntrusionDetection({
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📡</div>
               <strong>Awaiting Network Flow Input</strong>
               <p className="text-secondary font-xs" style={{ marginTop: '0.25rem' }}>
-                Select a flow scenario on the left and click "Analyze Network Flow" to execute off-chain classification.
+                Select a network traffic record on the left and click "ANALYZE NETWORK FLOW" to execute off-chain classification.
               </p>
             </div>
           ) : (
@@ -272,7 +396,7 @@ export function IntrusionDetection({
                 data-testid="stage1-result-box"
               >
                 <div className="stage-card-header">
-                  <span className="stage-tag">STAGE 1: BINARY IDS</span>
+                  <span className="stage-tag">STAGE 1 — BINARY IDS</span>
                   <span className="font-mono font-xs">
                     Model: {predictionResult.stage1_model_id || predictionResult.model_id || 'iot-ids-rf'}
                   </span>
@@ -291,11 +415,9 @@ export function IntrusionDetection({
                       }}
                       data-testid="prediction-label"
                     >
-                      {predictionResult.stage1_prediction
-                        ? predictionResult.stage1_prediction
-                        : predictionResult.prediction === 'Attack'
-                        ? 'Attack / Malicious Flow'
-                        : predictionResult.prediction}
+                      {predictionResult.stage1_prediction === 'Attack' || predictionResult.prediction === 'Attack'
+                        ? 'ATTACK / Malicious Flow'
+                        : 'BENIGN / Normal Flow'}
                     </div>
                   </div>
 
@@ -321,7 +443,7 @@ export function IntrusionDetection({
               {predictionResult.stage2_invoked ? (
                 <div className="result-stage-card attack-theme" style={{ marginTop: '1rem' }} data-testid="stage2-result-box">
                   <div className="stage-card-header">
-                    <span className="stage-tag">STAGE 2: MULTICLASS ATTACK CLASSIFIER</span>
+                    <span className="stage-tag">STAGE 2 — ATTACK CLASSIFICATION</span>
                     <span className="font-mono font-xs">
                       Model: {predictionResult.stage2_model_id || 'iot-ids-attack-classifier'}
                     </span>
@@ -351,8 +473,8 @@ export function IntrusionDetection({
                   </div>
                 </div>
               ) : (
-                <div className="stage2-bypassed-card" style={{ marginTop: '1rem' }}>
-                  <span>ℹ️ <strong>Stage 2 Multiclass Classifier: Bypassed</strong> (Stage 1 classified flow as Benign). Normal traffic does not invoke attack categorization.</span>
+                <div className="stage2-bypassed-card" style={{ marginTop: '1rem' }} data-testid="stage2-bypassed">
+                  <span>ℹ️ <strong>Stage 2 Multiclass Classifier: Bypassed</strong> (Stage 2: BYPASSED — Stage1 classified this flow as Benign). Normal traffic does not invoke attack categorization.</span>
                 </div>
               )}
 
@@ -363,7 +485,7 @@ export function IntrusionDetection({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span className="advisory-icon">📋</span>
                       <h4 className="advisory-title">
-                        Operator Advisory Recommendation: {predictionResult.advisory_recommendation.category}
+                        SECURITY ADVISORY: {predictionResult.advisory_recommendation.category}
                       </h4>
                     </div>
                     <div className="advisory-meta-pills">
@@ -385,11 +507,20 @@ export function IntrusionDetection({
                     </div>
 
                     <div className="advisory-item">
-                      <span className="advisory-item-label">Investigation Guidance:</span>
+                      <span className="advisory-item-label">Operator Guidance:</span>
                       <p className="advisory-item-text text-secondary font-xs" data-testid="advisory-operator-guidance">
                         {predictionResult.advisory_recommendation.operator_guidance}
                       </p>
                     </div>
+
+                    {predictionResult.advisory_recommendation.rationale && (
+                      <div className="advisory-item">
+                        <span className="advisory-item-label">Rationale:</span>
+                        <p className="advisory-item-text text-secondary font-xs">
+                          {predictionResult.advisory_recommendation.rationale}
+                        </p>
+                      </div>
+                    )}
 
                     {predictionResult.advisory_recommendation.limitations && (
                       <div className="advisory-item">
@@ -406,6 +537,14 @@ export function IntrusionDetection({
                   </div>
                 </div>
               )}
+
+              {/* Ground Truth: Research Evaluation Only */}
+              <div className="eval-ground-truth-box" data-testid="ground-truth-eval-box">
+                <span className="text-muted" style={{ fontWeight: 'bold' }}>GROUND TRUTH — EVALUATION ONLY: </span>
+                <span className="font-mono font-xs text-secondary" style={{ marginLeft: '0.4rem' }}>
+                  {activeFlowData.ground_truth?.attack_cat || 'Normal'} (Label {activeFlowData.ground_truth?.label ?? 0})
+                </span>
+              </div>
             </div>
           )}
         </div>
