@@ -3,7 +3,7 @@
 **Project:** Blockchain-Based Provenance and Tamper-Evident Auditing for AI-Driven IoT Intrusion Detection  
 **Repository:** `https://github.com/afrid995/blockchain-ai-iot-ids.git`  
 **Starting Checkpoint:** `b741bec72923eaa02de4296b79ccfe8934fe9cdd`  
-**Date:** October 25, 2026  
+**Date:** October 25, 2026 (Reconciled: October 26, 2026)
 **Status:** Completed  
 
 ---
@@ -26,7 +26,7 @@ All existing Phase 7B.6 operations console views (`Dashboard`, `Intrusion Detect
 ## 2. Checkpoint Information
 
 - **Starting Checkpoint:** `b741bec72923eaa02de4296b79ccfe8934fe9cdd`
-- **Target Commit Message:** `feat: add end-to-end security solution demonstrator`
+- **Target Commit Message:** `docs: finalize phase 7c research documentation`
 - **Final Checkpoint (Local and Remote):** Reported externally upon commit and push to avoid self-referential hash discrepancy.
 
 ---
@@ -38,7 +38,7 @@ All existing Phase 7B.6 operations console views (`Dashboard`, `Intrusion Detect
      - `MODE 1 — DETECT`: Full legitimate IDS workflow with model verification badges, authentic UNSW-NB15 flow presets, custom JSON input, Stage 1 binary output, conditional Stage 2 categorization (or bypass notice), operator advisory recommendations, and recorded audit evidence.
      - `MODE 2 — PROTECT`: Controlled ephemeral model replacement simulator, dual SHA-256 hash comparison, fail-closed enforcement manifest (Model Load BLOCKED, Inference LOCKED), unregistered candidate test (`v9.9.9`), and restore model action.
      - `MODE 3 — EVIDENCE`: Problem-to-Solution Traceability Table, authoritative benchmark metrics, and explicit 7-point research limitations card.
-   - Real-time 6-stage visual pipeline tracker (`[1] MODEL TRUST ➔ [2] NETWORK FLOW ➔ [3] STAGE 1 IDS ➔ [4] STAGE 2 MULTICLASS ➔ [5] ADVISORY ➔ [6] AUDIT EVIDENCE`).
+   - A 6-stage visual pipeline tracker displaying workflow state (`[1] MODEL TRUST ➔ [2] NETWORK FLOW ➔ [3] STAGE 1 IDS ➔ [4] STAGE 2 MULTICLASS ➔ [5] ADVISORY ➔ [6] AUDIT EVIDENCE`).
 2. **`frontend/src/components/Navigation.jsx` (Updated):**
    - Added `Security Solution` tab (`id: 'solution'`) as the premier navigation item with subtitle `End-to-End Problem & Workflow`, while preserving all 6 existing tabs (`dashboard`, `detection`, `model-security`, `security-testing`, `audit`, `research-results`).
 3. **`frontend/src/App.jsx` (Updated):**
@@ -62,9 +62,9 @@ All existing Phase 7B.6 operations console views (`Dashboard`, `Intrusion Detect
   - Input: 42 UNSW-NB15 features (e.g., rate = 74.1/s, duration = 0.1215s)
   - Endpoint: `POST /predict/hierarchical`
   - Stage 1 Binary IDS: `Attack` (confidence: 94.36%)
-  - Stage 2 Multiclass IDS: `DoS` (confidence: 51.37%)
+  - Stage 2 Multiclass IDS: Stage 2 classified the demonstrated attack flow as DoS.
   - Advisory Recommendation: High severity, high investigation priority, inspect connection-rate anomalies, human operator sign-off required
-  - Audit Record: Event `caa8c140-5bba-4ad9-8b48-9c9013369199` logged in local SQLite
+  - Audit Record: Event `caa8c140-5bba-4ad9-8b48-9c9013369199` logged in local SQLite operational audit store
   - Per-Flow Blockchain Queries: `0`
 - **Flow 2 (Normal Benign Scenario):**
   - Stage 1 Binary IDS: `Benign`
@@ -81,7 +81,7 @@ All existing Phase 7B.6 operations console views (`Dashboard`, `Intrusion Detect
   - Downstream Inference: `LOCKED (Fail-Closed)`
   - Subsequent inference attempt (`POST /predict/hierarchical`) immediately returns `HTTP 503 Service Unavailable`:
     > *"Hierarchical inference rejected: Models are not verified or loaded (status: 'HASH_MISMATCH'). Fail-closed verification gate is active."*
-  - Security Incident: Logged in local SQLite audit trail
+  - Security Incident: Logged in local SQLite operational audit store
 
 ### 4.3 Restoration Demonstration (Workflow C)
 - **Trigger:** Evaluator clicks `↻ RESTORE VERIFIED MODEL` (`POST /demo/model-replacement/reset`)
@@ -147,11 +147,12 @@ tests/test_stage2_provenance.py: 10/10 passed
 
 - **Canonical Stage 1 Hash:** `dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5` (Unchanged)
 - **Canonical Stage 2 Hash:** `596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208` (Unchanged)
-- **Raw Datasets:** Intact and verified
-- **Smart Contract:** `blockchain/contracts/ModelRegistry.sol` unmodified
+- **Raw Training Dataset SHA-256:** `734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559` (Unchanged)
+- **Raw Testing Dataset SHA-256:** `bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa` (Reconciled with authoritative on-disk digest)
+- **Smart Contract:** `blockchain/contracts/ModelRegistry.sol` source and contract implementation unmodified
 - **Per-Flow Blockchain Overhead:** Decoupled; `per_flow_blockchain_queries = 0`
-- **Advisory Response:** Non-autonomous; human approval strictly required
-- **Audit Logging:** Decoupled SQLite storage without raw 42-feature persistence
+- **Advisory Response:** Non-autonomous; human approval strictly required (`requires_human_approval: true`, `automated_remediation_enabled: false`)
+- **Audit Logging:** The local SQLite operational audit trail records prediction and security-event metadata while excluding raw 42-feature network-flow vectors. It is separate from the on-chain model provenance registry and is not itself a blockchain-backed immutable log.
 - **Prohibited Marketing Terms:** Zero occurrences of speculative claims ("tamper-proof", "real-time IDS", "blockchain detects hackers", "autonomous defense")
 
 ---

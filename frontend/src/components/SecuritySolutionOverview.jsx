@@ -392,7 +392,7 @@ export function SecuritySolutionOverview({
 
                     <div className="flow-spec-card">
                       <div className="flow-spec-header">
-                        <span>Flow Telemetry Summary</span>
+                        <span>Flow Feature Summary</span>
                         <span className="font-mono font-xs text-secondary">
                           Expected True Label: {activeFlow.true_category || selectedPreset}
                         </span>
@@ -722,7 +722,7 @@ export function SecuritySolutionOverview({
               </div>
             </div>
 
-            {/* Right Column: Simulation Telemetry & Fail-Closed Status */}
+            {/* Right Column: Simulation Execution State & Fail-Closed Status */}
             <div className="console-card">
               <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 className="card-title">Enforcement &amp; Verification Gating State</h3>
