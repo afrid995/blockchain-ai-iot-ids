@@ -156,6 +156,10 @@ class ModelService:
             registrant = self.last_verification_result.get("registrant")
             v_details = self.last_verification_result.get("details", {})
 
+        if not contract_addr:
+            from backend.config import settings
+            contract_addr = settings.CONTRACT_ADDRESS
+
         return {
             "model_id": self.model_id,
             "model_version": self.model_version,

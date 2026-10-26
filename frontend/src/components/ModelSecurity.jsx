@@ -22,8 +22,8 @@ export function ModelSecurity({
   const algorithm = isStage1 ? (modelStatus?.algorithm || 'RandomForestClassifier') : (stage2Status?.algorithm || 'RandomForestClassifier');
   const artifactPath = isStage1 ? 'ml/artifacts/ids_model.joblib' : 'ml/artifacts/attack_classifier.joblib';
   const artifactSize = verifyResult?.artifact_size_bytes ?? activeStatus?.artifact_size_bytes ?? (isStage1 ? 448512 : 524288);
-  const contractAddress = activeStatus?.contract_address || '0x5FbDB2315678afecb367f032d93F642f64180aa3';
-  const registrant = verifyResult?.registrant || activeStatus?.registrant || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+  const contractAddress = verifyResult?.contract_address || activeStatus?.contract_address || '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec';
+  const registrant = verifyResult?.registrant || activeStatus?.registrant || '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1';
   const registeredAt = verifyResult?.registered_at || activeStatus?.registered_at || 1729850000;
   const formattedDate = registeredAt ? new Date(registeredAt * 1000).toUTCString() : '2026-10-25 10:00:00 UTC';
 

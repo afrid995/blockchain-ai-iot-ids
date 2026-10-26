@@ -72,8 +72,8 @@ export function SecuritySolutionOverview({
   const isMismatch = currentVerifyStatus === 'HASH_MISMATCH' || (!isDigestMatch && currentVerifyStatus !== 'NOT_REGISTERED' && currentVerifyStatus !== 'UNVERIFIED');
   const isNotRegistered = currentVerifyStatus === 'NOT_REGISTERED';
 
-  const contractAddress = activeStatus?.contract_address || '0x5FbDB2315678afecb367f032d93F642f64180aa3';
-  const registrantAddress = activeVerify?.registrant || activeStatus?.registrant || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+  const contractAddress = activeVerify?.contract_address || activeStatus?.contract_address || '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec';
+  const registrantAddress = activeVerify?.registrant || activeStatus?.registrant || '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1';
   const registeredAtTimestamp = activeVerify?.registered_at || activeStatus?.registered_at || 1729850000;
   const formattedRegistrationDate = registeredAtTimestamp ? new Date(registeredAtTimestamp * 1000).toUTCString() : '2026-10-25 10:00:00 UTC';
 
@@ -730,7 +730,7 @@ LOCAL ARTIFACT    MODEL REGISTRY
                     <li><strong>Gated Memory Loading:</strong> Matching digests allow the model-loading path to proceed into memory.</li>
                     <li><strong>Fail-Closed Enforcement:</strong> Any mismatch aborts deserialization and locks downstream inference fail-closed.</li>
                     <li><strong>Provenance Anchor:</strong> The blockchain serves exclusively as the provenance/reference consensus layer.</li>
-                    <li><strong>Zero Ingestion Overhead:</strong> Blockchain queries occur at control-plane registration/verification, strictly decoupled from the per-flow <code>/predict/hierarchical</code> inference path (0 per-flow queries).</li>
+                    <li><strong>No Per-Flow Blockchain Lookup:</strong> The evaluated <code>/predict/hierarchical</code> inference path performed zero observed blockchain queries per network flow. Blockchain interaction occurs strictly during control-plane pre-load verification.</li>
                   </ol>
 
                   <div className="alert-box warning font-xs" style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem' }}>

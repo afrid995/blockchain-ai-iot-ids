@@ -35,7 +35,7 @@ The phase fulfills all 12 evaluator verification criteria with observable system
 | **1** | **Which model is being verified?** | Displayed in Model Identity: `model_id` (`iot-ids-rf` or `iot-ids-attack-classifier`), `model_version` (`v1.0.0`), `algorithm` (`RandomForestClassifier`), and physical artifact path. |
 | **2** | **What SHA-256 was calculated for the artifact?** | Displayed in Observed Digest: `dc5e1688...e7c5` (canonical) or `a7fc4306...cf65` (perturbed candidate), toggleable to full 64-hex string. |
 | **3** | **What SHA-256 is registered for that model/version?** | Displayed in Registered Digest: `dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5`. |
-| **4** | **Where did the registered value come from?** | Retrieved via web3 call to `ModelRegistry.sol` using function `getModelRecord(model_id, version)` at contract address `0x5FbDB2315678afecb367f032d93F642f64180aa3`. |
+| **4** | **Where did the registered value come from?** | Retrieved via web3 call to `ModelRegistry.sol` using function `getModelRecord(model_id, version)` at contract address `0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec`. |
 | **5** | **Did the values actually match?** | Displayed explicitly in Cryptographic Panel: Comparison indicator (`=` vs `≠`) and comparison result (`MATCH` vs `MISMATCH`). |
 | **6** | **What happened when they matched?** | Verification decision transitioned to `VERIFIED — MODEL LOAD AUTHORIZED`, permitting `📥 AUTHORIZE & LOAD MODEL` into memory. |
 | **7** | **What happened when the artifact was modified?** | Candidate copy byte perturbation at offset 500 altered observed SHA to `a7fc4306...`, resulting in `≠` inequality and `HASH_MISMATCH`. |

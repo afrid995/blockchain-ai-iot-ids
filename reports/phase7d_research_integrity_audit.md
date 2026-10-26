@@ -135,7 +135,7 @@ All displayed performance metrics align exactly with authoritative empirical res
 
 ## 8. Summary Conclusion
 
-Phase 7D adheres to the highest standards of research integrity:
+Phase 7D is research-integrity compliant within the evaluated implementation and documented experimental scope:
 1. Canonical models and datasets are unmodified.
 2. The verification evidence exposed reflects actual runtime cryptographic and smart-contract executions.
 3. No fake, placeholder, or decorative hashes exist.

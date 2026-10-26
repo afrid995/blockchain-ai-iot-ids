@@ -19,6 +19,8 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     algorithm: 'RandomForestClassifier',
     local_sha256: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
     registered_sha256: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+    contract_address: '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec',
+    registrant: '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
     verification_status: 'VERIFIED',
     is_loaded: true,
     last_verified_at: '2026-10-25T12:05:00Z',
@@ -120,8 +122,9 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     model_version: 'v1.0.0',
     read_latency_ms: 15.65,
     algorithm: 'RandomForestClassifier',
+    contract_address: '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec',
     registered_at: 1729850000,
-    registrant: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    registrant: '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
     artifact_size_bytes: 448512,
   };
 
@@ -548,6 +551,7 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     expect(pageText).not.toMatch(/\btamper-proof\b/i);
     expect(pageText).not.toMatch(/\bzero latency\b/i);
     expect(pageText).not.toMatch(/\bzero overhead\b/i);
+    expect(pageText).not.toMatch(/\bzero ingestion overhead\b/i);
     expect(pageText).not.toMatch(/\breal-time ids\b/i);
     expect(pageText).not.toMatch(/\bwire-speed\b/i);
     expect(pageText).not.toMatch(/\bautonomous defense\b/i);
@@ -622,10 +626,10 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('solution-blockchain-panel')).toBeInTheDocument();
-      expect(screen.getByTestId('blockchain-contract-address')).toHaveTextContent(/0x5FbDB2315678afecb367f032d93F642f64180aa3/i);
+      expect(screen.getByTestId('blockchain-contract-address')).toHaveTextContent(/0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec/i);
       expect(screen.getByTestId('blockchain-reg-status')).toHaveTextContent(/REGISTERED/i);
       expect(screen.getByTestId('blockchain-algorithm')).toHaveTextContent('RandomForestClassifier');
-      expect(screen.getByTestId('blockchain-registrant')).toHaveTextContent(/0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266/i);
+      expect(screen.getByTestId('blockchain-registrant')).toHaveTextContent(/0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1/i);
       expect(screen.getByTestId('blockchain-reg-digest')).toHaveTextContent('dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5');
     });
   });

@@ -96,11 +96,11 @@ The React frontend (`frontend/src/components/SecuritySolutionOverview.jsx`) inco
 
 ### 4.3 Blockchain Evidence Panel: BLOCKCHAIN PROVENANCE LOOKUP
 - Panel ID: `data-testid="solution-blockchain-panel"`
-- Registry contract address: `0x5FbDB2315678afecb367f032d93F642f64180aa3` (`ModelRegistry.sol`)
+- Registry contract address: `0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec` (`ModelRegistry.sol`)
 - Queried model ID and version: `iot-ids-rf:v1.0.0`
 - Registration status: `✓ REGISTERED (isModelRegistered = true)` (`data-testid="blockchain-reg-status"`)
 - Registered algorithm: `RandomForestClassifier` (`data-testid="blockchain-algorithm"`)
-- Registrant wallet address (`data-testid="blockchain-registrant"`)
+- Registrant wallet address: `0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1` (`data-testid="blockchain-registrant"`)
 - Registered timestamp formatted to UTC (`data-testid="blockchain-timestamp"`)
 - Explicit contract interface notice:
   > *Contract Interface:* Backend verification service queried the registered model record via web3 contract call (`getModelRecord`, `getModelHash`, `isModelRegistered`). Registered digest retrieved from the evaluated ModelRegistry.
@@ -168,7 +168,7 @@ The React frontend (`frontend/src/components/SecuritySolutionOverview.jsx`) inco
   4. **Gated Memory Loading:** Matching digests permit deserialization into memory.
   5. **Fail-Closed Enforcement:** Any mismatch terminates deserialization and disables inference.
   6. **Provenance Anchor:** Blockchain serves solely as consensus reference, never per-flow classifier.
-  7. **Zero Ingestion Overhead:** Per-flow inference path (`/predict/hierarchical`) makes zero blockchain queries.
+  7. **No Per-Flow Blockchain Lookup:** The evaluated `/predict/hierarchical` inference path performed zero observed blockchain queries per network flow. Blockchain interaction occurs strictly during control-plane pre-load verification.
 - Mandatory research limitation notice:
   > **Research Integrity Notice:** SHA-256 equality proves byte-level correspondence with the registered artifact. It does not prove that the registered model is accurate, safe, robust, or free from poisoned training data.
 
