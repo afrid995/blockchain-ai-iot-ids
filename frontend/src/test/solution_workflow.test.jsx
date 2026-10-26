@@ -776,4 +776,205 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
     expect(screen.getByText(/TAMPERING \/ REPLACEMENT INCIDENT DETECTED/i)).toBeInTheDocument();
     expect(screen.getByText(/MODEL LOAD: BLOCKED \| INFERENCE: LOCKED/i)).toBeInTheDocument();
   });
+
+  // =========================================================================
+  // Phase 7D.5: Explicit Model Verification and Load Lifecycle Tests
+  // =========================================================================
+
+  const mockStartupStatusUnverified = {
+    model_id: 'iot-ids-rf',
+    model_version: 'v1.0.0',
+    algorithm: 'RandomForestClassifier',
+    model_path: 'ml/artifacts/ids_model.joblib',
+    artifact_size_bytes: 448512,
+    local_sha256: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+    registered_sha256: null,
+    contract_address: '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec',
+    registered_at: null,
+    registrant: null,
+    verification_status: 'UNVERIFIED',
+    is_loaded: false,
+    last_verified_at: null,
+    read_latency_ms: null,
+    details: {},
+  };
+
+  it('28. Initial application mount renders UNVERIFIED and UNLOADED without automatic verify or load calls', async () => {
+    const spyVerify = vi.spyOn(api, 'verifyModel');
+    const spyLoad = vi.spyOn(api, 'loadModel');
+    vi.spyOn(api, 'getHealth').mockResolvedValue({ ...mockHealth, model_status: 'unloaded (UNVERIFIED)' });
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockStartupStatusUnverified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue({ total: 0, events: [] });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+
+    // Verify badges and labels reflect unverified / unloaded
+    expect(screen.getByTestId('solution-model-trust-badge')).toHaveTextContent(/UNVERIFIED/i);
+    expect(screen.getByText(/UNLOADED \(Locked Fail-Closed\)/i)).toBeInTheDocument();
+
+    // Zero automatic POST /model/verify or POST /model/load on mount
+    expect(spyVerify).not.toHaveBeenCalled();
+    expect(spyLoad).not.toHaveBeenCalled();
+  });
+
+  it('29. Top posture card shows unverified and locked state before operator actions', () => {
+    render(
+      <SecuritySolutionOverview
+        health={{ ...mockHealth, model_status: 'unloaded (UNVERIFIED)' }}
+        modelStatus={mockStartupStatusUnverified}
+        stage2Status={mockStartupStatusUnverified}
+        isModelLoaded={false}
+      />
+    );
+
+    const tracker = screen.getByTestId('pipeline-tracker');
+    expect(within(tracker).getByText(/\[1\] MODEL PROVENANCE/i)).toBeInTheDocument();
+    expect(within(tracker).getByText(/● UNVERIFIED/i)).toBeInTheDocument();
+    expect(within(tracker).getByText(/LOCKED — VERIFY MODEL FIRST/i)).toBeInTheDocument();
+    expect(within(tracker).getByText(/AWAITING MODEL AUTHORIZATION/i)).toBeInTheDocument();
+    expect(within(tracker).getByText(/NOT AVAILABLE/i)).toBeInTheDocument();
+    expect(within(tracker).getByText(/0 PER-FLOW EVM QUERIES/i)).toBeInTheDocument();
+  });
+
+  it('30. AUTHORIZE & LOAD MODEL button is disabled before verification', () => {
+    render(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={mockStartupStatusUnverified}
+        stage2Status={mockStartupStatusUnverified}
+        isModelLoaded={false}
+      />
+    );
+
+    const loadBtn = screen.getByTestId('solution-load-btn');
+    expect(loadBtn).toBeDisabled();
+    expect(screen.getByTestId('solution-verify-btn')).not.toBeDisabled();
+  });
+
+  it('31. Successful verification enables AUTHORIZE & LOAD without immediately loading model', async () => {
+    const onVerifyMock = vi.fn().mockResolvedValue({
+      verified: true,
+      status: 'VERIFIED',
+      is_loaded: false,
+      local_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      contract_address: '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec',
+      algorithm: 'RandomForestClassifier',
+    });
+
+    const { rerender } = render(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={mockStartupStatusUnverified}
+        stage2Status={mockStartupStatusUnverified}
+        isModelLoaded={false}
+        onVerify={onVerifyMock}
+      />
+    );
+
+    // Click verify
+    fireEvent.click(screen.getByTestId('solution-verify-btn'));
+    expect(onVerifyMock).toHaveBeenCalled();
+
+    // Rerender with verified but unloaded status
+    const verifiedUnloadedStatus = {
+      ...mockStartupStatusUnverified,
+      verification_status: 'VERIFIED',
+      registered_sha256: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      is_loaded: false,
+    };
+
+    rerender(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={verifiedUnloadedStatus}
+        stage2Status={verifiedUnloadedStatus}
+        isModelLoaded={false}
+        verifyResult={{
+          verified: true,
+          status: 'VERIFIED',
+          is_loaded: false,
+          model_id: 'iot-ids-rf',
+          local_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+          registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+        }}
+      />
+    );
+
+    // Now verified, load button enabled, but model remains unloaded
+    expect(screen.getByTestId('solution-model-trust-badge')).toHaveTextContent(/VERIFIED/i);
+    expect(screen.getByText(/UNLOADED \(Locked Fail-Closed\)/i)).toBeInTheDocument();
+    expect(screen.getByTestId('solution-load-btn')).not.toBeDisabled();
+  });
+
+  it('32. Explicit load sets model to LOADED & ACTIVE and unlocks Intrusion Detection Workbench', () => {
+    const onLoadMock = vi.fn();
+
+    const verifiedUnloadedStatus = {
+      ...mockStartupStatusUnverified,
+      verification_status: 'VERIFIED',
+      registered_sha256: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+      is_loaded: false,
+    };
+
+    const { rerender } = render(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={verifiedUnloadedStatus}
+        stage2Status={verifiedUnloadedStatus}
+        isModelLoaded={false}
+        onLoadModel={onLoadMock}
+        verifyResult={{
+          verified: true,
+          status: 'VERIFIED',
+          is_loaded: false,
+          model_id: 'iot-ids-rf',
+          local_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+          registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+        }}
+      />
+    );
+
+    // Click load
+    fireEvent.click(screen.getByTestId('solution-load-btn'));
+    expect(onLoadMock).toHaveBeenCalled();
+
+    // Rerender as loaded
+    rerender(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={mockModelStatusVerified}
+        stage2Status={mockStage2Status}
+        isModelLoaded={true}
+      />
+    );
+
+    expect(screen.getByText(/LOADED \(Active Memory\)/i)).toBeInTheDocument();
+    expect(screen.getByTestId('solution-load-btn')).toHaveTextContent(/MODEL LOADED & ACTIVE/i);
+  });
+
+  it('33. Reset does not silently reload the model but restores canonical artifact in UNVERIFIED/UNLOADED state', () => {
+    const unverifiedAfterReset = {
+      ...mockStartupStatusUnverified,
+      verification_status: 'UNVERIFIED',
+      is_loaded: false,
+    };
+
+    render(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={unverifiedAfterReset}
+        stage2Status={unverifiedAfterReset}
+        isModelLoaded={false}
+      />
+    );
+
+    expect(screen.getByTestId('solution-model-trust-badge')).toHaveTextContent(/UNVERIFIED/i);
+    expect(screen.getByText(/UNLOADED \(Locked Fail-Closed\)/i)).toBeInTheDocument();
+    expect(screen.getByTestId('solution-load-btn')).toBeDisabled();
+  });
 });

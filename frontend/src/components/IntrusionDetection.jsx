@@ -84,8 +84,8 @@ export function IntrusionDetection({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ fontSize: '1.4rem' }}>🔒</span>
             <div>
-              <strong>FAIL-CLOSED VERIFICATION GATE ENGAGED:</strong> Model memory is currently unloaded.
-              Network flow analysis is locked fail-closed until models are cryptographically verified against the blockchain registry.
+              <strong>MODEL NOT AUTHORIZED:</strong> Network-flow analysis unavailable.
+              Verify and load the authorized model first.
             </div>
           </div>
         </div>
@@ -352,6 +352,7 @@ export function IntrusionDetection({
                 className="btn btn-primary btn-block"
                 disabled={isPredicting}
                 data-testid="predict-btn"
+                title={!isModelLoaded ? 'Model not authorized. Verify and load the authorized model first.' : 'Analyze network flow'}
               >
                 {isPredicting ? (
                   <span>

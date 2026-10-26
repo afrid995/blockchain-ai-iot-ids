@@ -52,6 +52,7 @@ class ModelVerifyResponse(BaseModel):
     """Result of an explicit model integrity and blockchain provenance verification."""
     verified: bool
     status: str
+    is_loaded: bool = False
     model_id: str
     version: str
     model_path: str

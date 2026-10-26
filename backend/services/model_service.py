@@ -44,15 +44,14 @@ class ModelService:
         self.last_verification_result: Optional[Dict[str, Any]] = None
         self.last_verified_at: Optional[str] = None
 
-    def verify_and_load(self, verification_service: VerificationService) -> Dict[str, Any]:
-        """Execute the verification gate and conditionally load the model artifact.
+    def verify(self, verification_service: VerificationService) -> Dict[str, Any]:
+        """Execute cryptographic integrity verification against the blockchain registry.
 
-        Lifecycle:
-        1. Calculate SHA-256 of local file.
-        2. Query smart contract on blockchain for registered digest.
-        3. Strict byte comparison.
-        4. If VERIFIED -> load into memory via joblib.load() and enable inference.
-        5. If ANY FAILURE -> abort loading, purge pipeline from memory, and log security alert.
+        CRITICAL SECURITY INVARIANT:
+        This operation verifies the artifact SHA-256 against ModelRegistry.sol, but
+        DOES NOT load or deserialize the model into memory.
+        If verification succeeds, the artifact is authorized for a subsequent explicit load.
+        If verification fails, any previously loaded pipeline is purged fail-closed.
         """
         v_res = verification_service.verify(
             model_path=self.model_path,
@@ -62,51 +61,12 @@ class ModelService:
 
         self.last_verification_result = v_res
         self.last_verified_at = v_res.get("timestamp")
+        self.verification_status = v_res["status"]
 
-        if v_res["verified"] is True and v_res["status"] == "VERIFIED":
-            try:
-                # Gated deserialization: strictly executed only after hash verification passes
-                self.model_pipeline = joblib.load(self.model_path)
-                self.is_loaded = True
-                self.verification_status = "VERIFIED"
-
-                if self.audit_service:
-                    self.audit_service.log_event(
-                        event_type="MODEL_LOAD",
-                        status="SUCCESS",
-                        model_id=self.model_id,
-                        model_version=self.model_version,
-                        verification_status="VERIFIED",
-                        details={
-                            "model_path": str(self.model_path),
-                            "local_hash": v_res.get("local_hash"),
-                            "registered_hash": v_res.get("registered_hash"),
-                            "message": "Model passed verification gate and was successfully loaded into memory.",
-                        },
-                    )
-            except Exception as e:
-                # If deserialization fails despite hash matching (e.g. corrupt pickle structure)
-                self.model_pipeline = None
-                self.is_loaded = False
-                self.verification_status = "SYSTEM_ERROR"
-                v_res["verified"] = False
-                v_res["status"] = "SYSTEM_ERROR"
-                v_res["message"] = f"Deserialization error after verification: {e}"
-
-                if self.audit_service:
-                    self.audit_service.log_event(
-                        event_type="SYSTEM_ERROR",
-                        status="ERROR",
-                        model_id=self.model_id,
-                        model_version=self.model_version,
-                        verification_status="SYSTEM_ERROR",
-                        details={"error": str(e)},
-                    )
-        else:
-            # FAIL-CLOSED: strictly prohibit loading
+        if v_res.get("status") != "VERIFIED":
+            # FAIL-CLOSED: strictly prohibit loading and purge memory
             self.model_pipeline = None
             self.is_loaded = False
-            self.verification_status = v_res["status"]
 
             if self.audit_service:
                 self.audit_service.log_event(
@@ -122,7 +82,95 @@ class ModelService:
                         "registered_hash": v_res.get("registered_hash"),
                     },
                 )
+        else:
+            # Model is VERIFIED, but remains UNLOADED until an explicit load_model() call
+            # Keep is_loaded as current state (typically False prior to explicit load)
+            pass
 
+        # Return structured verification outcome with is_loaded flag
+        v_res["is_loaded"] = self.is_loaded
+        return v_res
+
+    def load_model(self) -> Dict[str, Any]:
+        """Explicitly load a verified model artifact into memory for inference execution.
+
+        Enforces strict verification gate:
+        - If verification_status != 'VERIFIED' -> reject load fail-closed.
+        - If verification_status == 'VERIFIED' -> deserialize artifact into memory.
+        """
+        if self.verification_status != "VERIFIED":
+            self.model_pipeline = None
+            self.is_loaded = False
+            if self.audit_service:
+                self.audit_service.log_event(
+                    event_type="MODEL_LOAD_BLOCKED",
+                    status="WARNING",
+                    model_id=self.model_id,
+                    model_version=self.model_version,
+                    verification_status=self.verification_status,
+                    details={
+                        "message": f"Cannot load unverified model (current status: '{self.verification_status}'). Run /model/verify first.",
+                    },
+                )
+            raise RuntimeError(
+                f"Cannot load unverified model (current status: '{self.verification_status}'). Run /model/verify first."
+            )
+
+        try:
+            # Gated deserialization: strictly executed only when verification status is VERIFIED
+            self.model_pipeline = joblib.load(self.model_path)
+            self.is_loaded = True
+
+            if self.audit_service:
+                self.audit_service.log_event(
+                    event_type="MODEL_LOAD",
+                    status="SUCCESS",
+                    model_id=self.model_id,
+                    model_version=self.model_version,
+                    verification_status="VERIFIED",
+                    details={
+                        "model_path": str(self.model_path),
+                        "local_hash": self.last_verification_result.get("local_hash") if self.last_verification_result else None,
+                        "registered_hash": self.last_verification_result.get("registered_hash") if self.last_verification_result else None,
+                        "message": "Model passed verification gate and was successfully loaded into memory.",
+                    },
+                )
+            return {
+                "status": "LOADED",
+                "verification_status": "VERIFIED",
+                "is_loaded": True,
+                "model_id": self.model_id,
+                "model_version": self.model_version,
+            }
+        except Exception as e:
+            self.model_pipeline = None
+            self.is_loaded = False
+            self.verification_status = "SYSTEM_ERROR"
+            if self.audit_service:
+                self.audit_service.log_event(
+                    event_type="SYSTEM_ERROR",
+                    status="ERROR",
+                    model_id=self.model_id,
+                    model_version=self.model_version,
+                    verification_status="SYSTEM_ERROR",
+                    details={"error": str(e)},
+                )
+            raise RuntimeError(f"Failed to load model artifact: {e}")
+
+    def verify_and_load(self, verification_service: VerificationService) -> Dict[str, Any]:
+        """Convenience method combining verify() and load_model() for automated testing."""
+        v_res = self.verify(verification_service)
+        if v_res.get("verified") is True and v_res.get("status") == "VERIFIED":
+            try:
+                self.load_model()
+                v_res["is_loaded"] = True
+            except Exception as e:
+                v_res["verified"] = False
+                v_res["status"] = "SYSTEM_ERROR"
+                v_res["is_loaded"] = False
+                v_res["message"] = str(e)
+        else:
+            v_res["is_loaded"] = False
         return v_res
 
     def unload_model(self) -> None:

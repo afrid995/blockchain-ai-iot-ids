@@ -139,21 +139,30 @@ def test_3_scenario_a_valid_registered_model(test_app_and_client, test_blockchai
         algorithm=model_service.algorithm,
     )
 
-    # 1. Trigger verification via API
+    # 1. Trigger verification via API (authenticates artifact, but does NOT load into memory)
     v_res = client.post("/model/verify")
     assert v_res.status_code == 200
     v_data = v_res.json()
 
     assert v_data["verified"] is True
     assert v_data["status"] == "VERIFIED"
+    assert v_data["is_loaded"] is False
     assert v_data["local_hash"] == real_hash
     assert v_data["registered_hash"] == real_hash
     assert v_data["details"]["cryptographic_integrity"] == "MATCH"
     assert v_data["details"]["blockchain_registration"] == "REGISTERED"
 
-    # 2. Confirm model is loaded
-    assert model_service.is_loaded is True
+    # Confirm model remains UNLOADED immediately after verification
+    assert model_service.is_loaded is False
     assert model_service.verification_status == "VERIFIED"
+
+    # 2. Explicitly authorize and load verified model into execution plane
+    load_res = client.post("/model/load")
+    assert load_res.status_code == 200
+    load_data = load_res.json()
+    assert load_data["status"] == "LOADED"
+    assert load_data["is_loaded"] is True
+    assert model_service.is_loaded is True
 
     # 3. Confirm /health reports healthy
     h_res = client.get("/health")
@@ -293,6 +302,7 @@ def test_8_scenario_f_feature_formats_and_stripping(test_app_and_client, test_bl
         algorithm=model_service.algorithm,
     )
     client.post("/model/verify")
+    client.post("/model/load")
     assert model_service.is_loaded is True
 
     # Flat request with extraneous ground-truth columns included (e.g. id, label, attack_cat)
@@ -320,6 +330,7 @@ def test_9_scenario_g_audit_retrieval_and_pagination(test_app_and_client, test_b
         algorithm=model_service.algorithm,
     )
     client.post("/model/verify")
+    client.post("/model/load")
 
     # Perform 3 predictions to generate multiple events
     for _ in range(3):
@@ -363,3 +374,125 @@ def test_10_api_validation_error_handling(test_app_and_client):
     # Empty features dictionary
     res2 = client.post("/predict", json={"features": {}})
     assert res2.status_code == 422
+
+
+def test_11_explicit_lifecycle_verify_without_load(test_app_and_client, test_blockchain):
+    """Test A: /model/verify authenticates artifact against on-chain registry but does NOT load into memory."""
+    app, client = test_app_and_client
+    model_service = app.state.model_service
+
+    real_hash = calculate_sha256(model_service.model_path)
+    test_blockchain.register_model(
+        model_id=model_service.model_id,
+        version=model_service.model_version,
+        model_hash_hex=real_hash,
+        algorithm=model_service.algorithm,
+    )
+
+    # Initial state
+    assert model_service.verification_status == "UNVERIFIED"
+    assert model_service.is_loaded is False
+    assert model_service.model_pipeline is None
+
+    # Verify
+    v_res = client.post("/model/verify")
+    assert v_res.status_code == 200
+    v_data = v_res.json()
+    assert v_data["verified"] is True
+    assert v_data["status"] == "VERIFIED"
+    assert v_data["is_loaded"] is False
+
+    # Still unloaded in memory
+    assert model_service.verification_status == "VERIFIED"
+    assert model_service.is_loaded is False
+    assert model_service.model_pipeline is None
+
+
+def test_12_explicit_lifecycle_load_unverified_fails(test_app_and_client):
+    """Test C: /model/load without prior verification returns HTTP 400 and model remains unloaded."""
+    app, client = test_app_and_client
+    model_service = app.state.model_service
+
+    assert model_service.verification_status == "UNVERIFIED"
+    assert model_service.is_loaded is False
+
+    # Calling /model/load when unverified
+    load_res = client.post("/model/load")
+    assert load_res.status_code == 400
+    assert "Cannot load unverified model" in load_res.json()["detail"]
+
+    # Model remains unloaded
+    assert model_service.is_loaded is False
+    assert model_service.model_pipeline is None
+
+
+def test_13_explicit_lifecycle_load_after_verify_succeeds(test_app_and_client, test_blockchain):
+    """Test B: /model/load succeeds only after verification, setting is_loaded: True."""
+    app, client = test_app_and_client
+    model_service = app.state.model_service
+
+    real_hash = calculate_sha256(model_service.model_path)
+    test_blockchain.register_model(
+        model_id=model_service.model_id,
+        version=model_service.model_version,
+        model_hash_hex=real_hash,
+        algorithm=model_service.algorithm,
+    )
+
+    client.post("/model/verify")
+    assert model_service.verification_status == "VERIFIED"
+    assert model_service.is_loaded is False
+
+    load_res = client.post("/model/load")
+    assert load_res.status_code == 200
+    load_data = load_res.json()
+    assert load_data["status"] == "LOADED"
+    assert load_data["is_loaded"] is True
+    assert model_service.is_loaded is True
+    assert model_service.model_pipeline is not None
+
+
+def test_14_complete_explicit_lifecycle_gate(test_app_and_client, test_blockchain):
+    """Test G: Complete explicit lifecycle gate from START -> UNVERIFIED -> VERIFY -> LOAD -> PREDICT."""
+    app, client = test_app_and_client
+    model_service = app.state.model_service
+
+    real_hash = calculate_sha256(model_service.model_path)
+    test_blockchain.register_model(
+        model_id=model_service.model_id,
+        version=model_service.model_version,
+        model_hash_hex=real_hash,
+        algorithm=model_service.algorithm,
+    )
+
+    # 1. APPLICATION START: UNVERIFIED + UNLOADED
+    status_res = client.get("/model/status")
+    assert status_res.status_code == 200
+    assert status_res.json()["verification_status"] == "UNVERIFIED"
+    assert status_res.json()["is_loaded"] is False
+
+    # Inference blocked
+    pred_blocked = client.post("/predict", json={"features": SAMPLE_FLOW_RECORD})
+    assert pred_blocked.status_code == 503
+
+    # 2. VERIFY AUTHORIZED MODEL
+    v_res = client.post("/model/verify")
+    assert v_res.status_code == 200
+    assert v_res.json()["status"] == "VERIFIED"
+    assert v_res.json()["is_loaded"] is False
+
+    # Inference still blocked before explicit load
+    pred_still_blocked = client.post("/predict", json={"features": SAMPLE_FLOW_RECORD})
+    assert pred_still_blocked.status_code == 503
+
+    # 3. AUTHORIZE & LOAD MODEL
+    load_res = client.post("/model/load")
+    assert load_res.status_code == 200
+    assert load_res.json()["status"] == "LOADED"
+    assert load_res.json()["is_loaded"] is True
+
+    # 4. IDS AVAILABLE
+    pred_ok = client.post("/predict", json={"features": SAMPLE_FLOW_RECORD})
+    assert pred_ok.status_code == 200
+    assert pred_ok.json()["verification_status"] == "VERIFIED"
+    assert pred_ok.json()["prediction"] in ("Attack", "Benign")

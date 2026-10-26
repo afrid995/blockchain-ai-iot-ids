@@ -202,36 +202,56 @@ def test_5_downstream_inference_fails_closed_during_attack(app_and_client):
 
 
 def test_6_reset_restores_legitimate_verified_state(app_and_client):
-    """Reset endpoint must verify canonical artifact against on-chain digest and restore authorized state."""
+    """Reset endpoint confirms canonical artifact integrity and resets state to UNVERIFIED for explicit verification."""
     app, client = app_and_client
 
     # Trigger attack simulation first
     client.post("/demo/model-replacement")
     assert app.state.model_service.is_loaded is False
 
-    # Execute reset
+    # Execute reset (leaves model in UNVERIFIED/UNLOADED state, does not silently reload)
     reset_res = client.post("/demo/model-replacement/reset")
     assert reset_res.status_code == 200
     data = reset_res.json()
 
-    assert data["status"] == "VERIFIED"
-    assert data["verified"] is True
+    assert data["status"] == "UNVERIFIED"
+    assert data["verified"] is False
     assert data["canonical_hash"] == CANONICAL_STAGE1_SHA256
     assert data["registered_hash"] == CANONICAL_STAGE1_SHA256
-    assert data["action_taken"] == "AUTHORIZED_AND_LOADED"
-    assert data["downstream_state"] == "UNLOCKED"
+    assert data["action_taken"] == "CANONICAL_RESTORED"
+    assert data["downstream_state"] == "LOCKED"
 
-    # Verify memory state is restored
+    # Verify memory state remains unloaded before explicit verification/load
+    assert app.state.model_service.is_loaded is False
+    assert app.state.model_service.verification_status == "UNVERIFIED"
+
+    # Explicit verification and load completes restoration
+    v_res = client.post("/model/verify")
+    assert v_res.status_code == 200
+    assert v_res.json()["status"] == "VERIFIED"
+    assert app.state.model_service.is_loaded is False
+
+    load_res = client.post("/model/load")
+    assert load_res.status_code == 200
     assert app.state.model_service.is_loaded is True
     assert app.state.model_service.verification_status == "VERIFIED"
 
 
 def test_7_inference_succeeds_after_reset(app_and_client):
-    """After reset, downstream inference endpoints operate normally."""
+    """After reset, downstream inference endpoints remain locked until explicitly verified and loaded."""
     app, client = app_and_client
 
     client.post("/demo/model-replacement")
     client.post("/demo/model-replacement/reset")
+
+    # Inference is blocked before explicit verification and load
+    blocked_res = client.post("/predict", json={"features": SAMPLE_FLOW_RECORD})
+    assert blocked_res.status_code == 503
+
+    # Explicit verify and load both stages
+    client.post("/model/verify?target=stage1")
+    client.post("/model/verify?target=stage2")
+    client.post("/model/load")
 
     pred_res = client.post("/predict", json={"features": SAMPLE_FLOW_RECORD})
     assert pred_res.status_code == 200
@@ -266,8 +286,8 @@ def test_8_audit_trail_captures_attack_and_restoration(app_and_client):
 
     restore_event = next(e for e in events if e["event_type"] == "MODEL_RESTORED")
     assert restore_event["status"] == "SUCCESS"
-    assert restore_event["verification_status"] == "VERIFIED"
-    assert restore_event["details"]["action_taken"] == "AUTHORIZED_AND_LOADED"
+    assert restore_event["verification_status"] == "UNVERIFIED"
+    assert restore_event["details"]["action_taken"] == "CANONICAL_RESTORED"
 
 
 def test_9_unregistered_version_simulation_fails_closed(app_and_client):

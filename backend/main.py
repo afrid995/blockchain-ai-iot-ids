@@ -201,16 +201,18 @@ def create_app(
 
     @app.post("/model/verify", response_model=ModelVerifyResponse, tags=["Model Provenance"])
     async def verify_model(target: Optional[str] = Query(default="stage1", description="'stage1' or 'stage2'")):
-        """Explicitly execute cryptographic integrity verification against the blockchain registry.
+        """Perform cryptographic integrity and provenance verification against the blockchain registry.
 
-        If verification succeeds, the model is loaded into memory for inference.
-        If verification fails, the model is purged/blocked (fail-closed).
+        A successful result authorizes the artifact for a subsequent explicit load operation
+        but does NOT itself load the artifact into memory.
+        If verification fails, any previously loaded model is unloaded fail-closed.
         """
         svc = stage2_model_service if target == "stage2" else model_service
-        outcome = svc.verify_and_load(verification_service)
+        outcome = svc.verify(verification_service)
         return ModelVerifyResponse(
             verified=outcome["verified"],
             status=outcome["status"],
+            is_loaded=svc.is_loaded,
             model_id=outcome["model_id"],
             version=outcome["version"],
             model_path=outcome["model_path"],
@@ -228,35 +230,58 @@ def create_app(
         )
 
     @app.post("/model/load", tags=["Model Provenance"])
-    async def load_verified_model():
-        """Load verified model artifacts into memory for inference."""
-        if model_service.verification_status != "VERIFIED":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot load unverified model (current status: '{model_service.verification_status}'). Run /model/verify first."
-            )
-        import joblib
-        try:
-            model_service.model_pipeline = joblib.load(model_service.model_path)
-            model_service.is_loaded = True
+    async def load_verified_model(target: Optional[str] = Query(default=None, description="'stage1', 'stage2', or None for all verified")):
+        """Load verified model artifacts into memory for inference.
+
+        Enforces verification gate:
+        - If verification_status != 'VERIFIED' -> HTTP 400 Bad Request, model remains unloaded.
+        - If verification_status == 'VERIFIED' -> load artifact into memory.
+        """
+        if target == "stage1":
+            if model_service.verification_status != "VERIFIED":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Cannot load unverified model (current status: '{model_service.verification_status}'). Run /model/verify first."
+                )
             try:
-                stage2_model_service.model_pipeline = joblib.load(stage2_model_service.model_path)
-                stage2_model_service.is_loaded = True
-            except Exception:
-                pass
-            return {
-                "success": True,
-                "status": "LOADED",
-                "stage1_ready": model_service.is_loaded,
-                "stage2_ready": stage2_model_service.is_loaded,
-                "message": "Trusted models loaded into memory. Network flow analysis unlocked."
-            }
-        except Exception as e:
-            model_service.is_loaded = False
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to load model artifact: {e}"
-            )
+                model_service.load_model()
+            except RuntimeError as e:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        elif target == "stage2":
+            if stage2_model_service.verification_status != "VERIFIED":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Cannot load unverified Stage 2 model (current status: '{stage2_model_service.verification_status}'). Run /model/verify?target=stage2 first."
+                )
+            try:
+                stage2_model_service.load_model()
+            except RuntimeError as e:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        else:
+            if model_service.verification_status != "VERIFIED":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Cannot load unverified model (current status: '{model_service.verification_status}'). Run /model/verify first."
+                )
+            try:
+                model_service.load_model()
+                if stage2_model_service.verification_status == "VERIFIED":
+                    try:
+                        stage2_model_service.load_model()
+                    except Exception:
+                        pass
+            except RuntimeError as e:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+        return {
+            "success": True,
+            "status": "LOADED",
+            "verification_status": "VERIFIED",
+            "is_loaded": True,
+            "stage1_ready": model_service.is_loaded,
+            "stage2_ready": stage2_model_service.is_loaded,
+            "message": "Verified model loaded into execution plane memory. Network flow analysis unlocked."
+        }
 
     @app.post("/security/test-scenario", tags=["Security Demonstration"])
     async def run_security_test_scenario(req: SecurityTestScenarioRequest):
@@ -486,8 +511,8 @@ def create_app(
         response_model=ModelReplacementResetResponse,
         tags=["Model Replacement Simulator"],
     )
-    async def reset_model_replacement():
-        """Restore legitimate verified model state and confirm canonical artifact integrity."""
+    async def reset_model_replacement(reload: bool = Query(default=False, description="Whether to reload model immediately or reset to UNVERIFIED")):
+        """Restore legitimate canonical model state and confirm artifact integrity."""
         from core.hashing import calculate_sha256
 
         canonical_path = settings.MODEL_PATH
@@ -509,36 +534,51 @@ def create_app(
                 detail=f"CRITICAL: Canonical model hash {canonical_sha} does not match expected {expected_sha}",
             )
 
-        outcome = model_service.verify_and_load(verification_service)
-        try:
-            stage2_model_service.verify_and_load(verification_service)
-        except Exception:
-            pass
+        if reload:
+            outcome = model_service.verify_and_load(verification_service)
+            try:
+                stage2_model_service.verify_and_load(verification_service)
+            except Exception:
+                pass
+            action_taken = "AUTHORIZED_AND_LOADED"
+            downstream_state = "UNLOCKED"
+            v_status = outcome["status"]
+            verified = outcome["verified"]
+            msg = "Canonical model verified against on-chain registry and restored to memory. Inference authorized."
+        else:
+            # Explicit evaluator workflow: resets state to UNVERIFIED and UNLOADED without auto-loading
+            model_service.unload_model()
+            stage2_model_service.unload_model()
+            action_taken = "CANONICAL_RESTORED"
+            downstream_state = "LOCKED"
+            v_status = "UNVERIFIED"
+            verified = False
+            msg = "Canonical model restored on disk. Model is UNVERIFIED and UNLOADED. Explicit verification and load required."
 
         audit_service.log_event(
             event_type="MODEL_RESTORED",
             status="SUCCESS",
             model_id=model_id,
             model_version=version,
-            verification_status="VERIFIED",
+            verification_status=v_status,
             details={
                 "canonical_hash": canonical_sha,
-                "registered_hash": outcome.get("registered_hash"),
-                "action_taken": "AUTHORIZED_AND_LOADED",
+                "registered_hash": expected_sha,
+                "action_taken": action_taken,
             },
         )
 
         return ModelReplacementResetResponse(
             scenario="model_replacement_reset",
-            status=outcome["status"],
-            verified=outcome["verified"],
+            status=v_status,
+            verified=verified,
             model_id=model_id,
             version=version,
             canonical_hash=canonical_sha,
-            registered_hash=outcome.get("registered_hash", expected_sha),
-            action_taken="AUTHORIZED_AND_LOADED",
-            downstream_state="UNLOCKED",
-            message="Canonical model verified against on-chain registry and restored to memory. Inference authorized.",
+            registered_hash=expected_sha,
+            action_taken=action_taken,
+            downstream_state=downstream_state,
+            message=msg,
         )
 
     @app.post("/demo/unregistered-version", tags=["Model Replacement Simulator"])

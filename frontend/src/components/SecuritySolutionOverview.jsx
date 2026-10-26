@@ -60,6 +60,7 @@ export function SecuritySolutionOverview({
   const isMismatch = currentVerifyStatus === 'HASH_MISMATCH' || (Boolean(observedDigest && registeredDigest) && !isDigestMatch && currentVerifyStatus !== 'NOT_REGISTERED' && currentVerifyStatus !== 'UNVERIFIED');
   const isNotRegistered = currentVerifyStatus === 'NOT_REGISTERED';
   const isBlockchainUnavailable = currentVerifyStatus === 'BLOCKCHAIN_UNAVAILABLE';
+  const isTargetLoaded = isStage1 ? isModelLoaded : Boolean(stage2Status?.is_loaded);
 
   const contractAddress = activeVerify?.contract_address || activeStatus?.contract_address || null;
   const registrantAddress = activeVerify?.registrant || activeStatus?.registrant || null;
@@ -151,26 +152,26 @@ export function SecuritySolutionOverview({
         <div className="pipeline-steps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem' }}>
           <div className={`pipeline-step-box ${isVerified && isModelLoaded ? 'step-active' : 'step-locked'}`}>
             <span className="font-xs text-muted">[1] MODEL PROVENANCE</span>
-            <strong style={{ color: isVerified && isModelLoaded ? '#4ade80' : '#f87171' }}>
-              {isVerified && isModelLoaded ? '✓ LOADED & ACTIVE' : isVerified ? 'VERIFIED (UNLOADED)' : 'LOCKED FAIL-CLOSED'}
+            <strong style={{ color: isVerified && isModelLoaded ? '#4ade80' : isVerified ? '#facc15' : '#f87171' }}>
+              {isVerified && isModelLoaded ? '✓ LOADED & ACTIVE' : isVerified ? 'VERIFIED (UNLOADED)' : '● UNVERIFIED'}
             </strong>
           </div>
           <div className={`pipeline-step-box ${isModelLoaded ? 'step-active' : ''}`}>
             <span className="font-xs text-muted">[2] INTRUSION DETECTION</span>
             <strong style={{ color: isModelLoaded ? '#60a5fa' : '#94a3b8' }}>
-              {isModelLoaded ? 'READY IN WORKBENCH' : 'ENGINE LOCKED'}
+              {isModelLoaded ? 'READY IN WORKBENCH' : 'LOCKED — VERIFY MODEL FIRST'}
             </strong>
           </div>
           <div className={`pipeline-step-box ${predictionResult ? 'step-active' : ''}`}>
             <span className="font-xs text-muted">[3] LATEST INFERENCE</span>
             <strong>
-              {predictionResult ? (predictionResult.stage1_prediction || predictionResult.prediction) : 'NO RUN YET'}
+              {predictionResult ? (predictionResult.stage1_prediction || predictionResult.prediction) : (isModelLoaded ? 'NO RUN YET' : 'AWAITING MODEL AUTHORIZATION')}
             </strong>
           </div>
           <div className={`pipeline-step-box ${predictionResult?.advisory_recommendation ? 'step-active' : ''}`}>
             <span className="font-xs text-muted">[4] OPERATOR ADVISORY</span>
             <strong>
-              {predictionResult?.advisory_recommendation ? `${predictionResult.advisory_recommendation.investigation_priority} PRIORITY` : 'ADVISORY READY'}
+              {predictionResult?.advisory_recommendation ? `${predictionResult.advisory_recommendation.investigation_priority} PRIORITY` : (isModelLoaded ? 'ADVISORY READY' : 'NOT AVAILABLE')}
             </strong>
           </div>
           <div className="pipeline-step-box step-active">
@@ -252,8 +253,8 @@ export function SecuritySolutionOverview({
               </div>
               <div className="spec-item">
                 <span className="spec-label">Execution Plane:</span>
-                <span className="spec-val font-mono font-xs" style={{ color: isModelLoaded ? '#4ade80' : '#f87171' }}>
-                  {isModelLoaded ? 'LOADED (Active Memory)' : 'UNLOADED (Locked Fail-Closed)'}
+                <span className="spec-val font-mono font-xs" style={{ color: isTargetLoaded ? '#4ade80' : '#f87171' }}>
+                  {isTargetLoaded ? 'LOADED (Active Memory)' : 'UNLOADED (Locked Fail-Closed)'}
                 </span>
               </div>
             </div>
@@ -269,18 +270,18 @@ export function SecuritySolutionOverview({
               data-testid="solution-verify-btn"
               style={{ flex: 1, minWidth: '180px' }}
             >
-              {isVerifying || isVerifyingLocal ? 'Verifying Against Blockchain...' : '✓ VERIFY AUTHORIZED MODEL'}
+              {isVerifying || isVerifyingLocal ? 'Verifying Against Blockchain...' : isTargetVerified ? '✓ VERIFIED' : '✓ VERIFY AUTHORIZED MODEL'}
             </button>
             <button
               type="button"
               className="btn btn-secondary"
-              onClick={onLoadModel}
-              disabled={!isTargetVerified}
+              onClick={() => (onLoadModel ? onLoadModel(selectedStage) : api.loadModel(selectedStage))}
+              disabled={!isTargetVerified || isTargetLoaded}
               data-testid="solution-load-btn"
               style={{ flex: 1, minWidth: '180px' }}
-              title={!isTargetVerified ? 'Model verification required before loading into memory' : 'Authorize and load verified model into execution plane'}
+              title={!isTargetVerified ? 'Model verification required before loading into memory' : isTargetLoaded ? 'Model already loaded and active in memory' : 'Authorize and load verified model into execution plane'}
             >
-              📥 AUTHORIZE &amp; LOAD MODEL
+              {isTargetLoaded ? '✓ MODEL LOADED & ACTIVE' : '📥 AUTHORIZE & LOAD MODEL'}
             </button>
           </div>
 

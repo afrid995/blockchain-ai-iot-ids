@@ -83,7 +83,7 @@ class Settings:
         self.PORT = int(os.getenv("BACKEND_PORT", "8000"))
 
         # Model gate lifecycle
-        self.AUTO_VERIFY_ON_STARTUP = os.getenv("AUTO_VERIFY_ON_STARTUP", "true").lower() in ("true", "1", "yes")
+        self.AUTO_VERIFY_ON_STARTUP = os.getenv("AUTO_VERIFY_ON_STARTUP", "false").lower() in ("true", "1", "yes")
 
 
 settings = Settings()

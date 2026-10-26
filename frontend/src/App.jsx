@@ -138,9 +138,9 @@ export function App() {
   };
 
   // Handle explicit model load
-  const handleLoadModel = async () => {
+  const handleLoadModel = async (target = null) => {
     try {
-      const res = await api.loadModel();
+      const res = await api.loadModel(target);
       setIsModelLoaded(true);
       await loadAll();
       return res;

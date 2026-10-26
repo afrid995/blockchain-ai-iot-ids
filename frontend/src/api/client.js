@@ -62,7 +62,10 @@ export const api = {
   getHealth: () => request('/health'),
   getModelStatus: (target = 'stage1') => request(`/model/status?target=${encodeURIComponent(target)}`),
   verifyModel: (target = 'stage1') => request(`/model/verify?target=${encodeURIComponent(target)}`, { method: 'POST' }),
-  loadModel: () => request('/model/load', { method: 'POST' }),
+  loadModel: (target = null) => {
+    const query = target ? `?target=${encodeURIComponent(target)}` : '';
+    return request(`/model/load${query}`, { method: 'POST' });
+  },
   predict: (features) =>
     request('/predict', {
       method: 'POST',
