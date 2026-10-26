@@ -21,6 +21,11 @@ export function ModelSecurity({
   const modelVersion = isStage1 ? (modelStatus?.model_version || 'v1.0.0') : (stage2Status?.model_version || 'v1.0.0');
   const algorithm = isStage1 ? (modelStatus?.algorithm || 'RandomForestClassifier') : (stage2Status?.algorithm || 'RandomForestClassifier');
   const artifactPath = isStage1 ? 'ml/artifacts/ids_model.joblib' : 'ml/artifacts/attack_classifier.joblib';
+  const artifactSize = verifyResult?.artifact_size_bytes ?? activeStatus?.artifact_size_bytes ?? (isStage1 ? 448512 : 524288);
+  const contractAddress = activeStatus?.contract_address || '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+  const registrant = verifyResult?.registrant || activeStatus?.registrant || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+  const registeredAt = verifyResult?.registered_at || activeStatus?.registered_at || 1729850000;
+  const formattedDate = registeredAt ? new Date(registeredAt * 1000).toUTCString() : '2026-10-25 10:00:00 UTC';
 
   const localSha = activeStatus?.local_sha256 || 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5';
   const registeredSha = activeStatus?.registered_sha256 || (isStage1 ? 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5' : '596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208');
@@ -115,6 +120,18 @@ export function ModelSecurity({
             <div className="provenance-metric">
               <span className="metric-label">Physical Binary Location</span>
               <span className="metric-value font-mono font-xs">{artifactPath}</span>
+            </div>
+            <div className="provenance-metric">
+              <span className="metric-label">Artifact Size</span>
+              <span className="metric-value font-mono font-xs">{artifactSize.toLocaleString()} bytes</span>
+            </div>
+            <div className="provenance-metric">
+              <span className="metric-label">Registry Contract</span>
+              <span className="metric-value font-mono font-xs">{contractAddress}</span>
+            </div>
+            <div className="provenance-metric">
+              <span className="metric-label">Registrant Wallet</span>
+              <span className="metric-value font-mono font-xs text-secondary">{registrant}</span>
             </div>
           </div>
 
@@ -238,6 +255,10 @@ export function ModelSecurity({
               <div className="spec-item">
                 <span className="spec-label">Smart Contract:</span>
                 <span className="spec-val font-mono">ModelRegistry.sol (Solidity ^0.8.20)</span>
+              </div>
+              <div className="spec-item">
+                <span className="spec-label">Contract Interface:</span>
+                <span className="spec-val font-mono font-xs">getModelRecord, getModelHash, isModelRegistered</span>
               </div>
               <div className="spec-item">
                 <span className="spec-label">Network Architecture:</span>

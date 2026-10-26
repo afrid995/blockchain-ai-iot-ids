@@ -104,11 +104,25 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     model_id: 'iot-ids-rf',
     version: 'v1.0.0',
     registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
-    observed_hash: 'deadbeef11223344556677889900aabbccddeeff00112233445566778899aabb',
+    observed_hash: 'a7fc43063d36f359bc6c4f14a98bf233d3a1bdebbc2d7a98e1e67a872624cf65',
     action_taken: 'MODEL_LOAD_BLOCKED',
     downstream_state: 'LOCKED',
     message: 'Model replacement detected. Observed SHA-256 does not match on-chain registered digest. Model loading blocked fail-closed.',
     timeline: [],
+  };
+
+  const mockVerifyResponse = {
+    status: 'VERIFIED',
+    local_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+    registered_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
+    matches: true,
+    model_id: 'iot-ids-rf',
+    model_version: 'v1.0.0',
+    read_latency_ms: 15.65,
+    algorithm: 'RandomForestClassifier',
+    registered_at: 1729850000,
+    registrant: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    artifact_size_bytes: 448512,
   };
 
   const mockUnregisteredResponse = {
@@ -177,6 +191,7 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
       if (target === 'stage2') return mockStage2Status;
       return mockModelStatusVerified;
     });
+    vi.spyOn(api, 'verifyModel').mockResolvedValue(mockVerifyResponse);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
   };
 
@@ -358,7 +373,8 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     fireEvent.click(screen.getByTestId('solution-simulate-replacement-btn'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('solution-observed-hash')).toHaveTextContent(/deadbeef/i);
+      expect(screen.getByTestId('solution-observed-hash')).toHaveTextContent(/a7fc4306/i);
+      expect(screen.getByTestId('solution-observed-hash')).not.toHaveTextContent(/deadbeef/i);
     });
   });
 
@@ -537,5 +553,160 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     expect(pageText).not.toMatch(/\bautonomous defense\b/i);
     expect(pageText).not.toMatch(/\bproduction-ready\b/i);
     expect(pageText).not.toMatch(/\b100% secure\b/i);
+  });
+
+  // --- Phase 7D Evidence Demonstrator Tests ---
+
+  it('21. Legitimate verification renders actual observed and registered digest evidence', async () => {
+    setupDefaultMocks();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-crypto-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('crypto-observed-hash')).toHaveTextContent(/dc5e1688/i);
+      expect(screen.getByTestId('crypto-registered-hash')).toHaveTextContent(/dc5e1688/i);
+      expect(screen.getByTestId('crypto-comparison-result')).toHaveTextContent('MATCH');
+    });
+  });
+
+  it('22. Legitimate matching digests produce VERIFIED and MODEL LOAD AUTHORIZED', async () => {
+    setupDefaultMocks();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-decision-banner')).toHaveTextContent(/VERIFIED — MODEL LOAD AUTHORIZED/i);
+      expect(screen.getByTestId('solution-decision-panel')).toHaveTextContent(/Model loading authorized/i);
+    });
+  });
+
+  it('23. Clicking VERIFY AUTHORIZED MODEL executes backend verification', async () => {
+    setupDefaultMocks();
+    const verifySpy = vi.spyOn(api, 'verifyModel').mockResolvedValue(mockVerifyResponse);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-verify-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('solution-verify-btn'));
+
+    await waitFor(() => {
+      expect(verifySpy).toHaveBeenCalledWith('stage1');
+    });
+  });
+
+  it('24. Full hash toggle reveals complete 64-character hex digests', async () => {
+    setupDefaultMocks();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('crypto-toggle-hash-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('crypto-toggle-hash-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('crypto-observed-hash')).toHaveTextContent('dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5');
+      expect(screen.getByTestId('crypto-registered-hash')).toHaveTextContent('dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5');
+    });
+  });
+
+  it('25. Blockchain provenance panel exposes contract address, registrant, algorithm, timestamp', async () => {
+    setupDefaultMocks();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-blockchain-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('blockchain-contract-address')).toHaveTextContent(/0x5FbDB2315678afecb367f032d93F642f64180aa3/i);
+      expect(screen.getByTestId('blockchain-reg-status')).toHaveTextContent(/REGISTERED/i);
+      expect(screen.getByTestId('blockchain-algorithm')).toHaveTextContent('RandomForestClassifier');
+      expect(screen.getByTestId('blockchain-registrant')).toHaveTextContent(/0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266/i);
+      expect(screen.getByTestId('blockchain-reg-digest')).toHaveTextContent('dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5');
+    });
+  });
+
+  it('26. 7-Stage lifecycle gate tracker renders all 7 stages', async () => {
+    setupDefaultMocks();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toBeInTheDocument();
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/1. ARTIFACT/i);
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/2. SHA-256/i);
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/3. REGISTRY/i);
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/4. COMPARISON/i);
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/5. DECISION/i);
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/6. LOAD GATE/i);
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/7. IDS STATUS/i);
+    });
+  });
+
+  it('27. Technical architecture flow diagram and WHAT THIS PROVES are rendered', async () => {
+    setupDefaultMocks();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-architecture-diagram')).toBeInTheDocument();
+      expect(screen.getByTestId('solution-architecture-diagram')).toHaveTextContent(/MODEL ARTIFACT/i);
+      expect(screen.getByTestId('solution-what-this-proves')).toBeInTheDocument();
+      expect(screen.getByTestId('solution-what-this-proves')).toHaveTextContent(/Research Integrity Notice/i);
+    });
+  });
+
+  it('28. Evaluator demonstration guide outlines TEST A through TEST D', async () => {
+    setupDefaultMocks();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-evaluator-guide')).toBeInTheDocument();
+      expect(screen.getByTestId('solution-evaluator-guide')).toHaveTextContent(/TEST A — Authorized Model/i);
+      expect(screen.getByTestId('solution-evaluator-guide')).toHaveTextContent(/TEST B — Model Replacement/i);
+      expect(screen.getByTestId('solution-evaluator-guide')).toHaveTextContent(/TEST C — Recovery/i);
+      expect(screen.getByTestId('solution-evaluator-guide')).toHaveTextContent(/TEST D — Unregistered Version/i);
+    });
+  });
+
+  it('29. Stage target selector toggles between Stage 1 and Stage 2 inspection', async () => {
+    setupDefaultMocks();
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stage-select-stage2-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('stage-select-stage2-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-model-trust-card')).toHaveTextContent(/iot-ids-attack-classifier/i);
+      expect(screen.getByTestId('crypto-registered-hash')).toHaveTextContent(/596b98ce/i);
+      expect(screen.getByTestId('blockchain-reg-digest')).toHaveTextContent('596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208');
+    });
+  });
+
+  it('30. Failed verification prevents model loading and disables inference', async () => {
+    const mockModelStatusUnverified = {
+      ...mockModelStatusVerified,
+      verification_status: 'HASH_MISMATCH',
+      is_loaded: false,
+    };
+    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusUnverified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-load-btn')).toBeDisabled();
+      expect(screen.getByTestId('solution-predict-btn')).toBeDisabled();
+    });
   });
 });

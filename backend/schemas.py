@@ -24,8 +24,13 @@ class ModelStatusResponse(BaseModel):
     model_id: str
     model_version: str
     algorithm: str
+    model_path: Optional[str] = None
+    artifact_size_bytes: Optional[int] = None
     local_sha256: Optional[str] = None
     registered_sha256: Optional[str] = None
+    contract_address: Optional[str] = None
+    registered_at: Optional[int] = None
+    registrant: Optional[str] = None
     verification_status: str = Field(
         ...,
         description="One of: VERIFIED, HASH_MISMATCH, NOT_REGISTERED, BLOCKCHAIN_UNAVAILABLE, FILE_NOT_FOUND, UNVERIFIED",
@@ -33,6 +38,7 @@ class ModelStatusResponse(BaseModel):
     is_loaded: bool
     last_verified_at: Optional[str] = None
     read_latency_ms: Optional[float] = None
+    details: Dict[str, Any] = Field(default_factory=dict)
     security_qualification: str = Field(
         default=(
             "Cryptographic integrity verification establishes binary correspondence with "
@@ -52,6 +58,10 @@ class ModelVerifyResponse(BaseModel):
     local_hash: Optional[str] = None
     registered_hash: Optional[str] = None
     contract_address: Optional[str] = None
+    algorithm: Optional[str] = None
+    registered_at: Optional[int] = None
+    registrant: Optional[str] = None
+    artifact_size_bytes: Optional[int] = None
     read_latency_ms: float = 0.0
     timestamp: str
     message: str
@@ -89,7 +99,7 @@ class ModelReplacementResetResponse(BaseModel):
     model_id: str
     version: str
     canonical_hash: str
-    registered_hash: str
+    registered_hash: Optional[str] = None
     action_taken: str
     downstream_state: str
     message: str

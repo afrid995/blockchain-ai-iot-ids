@@ -134,28 +134,44 @@ class ModelService:
     def get_status(self) -> Dict[str, Any]:
         """Return the current model status and verification record."""
         local_hash = None
+        artifact_size = None
         if self.model_path.exists() and self.model_path.is_file():
             try:
                 local_hash = calculate_sha256(self.model_path)
+                artifact_size = self.model_path.stat().st_size
             except Exception:
                 local_hash = None
 
         registered_hash = None
         read_latency_ms = None
+        contract_addr = None
+        registered_at = None
+        registrant = None
+        v_details = {}
         if self.last_verification_result:
             registered_hash = self.last_verification_result.get("registered_hash")
             read_latency_ms = self.last_verification_result.get("read_latency_ms")
+            contract_addr = self.last_verification_result.get("contract_address")
+            registered_at = self.last_verification_result.get("registered_at")
+            registrant = self.last_verification_result.get("registrant")
+            v_details = self.last_verification_result.get("details", {})
 
         return {
             "model_id": self.model_id,
             "model_version": self.model_version,
             "algorithm": self.algorithm,
+            "model_path": str(self.model_path),
+            "artifact_size_bytes": artifact_size,
             "local_sha256": local_hash,
             "registered_sha256": registered_hash,
+            "contract_address": contract_addr,
+            "registered_at": registered_at,
+            "registrant": registrant,
             "verification_status": self.verification_status,
             "is_loaded": self.is_loaded,
             "last_verified_at": self.last_verified_at,
             "read_latency_ms": read_latency_ms,
+            "details": v_details,
             "security_qualification": (
                 "Cryptographic integrity verification establishes binary correspondence with "
                 "the registered artifact on-chain; it does not establish model correctness, "

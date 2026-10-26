@@ -325,34 +325,36 @@ class BlockchainRegistryClient:
         on_chain_record = self.get_model(model_id, version)
         registered_hash = on_chain_record["model_hash"]
         read_latency_ms = (time.perf_counter() - t_start) * 1000.0
+        artifact_size = path.stat().st_size if (path.exists() and path.is_file()) else None
+
+        base_res = {
+            "model_id": model_id,
+            "version": version,
+            "model_path": str(path),
+            "local_hash": local_hash,
+            "registered_hash": registered_hash,
+            "contract_address": self.contract_address,
+            "read_latency_ms": round(read_latency_ms, 4),
+            "timestamp": timestamp,
+            "algorithm": on_chain_record.get("algorithm"),
+            "registered_at": on_chain_record.get("registered_at"),
+            "registrant": on_chain_record.get("registrant"),
+            "artifact_size_bytes": artifact_size,
+        }
 
         # 6. Cryptographic comparison
         if local_hash.lower() == registered_hash.lower():
             return {
+                **base_res,
                 "verified": True,
                 "status": "VERIFIED",
-                "model_id": model_id,
-                "version": version,
-                "model_path": str(path),
-                "local_hash": local_hash,
-                "registered_hash": registered_hash,
-                "contract_address": self.contract_address,
-                "read_latency_ms": round(read_latency_ms, 4),
-                "timestamp": timestamp,
                 "message": "Local model artifact matches on-chain trusted provenance hash.",
             }
         else:
             return {
+                **base_res,
                 "verified": False,
                 "status": "HASH_MISMATCH",
-                "model_id": model_id,
-                "version": version,
-                "model_path": str(path),
-                "local_hash": local_hash,
-                "registered_hash": registered_hash,
-                "contract_address": self.contract_address,
-                "read_latency_ms": round(read_latency_ms, 4),
-                "timestamp": timestamp,
                 "message": (
                     "CRITICAL SECURITY ALERT: Local artifact SHA-256 differs from "
                     "blockchain-registered hash! Model is untrusted and rejected."

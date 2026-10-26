@@ -128,8 +128,10 @@ export function App() {
       const result = await api.verifyModel(target);
       setLastVerifyResult(result);
       await loadAll();
+      return result;
     } catch (err) {
       setVerificationError(err.message || 'Verification request failed.');
+      throw err;
     } finally {
       setIsVerifying(false);
     }
@@ -138,11 +140,13 @@ export function App() {
   // Handle explicit model load
   const handleLoadModel = async () => {
     try {
-      await api.loadModel();
+      const res = await api.loadModel();
       setIsModelLoaded(true);
       await loadAll();
+      return res;
     } catch (err) {
       setVerificationError(err.message || 'Model load blocked fail-closed.');
+      throw err;
     }
   };
 
@@ -211,6 +215,8 @@ export function App() {
             isModelLoaded={isModelLoaded}
             isVerifying={isVerifying}
             onVerify={handleVerify}
+            verifyResult={lastVerifyResult}
+            verificationError={verificationError}
             onLoadModel={handleLoadModel}
             isPredicting={isPredicting}
             onPredict={handlePredict}
