@@ -106,6 +106,18 @@ class ModelReplacementResetResponse(BaseModel):
     message: str
 
 
+class ModelSessionResetResponse(BaseModel):
+    """Response payload for resetting model authorization and execution memory."""
+    success: bool = True
+    action_taken: str = "SESSION_RESET"
+    verification_status: str = "UNVERIFIED"
+    is_loaded: bool = False
+    stage1_ready: bool = False
+    stage2_ready: bool = False
+    downstream_state: str = "LOCKED"
+    message: str = "Application authorization session reset. Models unloaded and verification gate locked fail-closed."
+
+
 class NetworkFlowPredictionRequest(BaseModel):
     """Network-flow feature record for IoT intrusion detection inference.
 

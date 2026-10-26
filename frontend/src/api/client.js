@@ -66,6 +66,7 @@ export const api = {
     const query = target ? `?target=${encodeURIComponent(target)}` : '';
     return request(`/model/load${query}`, { method: 'POST' });
   },
+  resetModelSession: () => request('/model/session/reset', { method: 'POST' }),
   predict: (features) =>
     request('/predict', {
       method: 'POST',

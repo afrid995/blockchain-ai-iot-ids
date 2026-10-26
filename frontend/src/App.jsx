@@ -113,9 +113,35 @@ export function App() {
     }
   }, [loadAnalytics, loadAuditEvents, auditLimit, auditOffset, auditFilter]);
 
-  // Initial load
+  // Initial application mount: reset model authorization session and load system telemetry
   useEffect(() => {
-    loadAll();
+    let isMounted = true;
+
+    const initializeSession = async () => {
+      setIsRefreshing(true);
+      setGeneralError(null);
+      try {
+        // Step 1: Explicitly reset backend model authorization state on fresh session/reload
+        await api.resetModelSession();
+      } catch (err) {
+        if (!isMounted) return;
+        setGeneralError(
+          `Backend Connection Alert: ${err.message}. Verify that the FastAPI backend server is running on http://127.0.0.1:8000.`
+        );
+        setIsRefreshing(false);
+        return;
+      }
+
+      if (!isMounted) return;
+      // Step 2: Query system telemetry reflecting the unverified / unloaded session state
+      await loadAll();
+    };
+
+    initializeSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, [loadAll]);
 
   // Handle explicit verification

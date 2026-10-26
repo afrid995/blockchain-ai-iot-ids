@@ -25,6 +25,7 @@ from backend.schemas import (
     HierarchicalPredictionResponse,
     ModelReplacementResetResponse,
     ModelReplacementSimulationResponse,
+    ModelSessionResetResponse,
     ModelStatusResponse,
     ModelVerifyResponse,
     NetworkFlowPredictionRequest,
@@ -282,6 +283,44 @@ def create_app(
             "stage2_ready": stage2_model_service.is_loaded,
             "message": "Verified model loaded into execution plane memory. Network flow analysis unlocked."
         }
+
+    @app.post(
+        "/model/session/reset",
+        response_model=ModelSessionResetResponse,
+        tags=["Model Provenance"],
+    )
+    async def reset_model_session():
+        """Reset model authorization state and execution memory for a fresh application session.
+
+        Purges deserialized pipelines from memory and transitions verification gate
+        back to UNVERIFIED and UNLOADED. Downstream inference is locked fail-closed.
+        Does NOT modify model artifacts, hashes, or blockchain registrations.
+        """
+        model_service.unload_model()
+        stage2_model_service.unload_model()
+
+        audit_service.log_event(
+            event_type="SESSION_RESET",
+            status="SUCCESS",
+            model_id=model_service.model_id,
+            model_version=model_service.model_version,
+            verification_status="UNVERIFIED",
+            details={
+                "action_taken": "SESSION_RESET",
+                "message": "Application authorization session reset on frontend initialization.",
+            },
+        )
+
+        return ModelSessionResetResponse(
+            success=True,
+            action_taken="SESSION_RESET",
+            verification_status="UNVERIFIED",
+            is_loaded=False,
+            stage1_ready=False,
+            stage2_ready=False,
+            downstream_state="LOCKED",
+            message="Application authorization session reset. Models unloaded and verification gate locked fail-closed.",
+        )
 
     @app.post("/security/test-scenario", tags=["Security Demonstration"])
     async def run_security_test_scenario(req: SecurityTestScenarioRequest):

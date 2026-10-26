@@ -496,3 +496,70 @@ def test_14_complete_explicit_lifecycle_gate(test_app_and_client, test_blockchai
     assert pred_ok.status_code == 200
     assert pred_ok.json()["verification_status"] == "VERIFIED"
     assert pred_ok.json()["prediction"] in ("Attack", "Benign")
+
+
+def test_15_model_session_reset_lifecycle(test_app_and_client, test_blockchain):
+    """Phase 7D.6: POST /model/session/reset unloads memory and resets gate to UNVERIFIED/UNLOADED."""
+    app, client = test_app_and_client
+    model_service = app.state.model_service
+
+    real_hash = calculate_sha256(model_service.model_path)
+    test_blockchain.register_model(
+        model_id=model_service.model_id,
+        version=model_service.model_version,
+        model_hash_hex=real_hash,
+        algorithm=model_service.algorithm,
+    )
+
+    # 1. Establish loaded state
+    client.post("/model/verify")
+    client.post("/model/load")
+    assert model_service.is_loaded is True
+    assert model_service.verification_status == "VERIFIED"
+
+    pred_res1 = client.post("/predict", json={"features": SAMPLE_FLOW_RECORD})
+    assert pred_res1.status_code == 200
+
+    # 2. Trigger session reset (simulates application reload / fresh session)
+    reset_res = client.post("/model/session/reset")
+    assert reset_res.status_code == 200
+    reset_data = reset_res.json()
+
+    assert reset_data["success"] is True
+    assert reset_data["action_taken"] == "SESSION_RESET"
+    assert reset_data["verification_status"] == "UNVERIFIED"
+    assert reset_data["is_loaded"] is False
+    assert reset_data["downstream_state"] == "LOCKED"
+
+    # 3. Backend internal state is UNVERIFIED and UNLOADED
+    assert model_service.is_loaded is False
+    assert model_service.verification_status == "UNVERIFIED"
+    assert model_service.model_pipeline is None
+
+    # 4. Status endpoint reflects reset state
+    status_res = client.get("/model/status")
+    assert status_res.status_code == 200
+    assert status_res.json()["verification_status"] == "UNVERIFIED"
+    assert status_res.json()["is_loaded"] is False
+
+    # 5. Prediction is blocked fail-closed (503)
+    pred_blocked = client.post("/predict", json={"features": SAMPLE_FLOW_RECORD})
+    assert pred_blocked.status_code == 503
+
+    # 6. Verification works after reset, setting VERIFIED but keeping model UNLOADED
+    v_res = client.post("/model/verify")
+    assert v_res.status_code == 200
+    assert v_res.json()["status"] == "VERIFIED"
+    assert v_res.json()["is_loaded"] is False
+    assert model_service.is_loaded is False
+
+    # 7. Explicit load works after verification
+    load_res = client.post("/model/load")
+    assert load_res.status_code == 200
+    assert load_res.json()["is_loaded"] is True
+    assert model_service.is_loaded is True
+
+    # 8. Prediction succeeds after explicit load
+    pred_ok = client.post("/predict", json={"features": SAMPLE_FLOW_RECORD})
+    assert pred_ok.status_code == 200
+    assert pred_ok.json()["prediction"] in ("Attack", "Benign")

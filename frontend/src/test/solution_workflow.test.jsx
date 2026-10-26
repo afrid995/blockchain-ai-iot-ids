@@ -977,4 +977,114 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
     expect(screen.getByText(/UNLOADED \(Locked Fail-Closed\)/i)).toBeInTheDocument();
     expect(screen.getByTestId('solution-load-btn')).toBeDisabled();
   });
+
+  // =========================================================================
+  // Phase 7D.6: Reset Model Authorization on Frontend Application Reload
+  // =========================================================================
+
+  it('34. Application mount explicitly executes api.resetModelSession() on initialization', async () => {
+    const spyReset = vi.spyOn(api, 'resetModelSession').mockResolvedValue({
+      success: true,
+      action_taken: 'SESSION_RESET',
+      verification_status: 'UNVERIFIED',
+      is_loaded: false,
+    });
+    vi.spyOn(api, 'getHealth').mockResolvedValue({ ...mockHealth, model_status: 'unloaded (UNVERIFIED)' });
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockStartupStatusUnverified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue({ total: 0, events: [] });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+
+    expect(spyReset).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('solution-model-trust-badge')).toHaveTextContent(/UNVERIFIED/i);
+  });
+
+  it('35. Workspace tab navigation does NOT re-trigger session reset', async () => {
+    const spyReset = vi.spyOn(api, 'resetModelSession').mockResolvedValue({
+      success: true,
+      action_taken: 'SESSION_RESET',
+      verification_status: 'UNVERIFIED',
+      is_loaded: false,
+    });
+    vi.spyOn(api, 'getHealth').mockResolvedValue({ ...mockHealth, model_status: 'loaded' });
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusVerified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+
+    // Initial mount called reset once
+    expect(spyReset).toHaveBeenCalledTimes(1);
+
+    // Navigate to Intrusion Detection
+    fireEvent.click(screen.getByTestId('tab-detection'));
+    await waitFor(() => {
+      expect(screen.getByTestId('prediction-card')).toBeInTheDocument();
+    });
+
+    // Navigate to Model Security
+    fireEvent.click(screen.getByTestId('tab-model-security'));
+    await waitFor(() => {
+      expect(screen.getByTestId('model-provenance-card')).toBeInTheDocument();
+    });
+
+    // Navigate back to Security Solution
+    fireEvent.click(screen.getByTestId('tab-solution'));
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+
+    // resetModelSession was NOT called again during SPA tab transitions
+    expect(spyReset).toHaveBeenCalledTimes(1);
+  });
+
+  it('36. Simulating application reload re-triggers session reset and establishes fresh UNVERIFIED/UNLOADED cycle', async () => {
+    const spyReset = vi.spyOn(api, 'resetModelSession').mockResolvedValue({
+      success: true,
+      action_taken: 'SESSION_RESET',
+      verification_status: 'UNVERIFIED',
+      is_loaded: false,
+    });
+    vi.spyOn(api, 'getHealth').mockResolvedValue({ ...mockHealth, model_status: 'unloaded (UNVERIFIED)' });
+    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockStartupStatusUnverified);
+    vi.spyOn(api, 'getAuditEvents').mockResolvedValue({ total: 0, events: [] });
+
+    // Session 1: Mount
+    const { unmount } = render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+    expect(spyReset).toHaveBeenCalledTimes(1);
+
+    // Simulate browser reload (unmount old tree, mount fresh tree)
+    unmount();
+
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+
+    // Session 2: Second reset was performed on fresh reload
+    expect(spyReset).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('solution-model-trust-badge')).toHaveTextContent(/UNVERIFIED/i);
+    expect(screen.getByText(/UNLOADED \(Locked Fail-Closed\)/i)).toBeInTheDocument();
+  });
+
+  it('37. Failed session reset displays explicit error alert and does not falsely display unverified model as ready', async () => {
+    vi.spyOn(api, 'resetModelSession').mockRejectedValue(new Error('Backend connection refused on reset'));
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('alert-banner')).toBeInTheDocument();
+      expect(screen.getByText(/Backend Connection Alert.*Backend connection refused on reset/i)).toBeInTheDocument();
+    });
+  });
 });

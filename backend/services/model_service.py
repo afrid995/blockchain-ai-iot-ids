@@ -178,6 +178,18 @@ class ModelService:
         self.model_pipeline = None
         self.is_loaded = False
         self.verification_status = "UNVERIFIED"
+        self.last_verification_result = None
+        self.last_verified_at = None
+
+    def reset_session(self) -> Dict[str, Any]:
+        """Reset model authorization state for a fresh application session."""
+        self.unload_model()
+        return {
+            "model_id": self.model_id,
+            "version": self.model_version,
+            "verification_status": "UNVERIFIED",
+            "is_loaded": False,
+        }
 
     def get_status(self) -> Dict[str, Any]:
         """Return the current model status and verification record."""
