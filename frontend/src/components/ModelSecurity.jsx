@@ -183,8 +183,9 @@ export function ModelSecurity({
               onClick={onLoadModel}
               disabled={!isVerified || effectiveLoaded}
               data-testid="load-model-btn"
+              title={!isVerified ? 'Model verification required before loading' : effectiveLoaded ? 'Model already loaded and active in memory' : 'Load verified model into execution plane'}
             >
-              {effectiveLoaded ? '✓ MODEL READY' : '📥 AUTHORIZE & LOAD'}
+              {effectiveLoaded ? '✓ MODEL READY' : '📥 LOAD MODEL'}
             </button>
           </div>
         </div>

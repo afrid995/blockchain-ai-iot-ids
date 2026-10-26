@@ -840,7 +840,7 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
     expect(within(tracker).getByText(/0 PER-FLOW EVM QUERIES/i)).toBeInTheDocument();
   });
 
-  it('30. AUTHORIZE & LOAD MODEL button is disabled before verification', () => {
+  it('30. LOAD MODEL button is disabled before verification', () => {
     render(
       <SecuritySolutionOverview
         health={mockHealth}
@@ -852,10 +852,12 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
 
     const loadBtn = screen.getByTestId('solution-load-btn');
     expect(loadBtn).toBeDisabled();
+    expect(loadBtn).toHaveTextContent(/LOAD MODEL/i);
+    expect(loadBtn).not.toHaveTextContent(/AUTHORIZE/i);
     expect(screen.getByTestId('solution-verify-btn')).not.toBeDisabled();
   });
 
-  it('31. Successful verification enables AUTHORIZE & LOAD without immediately loading model', async () => {
+  it('31. Successful verification enables LOAD MODEL without immediately loading model', async () => {
     const onVerifyMock = vi.fn().mockResolvedValue({
       verified: true,
       status: 'VERIFIED',
@@ -909,6 +911,8 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
     expect(screen.getByTestId('solution-model-trust-badge')).toHaveTextContent(/VERIFIED/i);
     expect(screen.getByText(/UNLOADED \(Locked Fail-Closed\)/i)).toBeInTheDocument();
     expect(screen.getByTestId('solution-load-btn')).not.toBeDisabled();
+    expect(screen.getByTestId('solution-load-btn')).toHaveTextContent(/LOAD MODEL/i);
+    expect(screen.getByTestId('solution-load-btn')).not.toHaveTextContent(/AUTHORIZE/i);
   });
 
   it('32. Explicit load sets model to LOADED & ACTIVE and unlocks Intrusion Detection Workbench', () => {

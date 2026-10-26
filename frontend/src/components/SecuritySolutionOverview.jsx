@@ -279,9 +279,9 @@ export function SecuritySolutionOverview({
               disabled={!isTargetVerified || isTargetLoaded}
               data-testid="solution-load-btn"
               style={{ flex: 1, minWidth: '180px' }}
-              title={!isTargetVerified ? 'Model verification required before loading into memory' : isTargetLoaded ? 'Model already loaded and active in memory' : 'Authorize and load verified model into execution plane'}
+              title={!isTargetVerified ? 'Model verification required before loading into memory' : isTargetLoaded ? 'Model already loaded and active in memory' : 'Load verified model into execution plane'}
             >
-              {isTargetLoaded ? '✓ MODEL LOADED & ACTIVE' : '📥 AUTHORIZE & LOAD MODEL'}
+              {isTargetLoaded ? '✓ MODEL LOADED & ACTIVE' : '📥 LOAD MODEL'}
             </button>
           </div>
 
