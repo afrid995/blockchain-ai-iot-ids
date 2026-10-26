@@ -20,15 +20,15 @@ export function ModelSecurity({
   const modelId = isStage1 ? (modelStatus?.model_id || 'iot-ids-rf') : (stage2Status?.model_id || 'iot-ids-attack-classifier');
   const modelVersion = isStage1 ? (modelStatus?.model_version || 'v1.0.0') : (stage2Status?.model_version || 'v1.0.0');
   const algorithm = isStage1 ? (modelStatus?.algorithm || 'RandomForestClassifier') : (stage2Status?.algorithm || 'RandomForestClassifier');
-  const artifactPath = isStage1 ? 'ml/artifacts/ids_model.joblib' : 'ml/artifacts/attack_classifier.joblib';
-  const artifactSize = verifyResult?.artifact_size_bytes ?? activeStatus?.artifact_size_bytes ?? (isStage1 ? 448512 : 524288);
-  const contractAddress = verifyResult?.contract_address || activeStatus?.contract_address || '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec';
-  const registrant = verifyResult?.registrant || activeStatus?.registrant || '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1';
-  const registeredAt = verifyResult?.registered_at || activeStatus?.registered_at || 1729850000;
-  const formattedDate = registeredAt ? new Date(registeredAt * 1000).toUTCString() : '2026-10-25 10:00:00 UTC';
+  const artifactPath = isStage1 ? (modelStatus?.model_path || 'ml/artifacts/ids_model.joblib') : (stage2Status?.model_path || 'ml/artifacts/attack_classifier.joblib');
+  const artifactSize = verifyResult?.artifact_size_bytes ?? activeStatus?.artifact_size_bytes;
+  const contractAddress = verifyResult?.contract_address || activeStatus?.contract_address || 'Unavailable';
+  const registrant = verifyResult?.registrant || activeStatus?.registrant || 'Unavailable';
+  const registeredAt = verifyResult?.registered_at || activeStatus?.registered_at;
+  const formattedDate = registeredAt ? new Date(registeredAt * 1000).toUTCString() : 'Unavailable';
 
-  const localSha = activeStatus?.local_sha256 || 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5';
-  const registeredSha = activeStatus?.registered_sha256 || (isStage1 ? 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5' : '596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208');
+  const localSha = verifyResult?.local_hash || activeStatus?.local_sha256 || null;
+  const registeredSha = verifyResult?.registered_hash || activeStatus?.registered_sha256 || null;
 
   const vStatus = verifyResult?.status || activeStatus?.verification_status || 'UNVERIFIED';
   const isVerified = vStatus === 'VERIFIED';
@@ -123,7 +123,9 @@ export function ModelSecurity({
             </div>
             <div className="provenance-metric">
               <span className="metric-label">Artifact Size</span>
-              <span className="metric-value font-mono font-xs">{artifactSize.toLocaleString()} bytes</span>
+              <span className="metric-value font-mono font-xs">
+                {artifactSize != null ? `${Number(artifactSize).toLocaleString()} bytes` : 'Unavailable'}
+              </span>
             </div>
             <div className="provenance-metric">
               <span className="metric-label">Registry Contract</span>
@@ -209,7 +211,7 @@ export function ModelSecurity({
                 <span className="badge badge-secondary">Off-Chain Binary</span>
               </div>
               <div className="font-mono font-xs hash-string" data-testid="local-hash">
-                {showFullHashes ? localSha : `${localSha.slice(0, 24)}...${localSha.slice(-8)}`}
+                {localSha ? (showFullHashes ? localSha : `${localSha.slice(0, 24)}...${localSha.slice(-8)}`) : 'Unavailable'}
               </div>
             </div>
 
@@ -220,7 +222,7 @@ export function ModelSecurity({
                 <span className="badge badge-success">ModelRegistry.sol</span>
               </div>
               <div className="font-mono font-xs hash-string text-success" data-testid="registered-hash">
-                {showFullHashes ? registeredSha : `${registeredSha.slice(0, 24)}...${registeredSha.slice(-8)}`}
+                {registeredSha ? (showFullHashes ? registeredSha : `${registeredSha.slice(0, 24)}...${registeredSha.slice(-8)}`) : 'Unavailable'}
               </div>
             </div>
 
@@ -230,7 +232,7 @@ export function ModelSecurity({
                 <div className="alert-box success" data-testid="verified-success-box">
                   <strong>✓ PROVENANCE CONFIRMED:</strong> Local artifact SHA-256 matches smart contract digest exactly.
                   <div className="font-xs" style={{ marginTop: '0.25rem' }}>
-                    Loaded (Inference Enabled) — Verification latency: {activeStatus?.read_latency_ms?.toFixed(2) || '15.65'} ms
+                    Loaded (Inference Enabled) — Verification latency: {activeStatus?.read_latency_ms != null ? `${activeStatus.read_latency_ms.toFixed(2)} ms` : (verifyResult?.verification_latency_ms != null ? `${verifyResult.verification_latency_ms.toFixed(2)} ms` : 'N/A')}
                   </div>
                 </div>
               ) : isFailed ? (

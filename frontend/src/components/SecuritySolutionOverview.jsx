@@ -49,21 +49,22 @@ export function SecuritySolutionOverview({
   const modelVersion = isStage1 ? (modelStatus?.model_version || 'v1.0.0') : (stage2Status?.model_version || 'v1.0.0');
   const algorithm = activeVerify?.algorithm || activeStatus?.algorithm || 'RandomForestClassifier';
   const modelPath = isStage1 ? (modelStatus?.model_path || 'ml/artifacts/ids_model.joblib') : (stage2Status?.model_path || 'ml/artifacts/attack_classifier.joblib');
-  const artifactSizeBytes = activeVerify?.artifact_size_bytes ?? activeStatus?.artifact_size_bytes ?? (isStage1 ? 448512 : 524288);
+  const artifactSizeBytes = activeVerify?.artifact_size_bytes ?? activeStatus?.artifact_size_bytes;
 
-  const registeredDigest = activeVerify?.registered_hash || activeStatus?.registered_sha256 || (isStage1 ? 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5' : '596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208');
-  const observedDigest = activeVerify?.local_hash || activeStatus?.local_sha256 || (isStage1 ? 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5' : '596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208');
+  const registeredDigest = activeVerify?.registered_hash || activeStatus?.registered_sha256 || null;
+  const observedDigest = activeVerify?.local_hash || activeStatus?.local_sha256 || null;
 
-  const currentVerifyStatus = activeVerify?.status || activeStatus?.verification_status || (activeStatus?.is_loaded ? 'VERIFIED' : 'UNVERIFIED');
+  const currentVerifyStatus = activeVerify?.status || activeStatus?.verification_status || 'UNVERIFIED';
   const isDigestMatch = Boolean(observedDigest && registeredDigest && (observedDigest.toLowerCase() === registeredDigest.toLowerCase()));
   const isTargetVerified = currentVerifyStatus === 'VERIFIED' && isDigestMatch;
-  const isMismatch = currentVerifyStatus === 'HASH_MISMATCH' || (!isDigestMatch && currentVerifyStatus !== 'NOT_REGISTERED' && currentVerifyStatus !== 'UNVERIFIED');
+  const isMismatch = currentVerifyStatus === 'HASH_MISMATCH' || (Boolean(observedDigest && registeredDigest) && !isDigestMatch && currentVerifyStatus !== 'NOT_REGISTERED' && currentVerifyStatus !== 'UNVERIFIED');
   const isNotRegistered = currentVerifyStatus === 'NOT_REGISTERED';
+  const isBlockchainUnavailable = currentVerifyStatus === 'BLOCKCHAIN_UNAVAILABLE';
 
-  const contractAddress = activeVerify?.contract_address || activeStatus?.contract_address || '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec';
-  const registrantAddress = activeVerify?.registrant || activeStatus?.registrant || '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1';
-  const registeredAtTimestamp = activeVerify?.registered_at || activeStatus?.registered_at || 1729850000;
-  const formattedRegistrationDate = registeredAtTimestamp ? new Date(registeredAtTimestamp * 1000).toUTCString() : '2026-10-25 10:00:00 UTC';
+  const contractAddress = activeVerify?.contract_address || activeStatus?.contract_address || null;
+  const registrantAddress = activeVerify?.registrant || activeStatus?.registrant || null;
+  const registeredAtTimestamp = activeVerify?.registered_at || activeStatus?.registered_at || null;
+  const formattedRegistrationDate = registeredAtTimestamp ? new Date(registeredAtTimestamp * 1000).toUTCString() : 'Unavailable';
 
   // Overall system verification states
   const verificationStatus = modelStatus?.verification_status || 'UNVERIFIED';
@@ -246,7 +247,7 @@ export function SecuritySolutionOverview({
               <div className="spec-item">
                 <span className="spec-label">Artifact Size:</span>
                 <span className="spec-val font-mono font-xs">
-                  {artifactSizeBytes ? `${Number(artifactSizeBytes).toLocaleString()} bytes (${Math.round(artifactSizeBytes / 1024)} KB)` : '448,512 bytes (438 KB)'}
+                  {artifactSizeBytes != null ? `${Number(artifactSizeBytes).toLocaleString()} bytes (${Math.round(artifactSizeBytes / 1024)} KB)` : 'Unavailable'}
                 </span>
               </div>
               <div className="spec-item">
@@ -284,13 +285,13 @@ export function SecuritySolutionOverview({
           </div>
 
           {/* Decision Panel with Causal Flow */}
-          <div className={`decision-panel ${isTargetVerified ? 'verified' : isMismatch ? 'mismatch' : isNotRegistered ? 'not-registered' : 'unverified'}`} data-testid="solution-decision-panel">
+          <div className={`decision-panel ${isTargetVerified ? 'verified' : isMismatch ? 'mismatch' : isNotRegistered ? 'not-registered' : isBlockchainUnavailable ? 'blocked' : 'unverified'}`} data-testid="solution-decision-panel">
             <div className="decision-header">
               <span className="decision-icon">
-                {isTargetVerified ? '✓' : isMismatch ? '⚠️' : isNotRegistered ? '❓' : 'ℹ️'}
+                {isTargetVerified ? '✓' : isMismatch ? '⚠️' : isNotRegistered ? '❓' : isBlockchainUnavailable ? '🔌' : 'ℹ️'}
               </span>
               <strong className="decision-verdict">
-                DECISION: {isTargetVerified ? 'VERIFIED — MODEL LOAD AUTHORIZED' : isMismatch ? 'HASH_MISMATCH — MODEL LOAD BLOCKED (FAIL-CLOSED)' : isNotRegistered ? 'NOT_REGISTERED — MODEL LOAD BLOCKED' : 'UNVERIFIED — RUN VERIFICATION'}
+                DECISION: {isTargetVerified ? 'VERIFIED — MODEL LOAD AUTHORIZED' : isMismatch ? 'HASH_MISMATCH — MODEL LOAD BLOCKED (FAIL-CLOSED)' : isNotRegistered ? 'NOT_REGISTERED — MODEL LOAD BLOCKED' : isBlockchainUnavailable ? 'BLOCKCHAIN_UNAVAILABLE — MODEL LOAD BLOCKED (FAIL-CLOSED)' : 'UNVERIFIED — RUN VERIFICATION'}
               </strong>
             </div>
             <div className="decision-causal-flow" data-testid="decision-causal-flow">
@@ -322,15 +323,21 @@ export function SecuritySolutionOverview({
                   &nbsp;&nbsp;&nbsp;&nbsp;↓<br />
                   Model loading blocked fail-closed; inference locked
                 </>
+              ) : isBlockchainUnavailable ? (
+                <>
+                  Blockchain RPC endpoint is unreachable<br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;↓<br />
+                  <strong>BLOCKCHAIN_UNAVAILABLE</strong><br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;↓<br />
+                  Model loading blocked fail-closed; inference locked
+                </>
               ) : (
                 <>
-                  Registered model found ({modelId}:{modelVersion})<br />
-                  &nbsp;&nbsp;&nbsp;&nbsp;+<br />
-                  Observed SHA-256 matches registered digest<br />
+                  Model artifact awaiting cryptographic integrity verification<br />
                   &nbsp;&nbsp;&nbsp;&nbsp;↓<br />
-                  <strong>VERIFIED</strong><br />
+                  <strong>UNVERIFIED</strong><br />
                   &nbsp;&nbsp;&nbsp;&nbsp;↓<br />
-                  Model loading authorized
+                  Run verification before loading into memory
                 </>
               )}
             </div>
@@ -356,7 +363,9 @@ export function SecuritySolutionOverview({
             <div className="crypto-hash-block">
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                 <span className="font-xs text-muted">CALCULATION STATUS:</span>
-                <span className="font-mono font-xs text-success">✓ COMPLETED (Calculated on Disk Artifact)</span>
+                <span className={`font-mono font-xs ${observedDigest ? 'text-success' : 'text-muted'}`}>
+                  {observedDigest ? '✓ COMPLETED (Calculated on Disk Artifact)' : '○ PENDING (Artifact not yet evaluated)'}
+                </span>
               </div>
 
               <div className="hashes-comparison-grid" style={{ marginTop: '0.5rem' }} data-testid="solution-hash-comparison">
@@ -366,17 +375,19 @@ export function SecuritySolutionOverview({
                     className="font-mono font-xs text-primary"
                     style={{ marginTop: '0.25rem', wordBreak: 'break-all' }}
                     data-testid="crypto-observed-hash"
-                    title={observedDigest}
+                    title={observedDigest || 'Unavailable'}
                   >
-                    {showCryptoFullHashes
-                      ? observedDigest
-                      : `${observedDigest.slice(0, 16)}...${observedDigest.slice(-8)}`}
+                    {observedDigest
+                      ? (showCryptoFullHashes
+                        ? observedDigest
+                        : `${observedDigest.slice(0, 16)}...${observedDigest.slice(-8)}`)
+                      : 'Unavailable'}
                   </div>
                 </div>
 
                 <div style={{ textAlign: 'center', padding: '0 0.5rem' }}>
-                  <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: isDigestMatch ? '#34d399' : '#f87171' }}>
-                    {isDigestMatch ? '=' : '≠'}
+                  <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: isDigestMatch ? '#34d399' : (observedDigest && registeredDigest) ? '#f87171' : '#94a3b8' }}>
+                    {isDigestMatch ? '=' : (observedDigest && registeredDigest) ? '≠' : '?'}
                   </span>
                 </div>
 
@@ -386,11 +397,13 @@ export function SecuritySolutionOverview({
                     className="font-mono font-xs text-success"
                     style={{ marginTop: '0.25rem', wordBreak: 'break-all' }}
                     data-testid="crypto-registered-hash"
-                    title={registeredDigest}
+                    title={registeredDigest || 'Unavailable'}
                   >
-                    {showCryptoFullHashes
-                      ? registeredDigest
-                      : `${registeredDigest.slice(0, 16)}...${registeredDigest.slice(-8)}`}
+                    {registeredDigest
+                      ? (showCryptoFullHashes
+                        ? registeredDigest
+                        : `${registeredDigest.slice(0, 16)}...${registeredDigest.slice(-8)}`)
+                      : 'Unavailable'}
                   </div>
                 </div>
               </div>
@@ -408,7 +421,7 @@ export function SecuritySolutionOverview({
               <div className="spec-item">
                 <span className="spec-label">Smart Contract Address:</span>
                 <span className="spec-val font-mono font-xs text-primary" data-testid="blockchain-contract-address">
-                  {contractAddress}
+                  {contractAddress || 'Unavailable'}
                 </span>
               </div>
               <div className="spec-item">
@@ -419,20 +432,20 @@ export function SecuritySolutionOverview({
               </div>
               <div className="spec-item">
                 <span className="spec-label">Registration Status:</span>
-                <span className="spec-val font-mono font-xs text-success" data-testid="blockchain-reg-status">
-                  ✓ REGISTERED (isModelRegistered = true)
+                <span className={`spec-val font-mono font-xs ${registeredDigest ? 'text-success' : isNotRegistered ? 'text-danger' : 'text-muted'}`} data-testid="blockchain-reg-status">
+                  {registeredDigest ? '✓ REGISTERED (isModelRegistered = true)' : isNotRegistered ? '✗ NOT REGISTERED (isModelRegistered = false)' : isBlockchainUnavailable ? '⚠️ UNAVAILABLE (Contract unreachable)' : '○ UNKNOWN (Registry not queried)'}
                 </span>
               </div>
               <div className="spec-item">
                 <span className="spec-label">Registered Algorithm:</span>
                 <span className="spec-val font-mono font-xs" data-testid="blockchain-algorithm">
-                  {algorithm}
+                  {activeVerify?.algorithm || activeStatus?.algorithm || 'Unavailable'}
                 </span>
               </div>
               <div className="spec-item">
                 <span className="spec-label">Registrant Address:</span>
                 <span className="spec-val font-mono font-xs text-secondary" data-testid="blockchain-registrant">
-                  {registrantAddress}
+                  {registrantAddress || 'Unavailable'}
                 </span>
               </div>
               <div className="spec-item">
@@ -446,7 +459,7 @@ export function SecuritySolutionOverview({
             <div className="spec-item" style={{ marginTop: '0.5rem' }}>
               <span className="spec-label">Registered SHA-256 Digest:</span>
               <span className="spec-val font-mono font-xs text-success" style={{ wordBreak: 'break-all' }} data-testid="blockchain-reg-digest">
-                {registeredDigest}
+                {registeredDigest || 'Unavailable'}
               </span>
             </div>
 
@@ -465,59 +478,65 @@ export function SecuritySolutionOverview({
             <div className="lifecycle-steps-grid">
               <div className="lifecycle-step-card">
                 <span className="font-xs text-muted">1. ARTIFACT</span>
-                <span className="lifecycle-pill passed">Passed</span>
+                <span className={`lifecycle-pill ${observedDigest || activeStatus?.model_path ? 'passed' : 'pending'}`}>
+                  {observedDigest || activeStatus?.model_path ? 'Passed' : 'Pending'}
+                </span>
                 <span className="font-mono font-xs" style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                  Selected on disk
+                  {observedDigest || activeStatus?.model_path ? 'Found on disk' : 'Unchecked'}
                 </span>
               </div>
               <div className="lifecycle-step-card">
                 <span className="font-xs text-muted">2. SHA-256</span>
-                <span className="lifecycle-pill passed">Passed</span>
+                <span className={`lifecycle-pill ${observedDigest ? 'passed' : 'pending'}`}>
+                  {observedDigest ? 'Passed' : 'Pending'}
+                </span>
                 <span className="font-mono font-xs" style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                  Digest calculated
+                  {observedDigest ? 'Digest calculated' : 'Not calculated'}
                 </span>
               </div>
               <div className="lifecycle-step-card">
                 <span className="font-xs text-muted">3. REGISTRY</span>
-                <span className="lifecycle-pill passed">Passed</span>
+                <span className={`lifecycle-pill ${registeredDigest ? 'passed' : isBlockchainUnavailable ? 'failed' : isNotRegistered ? 'failed' : 'pending'}`}>
+                  {registeredDigest ? 'Passed' : isBlockchainUnavailable ? 'Unavailable' : isNotRegistered ? 'Not Found' : 'Pending'}
+                </span>
                 <span className="font-mono font-xs" style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                  Record queried
+                  {registeredDigest ? 'Record queried' : isBlockchainUnavailable ? 'RPC unreachable' : isNotRegistered ? 'Record missing' : 'Not queried'}
                 </span>
               </div>
               <div className="lifecycle-step-card">
                 <span className="font-xs text-muted">4. COMPARISON</span>
-                <span className={`lifecycle-pill ${isDigestMatch ? 'passed' : 'failed'}`}>
-                  {isDigestMatch ? 'Passed' : 'Failed'}
+                <span className={`lifecycle-pill ${observedDigest && registeredDigest ? (isDigestMatch ? 'passed' : 'failed') : isBlockchainUnavailable ? 'blocked' : 'pending'}`}>
+                  {observedDigest && registeredDigest ? (isDigestMatch ? 'Passed' : 'Failed') : isBlockchainUnavailable ? 'Blocked' : 'Pending'}
                 </span>
                 <span className="font-mono font-xs" style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                  {isDigestMatch ? 'Digests match' : 'Digests differ'}
+                  {observedDigest && registeredDigest ? (isDigestMatch ? 'Digests match' : 'Digests differ') : isBlockchainUnavailable ? 'Registry unavailable' : 'Awaiting digests'}
                 </span>
               </div>
               <div className="lifecycle-step-card">
                 <span className="font-xs text-muted">5. DECISION</span>
-                <span className={`lifecycle-pill ${isTargetVerified ? 'passed' : 'failed'}`}>
-                  {isTargetVerified ? 'Passed' : 'Failed'}
+                <span className={`lifecycle-pill ${isTargetVerified ? 'passed' : (isMismatch || isNotRegistered || isBlockchainUnavailable) ? 'failed' : 'pending'}`}>
+                  {isTargetVerified ? 'Passed' : (isMismatch || isNotRegistered || isBlockchainUnavailable) ? 'Failed' : 'Pending'}
                 </span>
                 <span className="font-mono font-xs" style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                  {isTargetVerified ? 'VERIFIED' : currentVerifyStatus}
+                  {isTargetVerified ? 'VERIFIED' : (isMismatch ? 'HASH_MISMATCH' : isNotRegistered ? 'NOT_REGISTERED' : isBlockchainUnavailable ? 'UNAVAILABLE' : 'Not verified')}
                 </span>
               </div>
               <div className="lifecycle-step-card">
                 <span className="font-xs text-muted">6. LOAD GATE</span>
-                <span className={`lifecycle-pill ${isTargetVerified ? 'passed' : 'blocked'}`}>
-                  {isTargetVerified ? 'Passed' : 'Blocked'}
+                <span className={`lifecycle-pill ${isTargetVerified ? 'passed' : (isMismatch || isNotRegistered || isBlockchainUnavailable) ? 'blocked' : 'pending'}`}>
+                  {isTargetVerified ? 'Passed' : (isMismatch || isNotRegistered || isBlockchainUnavailable) ? 'Blocked' : 'Pending'}
                 </span>
                 <span className="font-mono font-xs" style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                  {isTargetVerified ? 'Load authorized' : 'Load blocked'}
+                  {isTargetVerified ? 'Load authorized' : (isMismatch || isNotRegistered || isBlockchainUnavailable) ? 'Load blocked' : 'Pending verification'}
                 </span>
               </div>
               <div className="lifecycle-step-card">
                 <span className="font-xs text-muted">7. IDS STATUS</span>
-                <span className={`lifecycle-pill ${isTargetVerified && isModelLoaded ? 'passed' : 'blocked'}`}>
-                  {isTargetVerified && isModelLoaded ? 'Passed' : 'Blocked'}
+                <span className={`lifecycle-pill ${isTargetVerified && isModelLoaded ? 'passed' : (isMismatch || isNotRegistered || isBlockchainUnavailable) ? 'blocked' : 'pending'}`}>
+                  {isTargetVerified && isModelLoaded ? 'Passed' : (isMismatch || isNotRegistered || isBlockchainUnavailable) ? 'Blocked' : 'Pending'}
                 </span>
                 <span className="font-mono font-xs" style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                  {isTargetVerified && isModelLoaded ? 'Inference ready' : 'Inference locked'}
+                  {isTargetVerified && isModelLoaded ? 'Inference ready' : (isMismatch || isNotRegistered || isBlockchainUnavailable) ? 'Inference locked' : 'Engine unloaded'}
                 </span>
               </div>
             </div>
@@ -640,7 +659,7 @@ export function SecuritySolutionOverview({
           </div>
 
           {/* Model Tampering Incident Status Card */}
-          {verificationStatus === 'HASH_MISMATCH' && (
+          {(verificationStatus === 'HASH_MISMATCH' || activeVerify?.status === 'HASH_MISMATCH' || activeStatus?.verification_status === 'HASH_MISMATCH') && (
             <div className="console-card alert-box danger" data-testid="solution-tamper-detected-alert">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '1.4rem' }}>⚠️</span>
@@ -652,11 +671,11 @@ export function SecuritySolutionOverview({
               </p>
               <div className="spec-item">
                 <span className="spec-label">Enforcement Action:</span>
-                <span className="spec-val font-mono font-xs text-danger">MODEL LOAD: BLOCKED | STAGE 1 IDS: LOCKED</span>
+                <span className="spec-val font-mono font-xs text-danger">MODEL LOAD: BLOCKED | INFERENCE: LOCKED</span>
               </div>
               <div className="spec-item" style={{ marginTop: '0.4rem' }}>
-                <span className="spec-label">Audit Logging:</span>
-                <span className="spec-val font-mono font-xs text-warning">RECORDED IN AUDIT LOG (event_type: MODEL_REPLACEMENT_DETECTED)</span>
+                <span className="spec-label">Verification Status:</span>
+                <span className="spec-val font-mono font-xs text-warning">HASH_MISMATCH</span>
               </div>
               <div style={{ marginTop: '0.75rem' }}>
                 <button
@@ -670,21 +689,21 @@ export function SecuritySolutionOverview({
             </div>
           )}
 
-          {/* LATEST DETECTION OUTCOME (READ-ONLY TELEMETRY) */}
+          {/* LATEST DETECTION OUTCOME (COMPACT READ-ONLY SUMMARY) */}
           <div className="console-card" data-testid="solution-latest-detection-card">
             <div className="card-header">
-              <h3 className="card-title">Latest Detection Result (Read-Only Telemetry)</h3>
+              <h3 className="card-title">Latest Detection Status (Read-Only Summary)</h3>
               <span className="badge badge-secondary font-mono font-xs">
-                {predictionResult ? (predictionResult.stage1_model_id || 'iot-ids-rf') : 'Awaiting Flow Analysis'}
+                {predictionResult ? 'COMPLETED' : 'Awaiting Flow Analysis'}
               </span>
             </div>
 
             {!predictionResult ? (
-              <div className="empty-state-box" style={{ padding: '2rem 1.5rem', textAlign: 'center' }} data-testid="solution-no-detection">
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📡</div>
+              <div className="empty-state-box" style={{ padding: '1.5rem', textAlign: 'center' }} data-testid="solution-no-detection">
+                <div style={{ fontSize: '1.8rem', marginBottom: '0.35rem' }}>📡</div>
                 <strong>No Detection Run In Current Session</strong>
-                <p className="text-secondary font-xs" style={{ maxWidth: '400px', margin: '0.35rem auto 1rem auto' }}>
-                  Network-flow record selection and classification occur exclusively in the dedicated Intrusion Detection Workbench.
+                <p className="text-secondary font-xs" style={{ maxWidth: '380px', margin: '0.35rem auto 0.75rem auto' }}>
+                  Network-flow selection and classification are performed exclusively in the Intrusion Detection Workbench.
                 </p>
                 <button
                   type="button"
@@ -696,19 +715,19 @@ export function SecuritySolutionOverview({
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} data-testid="solution-latest-detection">
-                {/* Stage 1 Binary IDS Outcome */}
-                <div className="flow-spec-card" data-testid="solution-stage1-card">
-                  <div className="flow-spec-header">
-                    <span>STAGE 1: BINARY IDS VERDICT</span>
-                    <span className="font-mono font-xs text-secondary">iot-ids-rf</span>
-                  </div>
-                  <div className="stage-result-grid" style={{ marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }} data-testid="solution-latest-detection">
+                <div className="flow-spec-card" style={{ padding: '0.85rem' }} data-testid="solution-stage1-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div>
-                      <span className="result-metric-label">VERDICT</span>
-                      <div
-                        className="result-verdict"
+                      <span className="font-xs text-muted" style={{ display: 'block' }}>LATEST INFERENCE STATUS</span>
+                      <strong className="font-mono font-xs" style={{ color: '#4ade80' }}>COMPLETED</strong>
+                    </div>
+                    <div>
+                      <span className="font-xs text-muted" style={{ display: 'block' }}>STAGE 1 VERDICT</span>
+                      <strong
+                        className="font-mono"
                         style={{
+                          fontSize: '1rem',
                           color:
                             predictionResult.stage1_prediction === 'Attack' || predictionResult.prediction === 'Attack'
                               ? '#f87171'
@@ -716,134 +735,30 @@ export function SecuritySolutionOverview({
                         }}
                         data-testid="solution-stage1-verdict"
                       >
-                        {predictionResult.stage1_prediction || predictionResult.prediction}
-                      </div>
+                        {predictionResult.stage1_prediction || predictionResult.prediction || 'Unknown'}
+                      </strong>
                     </div>
                     <div>
-                      <span className="result-metric-label">CONFIDENCE</span>
-                      <div className="font-mono result-confidence" data-testid="solution-stage1-confidence">
+                      <span className="font-xs text-muted" style={{ display: 'block' }}>STAGE 1 CONFIDENCE</span>
+                      <span className="font-mono font-xs" data-testid="solution-stage1-confidence">
                         {((predictionResult.stage1_confidence ?? predictionResult.confidence ?? 0) * 100).toFixed(1)}%
-                      </div>
-                    </div>
-                    <div>
-                      <span className="result-metric-label">VERIFICATION GATE</span>
-                      <div className="font-mono font-xs text-success">
-                        ✓ {predictionResult.verification_status || 'VERIFIED'}
-                      </div>
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Stage 2 Multiclass Attack Classification */}
-                <div className="flow-spec-card" data-testid="solution-stage2-card">
-                  <div className="flow-spec-header">
-                    <span>STAGE 2: ATTACK CLASSIFICATION</span>
-                    <span className="font-mono font-xs text-secondary">iot-ids-attack-classifier</span>
-                  </div>
-                  {predictionResult.stage2_invoked ? (
-                    <div className="stage-result-grid" style={{ marginTop: '0.5rem' }}>
-                      <div>
-                        <span className="result-metric-label">ATTACK CATEGORY</span>
-                        <div className="result-verdict font-mono" style={{ color: '#fb923c' }} data-testid="solution-stage2-category">
-                          {predictionResult.stage2_prediction || predictionResult.final_prediction}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="result-metric-label">CATEGORY CONFIDENCE</span>
-                        <div className="font-mono result-confidence" data-testid="solution-stage2-confidence">
-                          {((predictionResult.stage2_confidence ?? 0.85) * 100).toFixed(1)}%
-                        </div>
-                      </div>
-                      <div>
-                        <span className="result-metric-label">ROUTING LOGIC</span>
-                        <div className="font-mono font-xs text-secondary">
-                          Triggered strictly by Stage 1 Attack
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="stage2-bypassed-card" data-testid="solution-stage2-bypassed" style={{ marginTop: '0.5rem' }}>
-                      <span>ℹ️ <strong>Stage 2 Attack Classifier: Bypassed</strong> (Stage 1 classified flow as Benign). Normal traffic does not invoke attack categorization.</span>
-                    </div>
-                  )}
+                <div className="font-xs text-muted" style={{ lineHeight: '1.4' }}>
+                  <em>Note:</em> Stage 2 attack classification, operator advisory guidance, and audit event logs are maintained authoritatively in the Intrusion Detection Workbench and Operational Audit workspaces.
                 </div>
 
-                {/* Security Advisory Recommendation */}
-                {predictionResult.advisory_recommendation && (
-                  <div className="advisory-panel" data-testid="solution-advisory-panel" style={{ marginTop: '0.25rem' }}>
-                    <div className="advisory-header">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span className="advisory-icon">📋</span>
-                        <h4 className="advisory-title">
-                          Security Advisory: {predictionResult.advisory_recommendation.category}
-                        </h4>
-                      </div>
-                      <div className="advisory-meta-pills">
-                        <span className="badge badge-danger">
-                          Severity: {predictionResult.advisory_recommendation.severity}
-                        </span>
-                        <span className="badge badge-warning">
-                          Priority: {predictionResult.advisory_recommendation.investigation_priority}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="advisory-content">
-                      <div className="advisory-item">
-                        <span className="advisory-item-label">Recommended Operator Action:</span>
-                        <p className="advisory-item-text" data-testid="solution-advisory-action">
-                          {predictionResult.advisory_recommendation.recommended_action}
-                        </p>
-                      </div>
-                      <div className="advisory-item">
-                        <span className="advisory-item-label">Operator Guidance:</span>
-                        <p className="advisory-item-text text-secondary font-xs">
-                          {predictionResult.advisory_recommendation.operator_guidance}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="advisory-footer-disclaimer" data-testid="solution-advisory-approval">
-                      <span>⚠️ AUTOMATED REMEDIATION: DISABLED | HUMAN APPROVAL: REQUIRED. Guidance is advisory only.</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Recorded Operational Audit Evidence */}
-                <div className="flow-spec-card" data-testid="solution-audit-evidence-card">
-                  <div className="flow-spec-header">
-                    <span>RECORDED OPERATIONAL AUDIT EVIDENCE</span>
-                    <span className="badge badge-success font-mono font-xs">Event: {predictionResult.event_id || 'evt-live'}</span>
-                  </div>
-                  <div className="flow-spec-grid" style={{ marginTop: '0.5rem' }}>
-                    <div className="spec-item">
-                      <span className="spec-label">Event Timestamp (UTC):</span>
-                      <span className="spec-val font-mono font-xs">{predictionResult.timestamp || new Date().toISOString()}</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Per-Flow Blockchain Queries:</span>
-                      <span className="spec-val font-mono font-xs text-success">0 (Execution plane decoupled from EVM)</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Inference Latency:</span>
-                      <span className="spec-val font-mono font-xs">{predictionResult.inference_latency_ms?.toFixed(2) || '32.06'} ms</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Audit Storage:</span>
-                      <span className="spec-val font-mono font-xs">SQLite (backend/data/audit.db)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => onNavigate && onNavigate('detection')}
-                  >
-                    Select Another Flow in Intrusion Detection Workbench →
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => onNavigate && onNavigate('detection')}
+                  data-testid="solution-goto-workbench-details-btn"
+                >
+                  Open Intrusion Detection Workbench →
+                </button>
               </div>
             )}
           </div>

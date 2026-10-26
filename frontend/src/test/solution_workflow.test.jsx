@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from '../App';
 import { api } from '../api/client';
+import { SecuritySolutionOverview } from '../components/SecuritySolutionOverview';
+import { ModelSecurity } from '../components/ModelSecurity';
 
 describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Tests', () => {
   const mockHealth = {
@@ -620,5 +622,158 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
     expect(screen.queryByTestId('solution-architecture-diagram')).not.toBeInTheDocument();
     expect(screen.queryByTestId('solution-evaluator-guide')).not.toBeInTheDocument();
     expect(screen.queryByTestId('solution-what-this-proves')).not.toBeInTheDocument();
+  });
+
+  // =========================================================================
+  // 8. PHASE 7D.4.1 RESEARCH-INTEGRITY RECONCILIATION TESTS
+  // =========================================================================
+
+  it('23. Security Solution displays explicit "Unavailable" when metadata is absent from backend', () => {
+    const emptyStatus = {
+      model_id: 'iot-ids-rf',
+      model_version: 'v1.0.0',
+      algorithm: null,
+      local_sha256: null,
+      registered_sha256: null,
+      contract_address: null,
+      registrant: null,
+      registered_at: null,
+      artifact_size_bytes: null,
+      verification_status: 'UNVERIFIED',
+      is_loaded: false,
+    };
+
+    render(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={emptyStatus}
+        stage2Status={emptyStatus}
+        isModelLoaded={false}
+        isVerifying={false}
+      />
+    );
+
+    expect(screen.getByTestId('blockchain-contract-address')).toHaveTextContent('Unavailable');
+    expect(screen.getByTestId('blockchain-registrant')).toHaveTextContent('Unavailable');
+    expect(screen.getByTestId('blockchain-timestamp')).toHaveTextContent('Unavailable');
+    expect(screen.getByTestId('blockchain-reg-digest')).toHaveTextContent('Unavailable');
+    expect(screen.getByTestId('crypto-observed-hash')).toHaveTextContent('Unavailable');
+    expect(screen.getByTestId('crypto-registered-hash')).toHaveTextContent('Unavailable');
+  });
+
+  it('24. Model Security displays explicit "Unavailable" when metadata is absent from backend', () => {
+    const emptyStatus = {
+      model_id: 'iot-ids-rf',
+      model_version: 'v1.0.0',
+      algorithm: null,
+      local_sha256: null,
+      registered_sha256: null,
+      contract_address: null,
+      registrant: null,
+      registered_at: null,
+      artifact_size_bytes: null,
+      verification_status: 'UNVERIFIED',
+      is_loaded: false,
+    };
+
+    render(
+      <ModelSecurity
+        health={mockHealth}
+        modelStatus={emptyStatus}
+        stage2Status={emptyStatus}
+        isModelLoaded={false}
+        isVerifying={false}
+      />
+    );
+
+    expect(screen.getByTestId('local-hash')).toHaveTextContent('Unavailable');
+    expect(screen.getByTestId('registered-hash')).toHaveTextContent('Unavailable');
+  });
+
+  it('25. Lifecycle gate tracker truthfully reflects pending or unavailable states', () => {
+    const unverifiedStatus = {
+      model_id: 'iot-ids-rf',
+      model_version: 'v1.0.0',
+      local_sha256: null,
+      registered_sha256: null,
+      verification_status: 'UNVERIFIED',
+      is_loaded: false,
+    };
+
+    const { rerender } = render(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={unverifiedStatus}
+        stage2Status={unverifiedStatus}
+        isModelLoaded={false}
+      />
+    );
+
+    const tracker = screen.getByTestId('solution-lifecycle-tracker');
+    expect(within(tracker).getAllByText(/Pending/i).length).toBeGreaterThanOrEqual(4);
+
+    // Rerender with BLOCKCHAIN_UNAVAILABLE
+    const unavailableStatus = {
+      ...unverifiedStatus,
+      verification_status: 'BLOCKCHAIN_UNAVAILABLE',
+    };
+
+    rerender(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={unavailableStatus}
+        stage2Status={unavailableStatus}
+        isModelLoaded={false}
+      />
+    );
+
+    expect(within(tracker).getAllByText(/Unavailable/i).length).toBeGreaterThanOrEqual(1);
+    expect(within(tracker).getAllByText(/Blocked/i).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('26. Security Solution renders only compact detection summary and omits detailed stage2/advisory/audit panels', () => {
+    render(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={mockModelStatusVerified}
+        stage2Status={mockStage2Status}
+        isModelLoaded={true}
+        predictionResult={mockHierarchicalAttackResponse}
+      />
+    );
+
+    expect(screen.getByTestId('solution-latest-detection-card')).toBeInTheDocument();
+    expect(screen.getByTestId('solution-latest-detection')).toBeInTheDocument();
+
+    expect(screen.getByTestId('solution-stage1-verdict')).toHaveTextContent('Attack');
+    expect(screen.getByTestId('solution-stage1-confidence')).toHaveTextContent('94.5%');
+
+    expect(screen.getByTestId('solution-goto-workbench-details-btn')).toBeInTheDocument();
+
+    expect(screen.queryByTestId('solution-stage2-card')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-stage2-category')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-advisory-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-audit-evidence-card')).not.toBeInTheDocument();
+  });
+
+  it('27. Security Solution displays incident alert when HASH_MISMATCH occurs without inventing data', () => {
+    const mismatchStatus = {
+      ...mockModelStatusVerified,
+      verification_status: 'HASH_MISMATCH',
+      is_loaded: false,
+    };
+
+    render(
+      <SecuritySolutionOverview
+        health={mockHealth}
+        modelStatus={mismatchStatus}
+        stage2Status={mockStage2Status}
+        isModelLoaded={false}
+      />
+    );
+
+    expect(screen.getByTestId('solution-tamper-detected-alert')).toBeInTheDocument();
+    expect(screen.getByText(/TAMPERING \/ REPLACEMENT INCIDENT DETECTED/i)).toBeInTheDocument();
+    expect(screen.getByText(/MODEL LOAD: BLOCKED \| INFERENCE: LOCKED/i)).toBeInTheDocument();
   });
 });

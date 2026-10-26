@@ -66,15 +66,15 @@ The following sections and DOM elements were removed from `frontend/src/componen
 4. **Preserved and Refined Components:**
    - `solution-model-trust-card`: Displays Stage 1 & Stage 2 model identities, algorithms (`RandomForestClassifier`), versions (`1.0.0`), artifact file sizes (1.93 MB, 2.76 MB), status badges, and verify/load controls.
    - `solution-crypto-panel`: Displays observed local SHA-256 digests vs expected reference digests, comparison matches, and verification timestamp.
-   - `solution-blockchain-panel`: Displays on-chain `ModelRegistry` contract address (`0xa2b6...`), network, deployed bytecode status, and contract verification methods (`getModelRecord`, `getModelHash`, `isModelRegistered`).
+   - `solution-blockchain-panel`: Displays on-chain `ModelRegistry` contract address (`0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec`), network, deployed bytecode status, and contract verification methods (`getModelRecord`, `getModelHash`, `isModelRegistered`).
    - `solution-lifecycle-tracker`: Displays the 7-stage lifecycle gate tracker (`Artifact Hashing`, `ModelRegistry Lookup`, `Cryptographic Comparison`, `Gated Memory Load`, `Network Ingestion`, `Hierarchical Inference`, `Local Audit Logging`).
    - `solution-security-state-panel`: Actionable overview cards summarizing current system security posture with direct navigation buttons to:
      - *Network Traffic Workbench* (`setActiveTab('detection')`)
      - *Security Testing Lab* (`setActiveTab('testing')`)
      - *Audit Event Trail* (`setActiveTab('audit')`)
      - *Research Results* (`setActiveTab('results')`)
-   - `solution-latest-detection`: Read-only summary of the most recent classification performed in the Detection Workbench (if an inference has been run), directing operators to the Workbench for full details.
-   - `solution-tamper-detected-alert`: Read-only alert banner rendered if `HASH_MISMATCH` is active, prompting operators to investigate in the Security Testing or Model Security workspaces.
+   - `solution-latest-detection`: Compact read-only status summary of the most recent classification performed in the Detection Workbench (status, Stage 1 verdict, Stage 1 confidence, and Workbench navigation link). All detailed Stage 2 attack classifications, operator security advisory guidance, and recorded audit event details remain exclusively in the Detection Workbench and Operational Audit workspaces.
+   - `solution-tamper-detected-alert`: Read-only alert banner rendered if `HASH_MISMATCH` is active, prompting operators to investigate in the Security Testing or Model Security workspaces. Zero synthetic incidents or timestamps are generated.
 
 ---
 
@@ -145,10 +145,12 @@ dist/assets/index-ry9rd2WI.js   268.22 kB │ gzip: 73.32 kB
 ## 6. Research-Integrity & Invariant Compliance
 
 1. **Zero Modifications to Backend Endpoints:** The FastAPI service structure, endpoints (`/predict/hierarchical`, `/verify/all`, `/simulate/replace-model`, `/simulate/restore-model`), and payload schemas were preserved exactly.
-2. **Zero Modifications to ML Models:** The binary artifact files (`ml/artifacts/stage1_rf_best.joblib` and `ml/artifacts/stage2_rf_best.joblib`) remain unaltered.
+2. **Zero Modifications to ML Models:** The binary artifact files (`ml/artifacts/ids_model.joblib` and `ml/artifacts/attack_classifier.joblib`) remain unaltered.
 3. **Zero Modifications to Registered Cryptographic Hashes:**
-   - Stage 1 SHA-256: `ead1253459c0bb0b79d854eb130f14690cb54a3a60a7e289bf67a74794711fe9`
-   - Stage 2 SHA-256: `7ee91bba691ff49d0aa006ab8caeef81b891500f4625b0ea410887e076fb8fb8`
-4. **Zero Modifications to Smart Contracts:** `contracts/ModelRegistry.sol` source and deployed Ganache bytecode remain strictly unaltered.
+   - Stage 1 SHA-256: `dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5`
+   - Stage 2 SHA-256: `596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208`
+   - Training Dataset SHA-256: `734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559`
+   - Testing Dataset SHA-256: `bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa`
+4. **Zero Modifications to Smart Contracts:** `contracts/ModelRegistry.sol` source and deployed Ganache bytecode (`0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec`) remain strictly unaltered.
 5. **Zero Per-Flow Blockchain Queries:** Per-flow inference latency remains decoupled from blockchain consensus (`per_flow_blockchain_queries = 0`).
 6. **Fail-Closed Gate:** Tampered models immediately trigger `HASH_MISMATCH` and prevent in-memory model loading or prediction execution.
