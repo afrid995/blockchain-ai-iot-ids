@@ -651,30 +651,31 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     });
   });
 
-  it('27. Technical architecture flow diagram and WHAT THIS PROVES are rendered', async () => {
+  it('27. Technical architecture flow diagram and WHAT THIS PROVES presentation sections are removed', async () => {
     setupDefaultMocks();
 
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('solution-architecture-diagram')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-architecture-diagram')).toHaveTextContent(/MODEL ARTIFACT/i);
-      expect(screen.getByTestId('solution-what-this-proves')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-what-this-proves')).toHaveTextContent(/Research Integrity Notice/i);
+      expect(screen.queryByTestId('solution-architecture-diagram')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('solution-what-this-proves')).not.toBeInTheDocument();
+      // Operational panels remain active
+      expect(screen.getByTestId('solution-crypto-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('solution-blockchain-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toBeInTheDocument();
     });
   });
 
-  it('28. Evaluator demonstration guide outlines TEST A through TEST D', async () => {
+  it('28. Evaluator demonstration guide presentation section is removed', async () => {
     setupDefaultMocks();
 
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('solution-evaluator-guide')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-evaluator-guide')).toHaveTextContent(/TEST A — Authorized Model/i);
-      expect(screen.getByTestId('solution-evaluator-guide')).toHaveTextContent(/TEST B — Model Replacement/i);
-      expect(screen.getByTestId('solution-evaluator-guide')).toHaveTextContent(/TEST C — Recovery/i);
-      expect(screen.getByTestId('solution-evaluator-guide')).toHaveTextContent(/TEST D — Unregistered Version/i);
+      expect(screen.queryByTestId('solution-evaluator-guide')).not.toBeInTheDocument();
+      // Operational controls remain active
+      expect(screen.getByTestId('solution-verify-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('solution-load-btn')).toBeInTheDocument();
     });
   });
 

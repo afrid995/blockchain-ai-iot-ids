@@ -2642,47 +2642,4 @@ textarea.form-control:focus {
   border: 1px solid rgba(100, 116, 139, 0.4);
 }
 
-.architecture-diagram-pre {
-  background: #090d16;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 1rem;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: #38bdf8;
-  line-height: 1.45;
-  overflow-x: auto;
-}
-
-.evaluator-guide-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.evaluator-test-card {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.evaluator-test-card h5 {
-  margin: 0;
-  font-size: 0.85rem;
-  color: #93c5fd;
-}
-
-.evaluator-test-steps {
-  list-style: decimal;
-  padding-left: 1.25rem;
-  margin: 0;
-  font-size: 0.78rem;
-  line-height: 1.6;
-  color: var(--text-secondary);
-}
 
