@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from '../App';
 import { api } from '../api/client';
 
-describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
+describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Tests', () => {
   const mockHealth = {
     status: 'healthy',
     application_status: 'running',
@@ -128,19 +128,6 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     artifact_size_bytes: 448512,
   };
 
-  const mockUnregisteredResponse = {
-    scenario: 'unregistered_version',
-    status: 'NOT_REGISTERED',
-    verified: false,
-    model_id: 'iot-ids-rf',
-    version: 'v9.9.9',
-    registered_hash: null,
-    observed_hash: 'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5',
-    action_taken: 'MODEL_LOAD_BLOCKED',
-    downstream_state: 'LOCKED',
-    message: 'Candidate model version v9.9.9 is not registered in ModelRegistry.',
-  };
-
   const mockResetResponse = {
     scenario: 'model_replacement_reset',
     status: 'VERIFIED',
@@ -198,417 +185,164 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
   };
 
-  // --- Normal workflow ---
+  // =========================================================================
+  // 1. DEDUPLICATION VERIFICATION: SECURITY SOLUTION DOES NOT DUPLICATE WORKBENCH
+  // =========================================================================
 
-  it('1. Authorized model state renders on landing page', async () => {
+  it('1. Security Solution does NOT contain the Network Traffic selector or flow table', async () => {
     setupDefaultMocks();
-
     render(<App />);
 
     await waitFor(() => {
       expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+
+    const page = screen.getByTestId('solution-overview-page');
+
+    // Asserts removal of duplicate flow card, selector, and table
+    expect(screen.queryByTestId('solution-flow-card')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-preset-dropdown')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-selected-flow-details')).not.toBeInTheDocument();
+    expect(within(page).queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('2. Security Solution does NOT contain duplicate flow-selection pills', async () => {
+    setupDefaultMocks();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+
+    const page = screen.getByTestId('solution-overview-page');
+
+    // Confirms flow pills are absent from Security Solution
+    expect(within(page).queryByText('Flow 0001')).not.toBeInTheDocument();
+    expect(within(page).queryByText('Flow 0002')).not.toBeInTheDocument();
+    expect(within(page).queryByText('Flow 0003')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-preset-mode-btn')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-custom-mode-btn')).not.toBeInTheDocument();
+  });
+
+  it('3. Security Solution does NOT contain duplicate Analyze Network Flow button or custom JSON input', async () => {
+    setupDefaultMocks();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+
+    const page = screen.getByTestId('solution-overview-page');
+
+    // Confirms prediction controls are not duplicated in Security Solution
+    expect(screen.queryByTestId('solution-predict-btn')).not.toBeInTheDocument();
+    expect(within(page).queryByText(/ANALYZE NETWORK FLOW/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-custom-flow-json')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-ground-truth-eval')).not.toBeInTheDocument();
+  });
+
+  // =========================================================================
+  // 2. SECURITY SOLUTION AUTHORITATIVE RESPONSIBILITIES: MODEL TRUST & PROVENANCE
+  // =========================================================================
+
+  it('4. Security Solution renders authoritative model trust and provenance governance', async () => {
+    setupDefaultMocks();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+      expect(screen.getByTestId('solution-model-trust-card')).toBeInTheDocument();
       expect(screen.getByTestId('solution-model-trust-badge')).toHaveTextContent(/VERIFIED/i);
-      expect(screen.getByTestId('solution-model-trust-card')).toHaveTextContent(/iot-ids-rf/i);
     });
+
+    const trustCard = screen.getByTestId('solution-model-trust-card');
+    expect(within(trustCard).getByText('iot-ids-rf')).toBeInTheDocument();
+    expect(within(trustCard).getAllByText('RandomForestClassifier').length).toBeGreaterThanOrEqual(1);
+    expect(within(trustCard).getByText('ml/artifacts/ids_model.joblib')).toBeInTheDocument();
+    expect(screen.getByTestId('solution-verify-btn')).toBeInTheDocument();
+    expect(screen.getByTestId('solution-load-btn')).toBeInTheDocument();
   });
 
-  it('2. Network-flow preset loads and updates preview', async () => {
+  it('5. Security Solution renders cryptographic SHA-256 comparison and hash toggle', async () => {
     setupDefaultMocks();
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-preset-dropdown')).toBeInTheDocument();
-    });
-
-    const select = screen.getByTestId('solution-preset-dropdown');
-
-    // 1. Category names are not selectable as input options
-    const optionValues = Array.from(select.querySelectorAll('option')).map((o) => o.value);
-    expect(optionValues).not.toContain('Normal');
-    expect(optionValues).not.toContain('DoS');
-    expect(optionValues).not.toContain('Fuzzers');
-    expect(optionValues).not.toContain('Generic');
-    expect(optionValues).toContain('Flow 0001');
-    expect(optionValues).toContain('Flow 0002');
-
-    // 2. Network-flow records are displayed and selectable
-    fireEvent.change(select, { target: { value: 'Flow 0001' } });
-    expect(select.value).toBe('Flow 0001');
-    expect(screen.getByTestId('solution-flow-card')).toHaveTextContent(/Flow 0001/i);
-    expect(screen.getByTestId('solution-flow-card')).toHaveTextContent(/TCP/i);
-
-    // 3. Ground truth is not exposed in the input selection card
-    expect(screen.getByTestId('solution-flow-card')).not.toHaveTextContent(/Expected True Label/i);
-
-    // 4. Zero-duration flows do not produce infinite/absurd packet rates (N/A)
-    fireEvent.change(select, { target: { value: 'Flow 0002' } });
-    expect(select.value).toBe('Flow 0002');
-    expect(screen.getByTestId('solution-packet-rate')).toHaveTextContent('N/A');
-    expect(screen.getByTestId('solution-byte-rate')).toHaveTextContent('N/A');
-  });
-
-  it('3. Detection invokes /predict/hierarchical', async () => {
-    setupDefaultMocks();
-    const predictSpy = vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-predict-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-predict-btn'));
-
-    await waitFor(() => {
-      expect(predictSpy).toHaveBeenCalled();
-    });
-  });
-
-  it('4. Stage 1 Benign bypasses Stage 2', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalBenignResponse);
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-predict-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-predict-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-stage1-verdict')).toHaveTextContent(/Benign/i);
-      expect(screen.getByTestId('solution-stage2-bypassed')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-stage2-bypassed')).toHaveTextContent(/Bypassed/i);
-    });
-  });
-
-  it('5. Stage 1 Attack displays Stage 2 classification', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-predict-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-predict-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-stage1-verdict')).toHaveTextContent(/Attack/i);
-      expect(screen.getByTestId('solution-stage2-category')).toHaveTextContent('DoS');
-      expect(screen.getByTestId('solution-stage2-confidence')).toHaveTextContent('88.2%');
-    });
-  });
-
-  it('6. Advisory recommendation is displayed', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-predict-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-predict-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-advisory-panel')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-advisory-action')).toHaveTextContent(/Inspect traffic volume/i);
-    });
-  });
-
-  it('7. Human approval remains required in advisory response', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-predict-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-predict-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-advisory-approval')).toHaveTextContent(/HUMAN APPROVAL:\s*REQUIRED/i);
-    });
-  });
-
-  it('8. Audit evidence is displayed with zero per-flow queries', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-predict-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-predict-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-audit-evidence-card')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-audit-evidence-card')).toHaveTextContent(/Per-Flow Blockchain Queries:\s*0/i);
-    });
-  });
-
-  // --- Model replacement workflow ---
-
-  it('9. Replacement simulation invokes the correct demo endpoint', async () => {
-    setupDefaultMocks();
-    const simSpy = vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockTamperSimulationResponse);
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('mode-protect-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('mode-protect-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-simulate-replacement-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-simulate-replacement-btn'));
-
-    await waitFor(() => {
-      expect(simSpy).toHaveBeenCalled();
-    });
-  });
-
-  it('10. Actual candidate hash is displayed in comparison', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockTamperSimulationResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('mode-protect-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-simulate-replacement-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-simulate-replacement-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-observed-hash')).toHaveTextContent(/a7fc4306/i);
-      expect(screen.getByTestId('solution-observed-hash')).not.toHaveTextContent(/deadbeef/i);
-    });
-  });
-
-  it('11. HASH_MISMATCH state is prominently displayed', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockTamperSimulationResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('mode-protect-btn'));
-    fireEvent.click(screen.getByTestId('solution-simulate-replacement-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-tamper-detected-alert')).toHaveTextContent(/HASH_MISMATCH/i);
-    });
-  });
-
-  it('12. Model loading is blocked when hash mismatch occurs', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockTamperSimulationResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('mode-protect-btn'));
-    fireEvent.click(screen.getByTestId('solution-simulate-replacement-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-tamper-detected-alert')).toHaveTextContent(/MODEL LOAD:\s*BLOCKED/i);
-    });
-  });
-
-  it('13. Downstream inference becomes locked upon tampering', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockTamperSimulationResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('mode-protect-btn'));
-    fireEvent.click(screen.getByTestId('solution-simulate-replacement-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-tamper-detected-alert')).toHaveTextContent(/STAGE 1 IDS:\s*LOCKED/i);
-    });
-  });
-
-  it('14. Security event audit record is confirmed in response', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockTamperSimulationResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('mode-protect-btn'));
-    fireEvent.click(screen.getByTestId('solution-simulate-replacement-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-tamper-detected-alert')).toHaveTextContent(/RECORDED IN AUDIT LOG/i);
-    });
-  });
-
-  it('15. Restore returns the system to verified state', async () => {
-    setupDefaultMocks();
-    const resetSpy = vi.spyOn(api, 'resetModelReplacement').mockResolvedValue(mockResetResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('mode-protect-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-restore-model-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-restore-model-btn'));
-
-    await waitFor(() => {
-      expect(resetSpy).toHaveBeenCalled();
-      expect(screen.getByTestId('solution-restored-banner')).toHaveTextContent(/CANONICAL MODEL RESTORED/i);
-    });
-  });
-
-  // --- Unregistered model ---
-
-  it('16. NOT_REGISTERED state is displayed for unknown version', async () => {
-    setupDefaultMocks();
-    const unregSpy = vi.spyOn(api, 'simulateUnregisteredVersion').mockResolvedValue(mockUnregisteredResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('mode-protect-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-simulate-unregistered-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('solution-simulate-unregistered-btn'));
-
-    await waitFor(() => {
-      expect(unregSpy).toHaveBeenCalled();
-      expect(screen.getByTestId('solution-tamper-detected-alert')).toHaveTextContent(/NOT_REGISTERED/i);
-    });
-  });
-
-  it('17. Downstream inference remains locked for unregistered model', async () => {
-    setupDefaultMocks();
-    vi.spyOn(api, 'simulateUnregisteredVersion').mockResolvedValue(mockUnregisteredResponse);
-
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId('mode-protect-btn'));
-    fireEvent.click(screen.getByTestId('solution-simulate-unregistered-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-tamper-detected-alert')).toHaveTextContent(/STAGE 1 IDS:\s*LOCKED/i);
-    });
-  });
-
-  // --- Research integrity ---
-
-  it('18. Canonical SHA-256 hashes are displayed and preserved', async () => {
-    setupDefaultMocks();
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
-      expect(screen.getByText(/dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5/i)).toBeInTheDocument();
-    });
-  });
-
-  it('19. Authoritative benchmark metrics are rendered in Mode 3 (Evidence)', async () => {
-    setupDefaultMocks();
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('mode-evidence-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('mode-evidence-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('mode-evidence-container')).toBeInTheDocument();
-    });
-
-    const evidenceContainer = screen.getByTestId('mode-evidence-container');
-    const withinEvidence = within(evidenceContainer);
-
-    // Stage 1 authoritative metrics
-    expect(withinEvidence.getAllByText(/90.30%/i).length).toBeGreaterThan(0);
-    expect(withinEvidence.getAllByText(/98.78%/i).length).toBeGreaterThan(0);
-    expect(withinEvidence.getAllByText(/86.82%/i).length).toBeGreaterThan(0);
-    expect(withinEvidence.getAllByText(/92.41%/i).length).toBeGreaterThan(0);
-    // Stage 2 authoritative metrics
-    expect(withinEvidence.getAllByText(/76.18%/i).length).toBeGreaterThan(0);
-    expect(withinEvidence.getAllByText(/53.06%/i).length).toBeGreaterThan(0);
-    // Operational hierarchy
-    expect(withinEvidence.getAllByText(/51.43%/i).length).toBeGreaterThan(0);
-  });
-
-  it('20. No unsupported overclaims appear across all solution views', async () => {
-    setupDefaultMocks();
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
-    });
-
-    const pageText = document.body.textContent;
-    expect(pageText).not.toMatch(/blockchain detects hackers/i);
-    expect(pageText).not.toMatch(/blockchain prevents attacks/i);
-    expect(pageText).not.toMatch(/\btamper-proof\b/i);
-    expect(pageText).not.toMatch(/\bzero latency\b/i);
-    expect(pageText).not.toMatch(/\bzero overhead\b/i);
-    expect(pageText).not.toMatch(/\bzero ingestion overhead\b/i);
-    expect(pageText).not.toMatch(/\breal-time ids\b/i);
-    expect(pageText).not.toMatch(/\bwire-speed\b/i);
-    expect(pageText).not.toMatch(/\bautonomous defense\b/i);
-    expect(pageText).not.toMatch(/\bproduction-ready\b/i);
-    expect(pageText).not.toMatch(/\b100% secure\b/i);
-  });
-
-  // --- Phase 7D Evidence Demonstrator Tests ---
-
-  it('21. Legitimate verification renders actual observed and registered digest evidence', async () => {
-    setupDefaultMocks();
-
     render(<App />);
 
     await waitFor(() => {
       expect(screen.getByTestId('solution-crypto-panel')).toBeInTheDocument();
-      expect(screen.getByTestId('crypto-observed-hash')).toHaveTextContent(/dc5e1688/i);
-      expect(screen.getByTestId('crypto-registered-hash')).toHaveTextContent(/dc5e1688/i);
-      expect(screen.getByTestId('crypto-comparison-result')).toHaveTextContent('MATCH');
+      expect(screen.getByTestId('crypto-observed-hash')).toHaveTextContent(/dc5e16889ea247a4/i);
+      expect(screen.getByTestId('crypto-registered-hash')).toHaveTextContent(/dc5e16889ea247a4/i);
     });
+
+    // Toggle full hash
+    fireEvent.click(screen.getByTestId('crypto-toggle-hash-btn'));
+    expect(screen.getByTestId('crypto-observed-hash')).toHaveTextContent(
+      'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5'
+    );
   });
 
-  it('22. Legitimate matching digests produce VERIFIED and MODEL LOAD AUTHORIZED', async () => {
+  it('6. Security Solution renders blockchain ModelRegistry ledger metadata', async () => {
     setupDefaultMocks();
-
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('solution-decision-banner')).toHaveTextContent(/VERIFIED — MODEL LOAD AUTHORIZED/i);
-      expect(screen.getByTestId('solution-decision-panel')).toHaveTextContent(/Model loading authorized/i);
+      expect(screen.getByTestId('solution-blockchain-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('blockchain-contract-address')).toHaveTextContent(
+        '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec'
+      );
+      expect(screen.getByTestId('blockchain-reg-status')).toHaveTextContent(/isModelRegistered = true/i);
+      expect(screen.getByTestId('blockchain-registrant')).toHaveTextContent(
+        '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1'
+      );
+      expect(screen.getByTestId('blockchain-reg-digest')).toHaveTextContent(
+        'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5'
+      );
     });
   });
 
-  it('23. Clicking VERIFY AUTHORIZED MODEL executes backend verification', async () => {
+  it('7. Security Solution renders 7-stage lifecycle gate tracker', async () => {
     setupDefaultMocks();
-    const verifySpy = vi.spyOn(api, 'verifyModel').mockResolvedValue(mockVerifyResponse);
+    render(<App />);
 
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-lifecycle-tracker')).toBeInTheDocument();
+      expect(screen.getByText(/1\. ARTIFACT/i)).toBeInTheDocument();
+      expect(screen.getByText(/2\. SHA-256/i)).toBeInTheDocument();
+      expect(screen.getByText(/3\. REGISTRY/i)).toBeInTheDocument();
+      expect(screen.getByText(/4\. COMPARISON/i)).toBeInTheDocument();
+      expect(screen.getByText(/5\. DECISION/i)).toBeInTheDocument();
+      expect(screen.getByText(/6\. LOAD GATE/i)).toBeInTheDocument();
+      expect(screen.getByText(/7\. IDS STATUS/i)).toBeInTheDocument();
+    });
+  });
+
+  it('8. Security Solution stage target selector toggles between Stage 1 and Stage 2', async () => {
+    setupDefaultMocks();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stage-target-selector')).toBeInTheDocument();
+    });
+
+    const selector = screen.getByTestId('stage-target-selector');
+    const s2Btn = within(selector).getByTestId('target-stage2-btn');
+    const s1Btn = within(selector).getByTestId('target-stage1-btn');
+    const trustCard = screen.getByTestId('solution-model-trust-card');
+
+    // Switch to Stage 2
+    fireEvent.click(s2Btn);
+    await waitFor(() => {
+      expect(within(trustCard).getByText('iot-ids-attack-classifier')).toBeInTheDocument();
+    });
+
+    // Switch back to Stage 1
+    fireEvent.click(s1Btn);
+    await waitFor(() => {
+      expect(within(trustCard).getByText('iot-ids-rf')).toBeInTheDocument();
+    });
+  });
+
+  it('9. Security Solution verify button executes backend verification', async () => {
+    setupDefaultMocks();
     render(<App />);
 
     await waitFor(() => {
@@ -618,120 +352,273 @@ describe('Phase 7C End-to-End Solution Demonstrator Tests', () => {
     fireEvent.click(screen.getByTestId('solution-verify-btn'));
 
     await waitFor(() => {
-      expect(verifySpy).toHaveBeenCalledWith('stage1');
+      expect(api.verifyModel).toHaveBeenCalledWith('stage1');
     });
   });
 
-  it('24. Full hash toggle reveals complete 64-character hex digests', async () => {
+  it('10. Security Solution displays workspace ownership panel with direct navigation links', async () => {
     setupDefaultMocks();
-
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('crypto-toggle-hash-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('crypto-toggle-hash-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('crypto-observed-hash')).toHaveTextContent('dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5');
-      expect(screen.getByTestId('crypto-registered-hash')).toHaveTextContent('dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5');
+      expect(screen.getByTestId('solution-security-state-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-to-detection-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-to-testing-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-to-model-security-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-to-audit-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-to-research-btn')).toBeInTheDocument();
     });
   });
 
-  it('25. Blockchain provenance panel exposes contract address, registrant, algorithm, timestamp', async () => {
+  // =========================================================================
+  // 3. AUTHORITATIVE INTRUSION DETECTION / NETWORK TRAFFIC WORKBENCH TESTS
+  // =========================================================================
+
+  it('11. Intrusion Detection workspace authoritatively contains Network Traffic Workbench', async () => {
     setupDefaultMocks();
-
     render(<App />);
 
+    fireEvent.click(screen.getByTestId('tab-detection'));
+
     await waitFor(() => {
-      expect(screen.getByTestId('solution-blockchain-panel')).toBeInTheDocument();
-      expect(screen.getByTestId('blockchain-contract-address')).toHaveTextContent(/0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec/i);
-      expect(screen.getByTestId('blockchain-reg-status')).toHaveTextContent(/REGISTERED/i);
-      expect(screen.getByTestId('blockchain-algorithm')).toHaveTextContent('RandomForestClassifier');
-      expect(screen.getByTestId('blockchain-registrant')).toHaveTextContent(/0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1/i);
-      expect(screen.getByTestId('blockchain-reg-digest')).toHaveTextContent('dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5');
+      expect(screen.getByTestId('prediction-card')).toBeInTheDocument();
+      expect(screen.getByTestId('preset-dropdown')).toBeInTheDocument();
+      expect(screen.getByTestId('predict-btn')).toBeInTheDocument();
+      expect(screen.getByText(/Network-Flow Input Record \(Network Traffic\)/i)).toBeInTheDocument();
+      expect(screen.getByText('Flow 0001')).toBeInTheDocument();
+      expect(screen.getByText('Flow 0002')).toBeInTheDocument();
     });
   });
 
-  it('26. 7-Stage lifecycle gate tracker renders all 7 stages', async () => {
+  it('12. Intrusion Detection allows selecting Flow 0001 through Flow 0006 and updates preview', async () => {
     setupDefaultMocks();
-
     render(<App />);
 
+    fireEvent.click(screen.getByTestId('tab-detection'));
+
     await waitFor(() => {
-      expect(screen.getByTestId('solution-lifecycle-tracker')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/1. ARTIFACT/i);
-      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/2. SHA-256/i);
-      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/3. REGISTRY/i);
-      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/4. COMPARISON/i);
-      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/5. DECISION/i);
-      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/6. LOAD GATE/i);
-      expect(screen.getByTestId('solution-lifecycle-tracker')).toHaveTextContent(/7. IDS STATUS/i);
+      expect(screen.getByTestId('preset-dropdown')).toBeInTheDocument();
     });
+
+    const select = screen.getByTestId('preset-dropdown');
+
+    // 1. Verify category names are not selectable options
+    const optionValues = Array.from(select.querySelectorAll('option')).map((o) => o.value);
+    expect(optionValues).not.toContain('Normal');
+    expect(optionValues).not.toContain('DoS');
+    expect(optionValues).not.toContain('Generic');
+    expect(optionValues).toContain('Flow 0001');
+    expect(optionValues).toContain('Flow 0002');
+
+    // 2. Select Flow 0002 (zero-duration flow) -> displays N/A for rate
+    fireEvent.change(select, { target: { value: 'Flow 0002' } });
+    expect(select.value).toBe('Flow 0002');
+    expect(screen.getByTestId('selected-flow-packet-rate')).toHaveTextContent('N/A');
+    expect(screen.getByTestId('selected-flow-byte-rate')).toHaveTextContent('N/A');
+
+    // 3. Select Flow 0001
+    fireEvent.change(select, { target: { value: 'Flow 0001' } });
+    expect(select.value).toBe('Flow 0001');
+    expect(screen.getByTestId('selected-flow-details')).toHaveTextContent(/Flow 0001/i);
+    expect(screen.getByTestId('selected-flow-details')).toHaveTextContent(/TCP/i);
   });
 
-  it('27. Technical architecture flow diagram and WHAT THIS PROVES presentation sections are removed', async () => {
+  it('13. Intrusion Detection performs hierarchical inference and displays advisory', async () => {
     setupDefaultMocks();
+    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalAttackResponse);
 
     render(<App />);
 
+    fireEvent.click(screen.getByTestId('tab-detection'));
+
     await waitFor(() => {
-      expect(screen.queryByTestId('solution-architecture-diagram')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('solution-what-this-proves')).not.toBeInTheDocument();
-      // Operational panels remain active
-      expect(screen.getByTestId('solution-crypto-panel')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-blockchain-panel')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-lifecycle-tracker')).toBeInTheDocument();
+      expect(screen.getByTestId('predict-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('predict-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('stage1-result-box')).toBeInTheDocument();
+      expect(screen.getByTestId('prediction-label')).toHaveTextContent(/Attack/i);
+      expect(screen.getByTestId('stage2-result-box')).toBeInTheDocument();
+      expect(screen.getByTestId('stage2-category')).toHaveTextContent('DoS');
+      expect(screen.getByTestId('advisory-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('advisory-recommended-action')).toHaveTextContent(/Inspect traffic volume/i);
     });
   });
 
-  it('28. Evaluator demonstration guide presentation section is removed', async () => {
+  it('14. Intrusion Detection Stage 1 Benign bypasses Stage 2 attack classification', async () => {
     setupDefaultMocks();
+    vi.spyOn(api, 'predictHierarchical').mockResolvedValue(mockHierarchicalBenignResponse);
 
     render(<App />);
 
+    fireEvent.click(screen.getByTestId('tab-detection'));
+
     await waitFor(() => {
-      expect(screen.queryByTestId('solution-evaluator-guide')).not.toBeInTheDocument();
-      // Operational controls remain active
-      expect(screen.getByTestId('solution-verify-btn')).toBeInTheDocument();
-      expect(screen.getByTestId('solution-load-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('predict-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('predict-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('prediction-label')).toHaveTextContent(/Benign/i);
+      expect(screen.getByText(/Stage 2 Multiclass Classifier: Bypassed/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('stage2-category')).not.toBeInTheDocument();
     });
   });
 
-  it('29. Stage target selector toggles between Stage 1 and Stage 2 inspection', async () => {
+  // =========================================================================
+  // 4. AUTHORITATIVE MODEL SECURITY WORKSPACE TESTS
+  // =========================================================================
+
+  it('15. Model Security workspace authoritatively performs model verification', async () => {
     setupDefaultMocks();
-
     render(<App />);
 
+    fireEvent.click(screen.getByTestId('tab-model-security'));
+
     await waitFor(() => {
-      expect(screen.getByTestId('stage-select-stage2-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('model-provenance-card')).toBeInTheDocument();
+      expect(screen.getByTestId('verify-btn')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByTestId('stage-select-stage2-btn'));
+    fireEvent.click(screen.getByTestId('verify-btn'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('solution-model-trust-card')).toHaveTextContent(/iot-ids-attack-classifier/i);
-      expect(screen.getByTestId('crypto-registered-hash')).toHaveTextContent(/596b98ce/i);
-      expect(screen.getByTestId('blockchain-reg-digest')).toHaveTextContent('596b98ce0b9ed9bb80c04cea7790d81ec77c6e4470030c32b3739ef007703208');
+      expect(api.verifyModel).toHaveBeenCalled();
     });
   });
 
-  it('30. Failed verification prevents model loading and disables inference', async () => {
-    const mockModelStatusUnverified = {
-      ...mockModelStatusVerified,
-      verification_status: 'HASH_MISMATCH',
-      is_loaded: false,
-    };
-    vi.spyOn(api, 'getHealth').mockResolvedValue(mockHealth);
-    vi.spyOn(api, 'getModelStatus').mockResolvedValue(mockModelStatusUnverified);
-    vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+  // =========================================================================
+  // 5. AUTHORITATIVE SECURITY TESTING FACILITY TESTS
+  // =========================================================================
+
+  it('16. Security Testing facility authoritatively performs model replacement simulation', async () => {
+    setupDefaultMocks();
+    vi.spyOn(api, 'simulateModelReplacement').mockResolvedValue(mockTamperSimulationResponse);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-security-testing'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('security-testing-card')).toBeInTheDocument();
+      expect(screen.getByTestId('simulate-replacement-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('simulate-replacement-btn'));
+
+    await waitFor(() => {
+      expect(api.simulateModelReplacement).toHaveBeenCalled();
+      expect(screen.getByTestId('security-test-results')).toBeInTheDocument();
+      expect(screen.getByTestId('tamper-detected-alert')).toHaveTextContent(/HASH_MISMATCH/i);
+    });
+  });
+
+  it('17. Security Testing facility authoritatively supports reset/recovery', async () => {
+    setupDefaultMocks();
+    vi.spyOn(api, 'resetModelReplacement').mockResolvedValue(mockResetResponse);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-security-testing'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('restore-model-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('restore-model-btn'));
+
+    await waitFor(() => {
+      expect(api.resetModelReplacement).toHaveBeenCalled();
+      expect(screen.getByTestId('restored-banner')).toHaveTextContent(/Canonical Model Restored/i);
+    });
+  });
+
+  // =========================================================================
+  // 6. AUTHORITATIVE AUDIT & RESEARCH RESULTS WORKSPACE TESTS
+  // =========================================================================
+
+  it('18. Operational Audit workspace authoritatively displays audit event records', async () => {
+    setupDefaultMocks();
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-audit'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('audit-log-card')).toBeInTheDocument();
+      expect(screen.getByTestId('audit-table')).toBeInTheDocument();
+    });
+
+    const auditTable = screen.getByTestId('audit-table');
+    expect(within(auditTable).getAllByText('PREDICTION').length).toBeGreaterThanOrEqual(1);
+    expect(within(auditTable).getAllByText('MODEL_VERIFICATION').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('19. Research Results workspace authoritatively displays empirical research metrics', async () => {
+    setupDefaultMocks();
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-research-results'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('research-results-page')).toBeInTheDocument();
+    });
+
+    const rrPage = screen.getByTestId('research-results-page');
+    expect(within(rrPage).getByText(/Stage 1: Binary IDS/i)).toBeInTheDocument();
+    expect(within(rrPage).getByText(/90.30% Accuracy/i)).toBeInTheDocument();
+    expect(within(rrPage).getByText(/92.41%/i)).toBeInTheDocument();
+  });
+
+  // =========================================================================
+  // 7. NAVIGATION & NO UNINTENDED API CALLS
+  // =========================================================================
+
+  it('20. Application navigation button switches directly from Security Solution to Detection', async () => {
+    setupDefaultMocks();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('nav-to-detection-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('nav-to-detection-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tab-detection')).toHaveClass('active');
+    });
+  });
+
+  it('21. Security Solution does NOT execute unintended prediction or simulation API calls on load', async () => {
+    setupDefaultMocks();
+    const predictSpy = vi.spyOn(api, 'predictHierarchical');
+    const legacyPredictSpy = vi.spyOn(api, 'predict');
+    const simSpy = vi.spyOn(api, 'simulateModelReplacement');
 
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('solution-load-btn')).toBeDisabled();
-      expect(screen.getByTestId('solution-predict-btn')).toBeDisabled();
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
     });
+
+    // Zero prediction or simulation calls should occur automatically from Security Solution
+    expect(predictSpy).not.toHaveBeenCalled();
+    expect(legacyPredictSpy).not.toHaveBeenCalled();
+    expect(simSpy).not.toHaveBeenCalled();
+  });
+
+  it('22. Technical architecture diagram and evaluator guide presentation sections remain removed', async () => {
+    setupDefaultMocks();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('solution-overview-page')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId('solution-architecture-diagram')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-evaluator-guide')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-what-this-proves')).not.toBeInTheDocument();
   });
 });

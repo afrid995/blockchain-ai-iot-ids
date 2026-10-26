@@ -218,8 +218,6 @@ export function App() {
             verifyResult={lastVerifyResult}
             verificationError={verificationError}
             onLoadModel={handleLoadModel}
-            isPredicting={isPredicting}
-            onPredict={handlePredict}
             predictionResult={predictionResult}
             predictionError={predictionError}
             auditEvents={auditEvents}
