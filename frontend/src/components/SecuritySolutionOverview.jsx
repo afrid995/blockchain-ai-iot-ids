@@ -62,11 +62,6 @@ export function SecuritySolutionOverview({
   const isBlockchainUnavailable = currentVerifyStatus === 'BLOCKCHAIN_UNAVAILABLE';
   const isTargetLoaded = isStage1 ? isModelLoaded : Boolean(stage2Status?.is_loaded);
 
-  const contractAddress = activeVerify?.contract_address || activeStatus?.contract_address || null;
-  const registrantAddress = activeVerify?.registrant || activeStatus?.registrant || null;
-  const registeredAtTimestamp = activeVerify?.registered_at || activeStatus?.registered_at || null;
-  const formattedRegistrationDate = registeredAtTimestamp ? new Date(registeredAtTimestamp * 1000).toUTCString() : 'Unavailable';
-
   // Overall system verification states
   const verificationStatus = modelStatus?.verification_status || 'UNVERIFIED';
   const isVerified = verificationStatus === 'VERIFIED';
@@ -411,64 +406,6 @@ export function SecuritySolutionOverview({
             </div>
           </div>
 
-          {/* Blockchain Provenance Details Panel */}
-          <div className="evidence-panel" style={{ marginTop: '1rem' }} data-testid="solution-blockchain-panel">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '1.1rem' }}>⛓️</span>
-              <strong style={{ fontSize: '0.88rem', letterSpacing: '0.04em' }}>BLOCKCHAIN PROVENANCE LEDGER (ModelRegistry.sol)</strong>
-            </div>
-
-            <div className="flow-spec-grid">
-              <div className="spec-item">
-                <span className="spec-label">Smart Contract Address:</span>
-                <span className="spec-val font-mono font-xs text-primary" data-testid="blockchain-contract-address">
-                  {contractAddress || 'Unavailable'}
-                </span>
-              </div>
-              <div className="spec-item">
-                <span className="spec-label">Queried Model / Version:</span>
-                <span className="spec-val font-mono font-xs">
-                  {modelId}:{modelVersion}
-                </span>
-              </div>
-              <div className="spec-item">
-                <span className="spec-label">Registration Status:</span>
-                <span className={`spec-val font-mono font-xs ${registeredDigest ? 'text-success' : isNotRegistered ? 'text-danger' : 'text-muted'}`} data-testid="blockchain-reg-status">
-                  {registeredDigest ? '✓ REGISTERED (isModelRegistered = true)' : isNotRegistered ? '✗ NOT REGISTERED (isModelRegistered = false)' : isBlockchainUnavailable ? '⚠️ UNAVAILABLE (Contract unreachable)' : '○ UNKNOWN (Registry not queried)'}
-                </span>
-              </div>
-              <div className="spec-item">
-                <span className="spec-label">Registered Algorithm:</span>
-                <span className="spec-val font-mono font-xs" data-testid="blockchain-algorithm">
-                  {activeVerify?.algorithm || activeStatus?.algorithm || 'Unavailable'}
-                </span>
-              </div>
-              <div className="spec-item">
-                <span className="spec-label">Registrant Address:</span>
-                <span className="spec-val font-mono font-xs text-secondary" data-testid="blockchain-registrant">
-                  {registrantAddress || 'Unavailable'}
-                </span>
-              </div>
-              <div className="spec-item">
-                <span className="spec-label">Registration Timestamp:</span>
-                <span className="spec-val font-mono font-xs text-secondary" data-testid="blockchain-timestamp">
-                  {formattedRegistrationDate}
-                </span>
-              </div>
-            </div>
-
-            <div className="spec-item" style={{ marginTop: '0.5rem' }}>
-              <span className="spec-label">Registered SHA-256 Digest:</span>
-              <span className="spec-val font-mono font-xs text-success" style={{ wordBreak: 'break-all' }} data-testid="blockchain-reg-digest">
-                {registeredDigest || 'Unavailable'}
-              </span>
-            </div>
-
-            <div className="font-xs text-muted" style={{ marginTop: '0.75rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', lineHeight: '1.5' }}>
-              <em>Contract Interface:</em> Backend verification service queried the registered model record via web3 contract call (<code>getModelRecord</code>, <code>getModelHash</code>, <code>isModelRegistered</code>).
-            </div>
-          </div>
-
           {/* 7-Stage Lifecycle Gate Tracker */}
           <div className="evidence-panel" style={{ marginTop: '1rem' }} data-testid="solution-lifecycle-tracker">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -689,80 +626,6 @@ export function SecuritySolutionOverview({
               </div>
             </div>
           )}
-
-          {/* LATEST DETECTION OUTCOME (COMPACT READ-ONLY SUMMARY) */}
-          <div className="console-card" data-testid="solution-latest-detection-card">
-            <div className="card-header">
-              <h3 className="card-title">Latest Detection Status (Read-Only Summary)</h3>
-              <span className="badge badge-secondary font-mono font-xs">
-                {predictionResult ? 'COMPLETED' : 'Awaiting Flow Analysis'}
-              </span>
-            </div>
-
-            {!predictionResult ? (
-              <div className="empty-state-box" style={{ padding: '1.5rem', textAlign: 'center' }} data-testid="solution-no-detection">
-                <div style={{ fontSize: '1.8rem', marginBottom: '0.35rem' }}>📡</div>
-                <strong>No Detection Run In Current Session</strong>
-                <p className="text-secondary font-xs" style={{ maxWidth: '380px', margin: '0.35rem auto 0.75rem auto' }}>
-                  Network-flow selection and classification are performed exclusively in the Intrusion Detection Workbench.
-                </p>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => onNavigate && onNavigate('detection')}
-                  data-testid="solution-goto-workbench-btn"
-                >
-                  ⚡ Open Intrusion Detection Workbench
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }} data-testid="solution-latest-detection">
-                <div className="flow-spec-card" style={{ padding: '0.85rem' }} data-testid="solution-stage1-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div>
-                      <span className="font-xs text-muted" style={{ display: 'block' }}>LATEST INFERENCE STATUS</span>
-                      <strong className="font-mono font-xs" style={{ color: '#4ade80' }}>COMPLETED</strong>
-                    </div>
-                    <div>
-                      <span className="font-xs text-muted" style={{ display: 'block' }}>STAGE 1 VERDICT</span>
-                      <strong
-                        className="font-mono"
-                        style={{
-                          fontSize: '1rem',
-                          color:
-                            predictionResult.stage1_prediction === 'Attack' || predictionResult.prediction === 'Attack'
-                              ? '#f87171'
-                              : '#4ade80',
-                        }}
-                        data-testid="solution-stage1-verdict"
-                      >
-                        {predictionResult.stage1_prediction || predictionResult.prediction || 'Unknown'}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="font-xs text-muted" style={{ display: 'block' }}>STAGE 1 CONFIDENCE</span>
-                      <span className="font-mono font-xs" data-testid="solution-stage1-confidence">
-                        {((predictionResult.stage1_confidence ?? predictionResult.confidence ?? 0) * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="font-xs text-muted" style={{ lineHeight: '1.4' }}>
-                  <em>Note:</em> Stage 2 attack classification, operator advisory guidance, and audit event logs are maintained authoritatively in the Intrusion Detection Workbench and Operational Audit workspaces.
-                </div>
-
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => onNavigate && onNavigate('detection')}
-                  data-testid="solution-goto-workbench-details-btn"
-                >
-                  Open Intrusion Detection Workbench →
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>

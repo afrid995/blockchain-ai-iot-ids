@@ -282,22 +282,17 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
     );
   });
 
-  it('6. Security Solution renders blockchain ModelRegistry ledger metadata', async () => {
+  it('6. Security Solution omits duplicate blockchain ModelRegistry ledger (authoritative in Model Security)', async () => {
     setupDefaultMocks();
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('solution-blockchain-panel')).toBeInTheDocument();
-      expect(screen.getByTestId('blockchain-contract-address')).toHaveTextContent(
-        '0x26b4AFb60d6C903165150C6F0AA14F8016bE4aec'
-      );
-      expect(screen.getByTestId('blockchain-reg-status')).toHaveTextContent(/isModelRegistered = true/i);
-      expect(screen.getByTestId('blockchain-registrant')).toHaveTextContent(
-        '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1'
-      );
-      expect(screen.getByTestId('blockchain-reg-digest')).toHaveTextContent(
-        'dc5e16889ea247a4aa275f44a1b864c63f190bbdd1d1d4a68f1e1345a252e7c5'
-      );
+      expect(screen.getByTestId('solution-decision-panel')).toBeInTheDocument();
+      expect(screen.queryByTestId('solution-blockchain-panel')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('blockchain-contract-address')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('blockchain-reg-status')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('blockchain-registrant')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('blockchain-reg-digest')).not.toBeInTheDocument();
     });
   });
 
@@ -628,7 +623,7 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
   // 8. PHASE 7D.4.1 RESEARCH-INTEGRITY RECONCILIATION TESTS
   // =========================================================================
 
-  it('23. Security Solution displays explicit "Unavailable" when metadata is absent from backend', () => {
+  it('23. Security Solution displays explicit "Unavailable" for hash fields and omits blockchain panel', () => {
     const emptyStatus = {
       model_id: 'iot-ids-rf',
       model_version: 'v1.0.0',
@@ -653,12 +648,13 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
       />
     );
 
-    expect(screen.getByTestId('blockchain-contract-address')).toHaveTextContent('Unavailable');
-    expect(screen.getByTestId('blockchain-registrant')).toHaveTextContent('Unavailable');
-    expect(screen.getByTestId('blockchain-timestamp')).toHaveTextContent('Unavailable');
-    expect(screen.getByTestId('blockchain-reg-digest')).toHaveTextContent('Unavailable');
     expect(screen.getByTestId('crypto-observed-hash')).toHaveTextContent('Unavailable');
     expect(screen.getByTestId('crypto-registered-hash')).toHaveTextContent('Unavailable');
+    expect(screen.queryByTestId('solution-blockchain-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('blockchain-contract-address')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('blockchain-registrant')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('blockchain-timestamp')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('blockchain-reg-digest')).not.toBeInTheDocument();
   });
 
   it('24. Model Security displays explicit "Unavailable" when metadata is absent from backend', () => {
@@ -731,7 +727,7 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
     expect(within(tracker).getAllByText(/Blocked/i).length).toBeGreaterThanOrEqual(1);
   });
 
-  it('26. Security Solution renders only compact detection summary and omits detailed stage2/advisory/audit panels', () => {
+  it('26. Security Solution omits duplicate detection cards (authoritative in Intrusion Detection Workbench)', () => {
     render(
       <SecuritySolutionOverview
         health={mockHealth}
@@ -742,18 +738,19 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
       />
     );
 
-    expect(screen.getByTestId('solution-latest-detection-card')).toBeInTheDocument();
-    expect(screen.getByTestId('solution-latest-detection')).toBeInTheDocument();
-
-    expect(screen.getByTestId('solution-stage1-verdict')).toHaveTextContent('Attack');
-    expect(screen.getByTestId('solution-stage1-confidence')).toHaveTextContent('94.5%');
-
-    expect(screen.getByTestId('solution-goto-workbench-details-btn')).toBeInTheDocument();
-
+    expect(screen.queryByTestId('solution-latest-detection-card')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-latest-detection')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-no-detection')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-stage1-card')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-stage1-verdict')).not.toBeInTheDocument();
     expect(screen.queryByTestId('solution-stage2-card')).not.toBeInTheDocument();
     expect(screen.queryByTestId('solution-stage2-category')).not.toBeInTheDocument();
     expect(screen.queryByTestId('solution-advisory-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('solution-audit-evidence-card')).not.toBeInTheDocument();
+    expect(screen.queryByText(/No Detection Run In Current Session/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Latest Detection Status/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-goto-workbench-details-btn')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('solution-goto-workbench-btn')).not.toBeInTheDocument();
   });
 
   it('27. Security Solution displays incident alert when HASH_MISMATCH occurs without inventing data', () => {
