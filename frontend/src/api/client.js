@@ -92,6 +92,27 @@ export const api = {
     }
     return request(`/audit/events${query}`);
   },
+  getAllAuditEvents: async (pageSize = 500, maxEvents = 2000) => {
+    const firstPage = await api.getAuditEvents(pageSize, 0, null);
+    const total = firstPage?.total || 0;
+    let allEvents = Array.isArray(firstPage?.events) ? [...firstPage.events] : [];
+
+    let currentOffset = pageSize;
+    while (allEvents.length < total && allEvents.length < maxEvents) {
+      const nextPage = await api.getAuditEvents(pageSize, currentOffset, null);
+      const nextBatch = Array.isArray(nextPage?.events) ? nextPage.events : [];
+      if (nextBatch.length === 0) break;
+      allEvents = allEvents.concat(nextBatch);
+      currentOffset += pageSize;
+    }
+
+    return {
+      events: allEvents,
+      total,
+      limit: allEvents.length,
+      offset: 0,
+    };
+  },
   getAuditEvent: (eventId) => request(`/audit/events/${encodeURIComponent(eventId)}`),
   getDatasetInfo: () => request('/dataset/info'),
   getDatasetRecords: ({ page = 1, pageSize = 25, proto = '', service = '', state = '', search = '' } = {}) => {

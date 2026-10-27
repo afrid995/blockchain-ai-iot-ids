@@ -7,7 +7,7 @@ import {
   getAnalyticsSummary,
 } from '../utils/analytics';
 
-describe('Analytics Utility Functions (Phase 5B)', () => {
+describe('Analytics Utility Functions (Phase 7D.11 Integrity Audit)', () => {
   const sampleEvents = [
     {
       event_id: 'e1',
@@ -50,7 +50,7 @@ describe('Analytics Utility Functions (Phase 5B)', () => {
   ];
 
   describe('1. aggregatePredictions', () => {
-    it('correctly aggregates predictions with counts and percentages', () => {
+    it('correctly aggregates basic predictions with counts and percentages', () => {
       const result = aggregatePredictions(sampleEvents);
       expect(result.hasData).toBe(true);
       expect(result.total).toBe(3);
@@ -59,6 +59,142 @@ describe('Analytics Utility Functions (Phase 5B)', () => {
       expect(result.otherCount).toBe(0);
       expect(result.attackPercentage).toBe(66.7);
       expect(result.benignPercentage).toBe(33.3);
+      expect(result.otherPercentage).toBe(0.0);
+    });
+
+    it('strictly quarantines ADVISORY_RECOMMENDATION events to prevent double counting', () => {
+      const eventsWithAdvisories = [
+        {
+          event_id: 'p1',
+          event_type: 'PREDICTION',
+          prediction: 'DoS',
+          details: { stage1_prediction: 'Attack', stage2_prediction: 'DoS' },
+        },
+        {
+          event_id: 'adv1',
+          event_type: 'ADVISORY_RECOMMENDATION',
+          prediction: 'DoS',
+          details: { category: 'DoS', severity: 'High' },
+        },
+        {
+          event_id: 'p2',
+          event_type: 'PREDICTION',
+          prediction: 'Normal',
+          details: { stage1_prediction: 'Benign', final_prediction: 'Normal' },
+        },
+        {
+          event_id: 'adv2',
+          event_type: 'ADVISORY_RECOMMENDATION',
+          prediction: 'Normal',
+          details: { category: 'Normal', severity: 'Informational' },
+        },
+      ];
+
+      const result = aggregatePredictions(eventsWithAdvisories);
+      // Only the 2 PREDICTION events must be counted; ADVISORY_RECOMMENDATION must be excluded
+      expect(result.total).toBe(2);
+      expect(result.attackCount).toBe(1);
+      expect(result.benignCount).toBe(1);
+      expect(result.otherCount).toBe(0);
+      expect(result.attackPercentage).toBe(50.0);
+      expect(result.benignPercentage).toBe(50.0);
+    });
+
+    it('correctly parses hierarchical prediction schema (Normal as Benign, attack categories as Attack)', () => {
+      const hierarchicalEvents = [
+        {
+          event_type: 'PREDICTION',
+          prediction: 'DoS',
+          details: {
+            pipeline: 'hierarchical',
+            stage1_prediction: 'Attack',
+            stage1_code: 1,
+            stage2_invoked: true,
+            stage2_prediction: 'DoS',
+          },
+        },
+        {
+          event_type: 'PREDICTION',
+          prediction: 'Exploits',
+          details: {
+            pipeline: 'hierarchical',
+            stage1_prediction: 'Attack',
+            stage1_code: 1,
+            stage2_invoked: true,
+            stage2_prediction: 'Exploits',
+          },
+        },
+        {
+          event_type: 'PREDICTION',
+          prediction: 'Normal',
+          details: {
+            pipeline: 'hierarchical',
+            stage1_prediction: 'Benign',
+            stage1_code: 0,
+            stage2_invoked: false,
+            final_prediction: 'Normal',
+          },
+        },
+      ];
+
+      const result = aggregatePredictions(hierarchicalEvents);
+      expect(result.total).toBe(3);
+      expect(result.attackCount).toBe(2);
+      expect(result.benignCount).toBe(1);
+      expect(result.otherCount).toBe(0);
+      expect(result.attackPercentage).toBe(66.7);
+      expect(result.benignPercentage).toBe(33.3);
+      expect(result.categories.DoS).toBe(1);
+      expect(result.categories.Exploits).toBe(1);
+    });
+
+    it('strictly maintains ground-truth quarantine: changing ground-truth does NOT alter predictions', () => {
+      const eventsWithConflictingGroundTruth = [
+        {
+          event_type: 'PREDICTION',
+          prediction: 'Attack',
+          details: {
+            stage1_prediction: 'Attack',
+            // Simulated conflicting ground truth
+            ground_truth_label: 0,
+            ground_truth_category: 'Normal',
+            label: 0,
+            attack_cat: 'Normal',
+          },
+        },
+        {
+          event_type: 'PREDICTION',
+          prediction: 'Normal',
+          details: {
+            stage1_prediction: 'Benign',
+            // Simulated conflicting ground truth
+            ground_truth_label: 1,
+            ground_truth_category: 'DoS',
+            label: 1,
+            attack_cat: 'DoS',
+          },
+        },
+      ];
+
+      const result = aggregatePredictions(eventsWithConflictingGroundTruth);
+      // Prediction remains Attack (1) and Benign (1) regardless of ground truth
+      expect(result.total).toBe(2);
+      expect(result.attackCount).toBe(1);
+      expect(result.benignCount).toBe(1);
+      expect(result.otherCount).toBe(0);
+    });
+
+    it('tallies unclassifiable predictions into otherCount while preserving total invariant', () => {
+      const oddEvents = [
+        { event_type: 'PREDICTION', prediction: 'UnrecognizedCategory' },
+        { event_type: 'PREDICTION', prediction: 'Attack' },
+      ];
+      const result = aggregatePredictions(oddEvents);
+      expect(result.total).toBe(2);
+      expect(result.attackCount).toBe(1);
+      expect(result.benignCount).toBe(0);
+      expect(result.otherCount).toBe(1);
+      expect(result.total).toBe(result.attackCount + result.benignCount + result.otherCount);
     });
 
     it('handles only attack predictions', () => {
@@ -84,7 +220,7 @@ describe('Analytics Utility Functions (Phase 5B)', () => {
       expect(result.benignPercentage).toBe(100.0);
     });
 
-    it('handles empty or non-prediction events safely', () => {
+    it('handles empty or non-prediction events safely without producing NaN', () => {
       expect(aggregatePredictions([])).toEqual({
         total: 0,
         attackCount: 0,
@@ -92,6 +228,8 @@ describe('Analytics Utility Functions (Phase 5B)', () => {
         otherCount: 0,
         attackPercentage: 0,
         benignPercentage: 0,
+        otherPercentage: 0,
+        categories: {},
         hasData: false,
       });
 
@@ -102,6 +240,8 @@ describe('Analytics Utility Functions (Phase 5B)', () => {
         otherCount: 0,
         attackPercentage: 0,
         benignPercentage: 0,
+        otherPercentage: 0,
+        categories: {},
         hasData: false,
       });
 
@@ -122,21 +262,26 @@ describe('Analytics Utility Functions (Phase 5B)', () => {
       expect(result.byStatus.NOT_REGISTERED).toBe(0);
     });
 
-    it('handles multiple statuses correctly', () => {
+    it('handles multiple statuses correctly and maintains success+failure === total', () => {
       const statusEvents = [
         { event_type: 'MODEL_VERIFICATION', verification_status: 'VERIFIED', status: 'SUCCESS' },
         { event_type: 'MODEL_VERIFICATION_FAILURE', verification_status: 'HASH_MISMATCH', status: 'FAILURE' },
         { event_type: 'MODEL_VERIFICATION_FAILURE', verification_status: 'NOT_REGISTERED', status: 'FAILURE' },
-        { event_type: 'MODEL_VERIFICATION_FAILURE', verification_status: 'BLOCKCHAIN_UNAVAILABLE', status: 'FAILURE' },
+        { event_type: 'MODEL_VERIFICATION_FAILURE', verification_status: 'BLOCKCHAIN_UNAVAILABLE', status: 'WARNING' },
+        { event_type: 'MODEL_VERIFICATION_FAILURE', verification_status: 'FILE_NOT_FOUND', status: 'WARNING' },
+        { event_type: 'MODEL_VERIFICATION_FAILURE', verification_status: 'SYSTEM_ERROR', status: 'ERROR' },
       ];
       const result = aggregateVerifications(statusEvents);
-      expect(result.total).toBe(4);
+      expect(result.total).toBe(6);
       expect(result.successCount).toBe(1);
-      expect(result.failureCount).toBe(3);
+      expect(result.failureCount).toBe(5);
+      expect(result.total).toBe(result.successCount + result.failureCount);
       expect(result.byStatus.VERIFIED).toBe(1);
       expect(result.byStatus.HASH_MISMATCH).toBe(1);
       expect(result.byStatus.NOT_REGISTERED).toBe(1);
       expect(result.byStatus.BLOCKCHAIN_UNAVAILABLE).toBe(1);
+      expect(result.byStatus.FILE_NOT_FOUND).toBe(1);
+      expect(result.byStatus.SYSTEM_ERROR).toBe(1);
     });
 
     it('handles empty or non-verification arrays safely', () => {
@@ -161,12 +306,22 @@ describe('Analytics Utility Functions (Phase 5B)', () => {
       expect(result.median).toBe(38.5);
     });
 
+    it('strictly isolates prediction latency: ignores latency on non-PREDICTION events', () => {
+      const mixedEvents = [
+        { event_type: 'PREDICTION', inference_latency_ms: 50.0 },
+        { event_type: 'MODEL_VERIFICATION', inference_latency_ms: 999.0 }, // Non-prediction should be ignored
+      ];
+      const result = calculateLatencyStats(mixedEvents);
+      expect(result.count).toBe(1);
+      expect(result.mean).toBe(50.0);
+    });
+
     it('calculates median for even number of measurements', () => {
       const evenEvents = [
-        { inference_latency_ms: 10.0 },
-        { inference_latency_ms: 20.0 },
-        { inference_latency_ms: 30.0 },
-        { inference_latency_ms: 40.0 },
+        { event_type: 'PREDICTION', inference_latency_ms: 10.0 },
+        { event_type: 'PREDICTION', inference_latency_ms: 20.0 },
+        { event_type: 'PREDICTION', inference_latency_ms: 30.0 },
+        { event_type: 'PREDICTION', inference_latency_ms: 40.0 },
       ];
       const result = calculateLatencyStats(evenEvents);
       expect(result.count).toBe(4);
@@ -177,7 +332,7 @@ describe('Analytics Utility Functions (Phase 5B)', () => {
     });
 
     it('handles single latency measurement', () => {
-      const single = [{ inference_latency_ms: 15.5 }];
+      const single = [{ event_type: 'PREDICTION', inference_latency_ms: 15.5 }];
       const result = calculateLatencyStats(single);
       expect(result.count).toBe(1);
       expect(result.mean).toBe(15.5);
@@ -188,11 +343,11 @@ describe('Analytics Utility Functions (Phase 5B)', () => {
 
     it('safely ignores null, undefined, negative, or NaN latency values', () => {
       const messyEvents = [
-        { inference_latency_ms: null },
-        { inference_latency_ms: undefined },
-        { inference_latency_ms: -5.0 },
-        { inference_latency_ms: 'invalid' },
-        { inference_latency_ms: 50.0 },
+        { event_type: 'PREDICTION', inference_latency_ms: null },
+        { event_type: 'PREDICTION', inference_latency_ms: undefined },
+        { event_type: 'PREDICTION', inference_latency_ms: -5.0 },
+        { event_type: 'PREDICTION', inference_latency_ms: 'invalid' },
+        { event_type: 'PREDICTION', inference_latency_ms: 50.0 },
       ];
       const result = calculateLatencyStats(messyEvents);
       expect(result.hasData).toBe(true);

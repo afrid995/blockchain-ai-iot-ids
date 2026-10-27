@@ -1,4 +1,5 @@
 import React from 'react';
+import { aggregatePredictions, aggregateVerifications } from '../utils/analytics';
 
 export function Dashboard({
   health,
@@ -13,20 +14,16 @@ export function Dashboard({
   const isModelLoaded = Boolean(modelStatus?.is_loaded ?? (health?.model_status === 'loaded'));
   const verificationStatus = modelStatus?.verification_status || 'UNVERIFIED';
 
-  // Compute operational aggregates from actual audit events
-  const predictions = auditEvents.filter((e) => e.event_type === 'PREDICTION');
-  const benignCount = predictions.filter(
-    (e) => e.prediction === 'Benign' || e.prediction === '0' || e.details?.prediction === 'Benign' || e.details?.stage1_prediction === 'Benign'
-  ).length;
-  const attackCount = predictions.filter(
-    (e) => e.prediction === 'Attack' || e.prediction === '1' || e.details?.prediction === 'Attack' || e.details?.stage1_prediction === 'Attack'
-  ).length;
+  // Compute operational aggregates deterministically from actual audit events
+  const predSummary = aggregatePredictions(auditEvents);
+  const totalPredictions = predSummary.total;
+  const benignCount = predSummary.benignCount;
+  const attackCount = predSummary.attackCount;
 
-  const verifications = auditEvents.filter((e) => e.event_type?.includes('VERIFICATION') || e.event_type === 'MODEL_RESTORED');
-  const verificationSuccessCount = verifications.filter((e) => e.status === 'SUCCESS' || e.verification_status === 'VERIFIED').length;
-  const verificationFailureCount = auditEvents.filter(
-    (e) => e.event_type === 'MODEL_REPLACEMENT_DETECTED' || e.status === 'WARNING' || e.status === 'FAILURE' || e.verification_status === 'HASH_MISMATCH'
-  ).length;
+  const verifSummary = aggregateVerifications(auditEvents);
+  const totalVerifications = verifSummary.total;
+  const verificationSuccessCount = verifSummary.successCount;
+  const verificationFailureCount = verifSummary.failureCount;
 
   // Format timestamp helper
   const formatTime = (ts) => {
@@ -119,7 +116,7 @@ export function Dashboard({
         <div className="summary-metrics-row">
           <div className="summary-metric-box">
             <span className="summary-label">TOTAL PREDICTIONS</span>
-            <span className="summary-number font-mono" data-testid="summary-total-predictions">{predictions.length}</span>
+            <span className="summary-number font-mono" data-testid="summary-total-predictions">{totalPredictions}</span>
             <span className="summary-subtext">Off-chain flow evaluations</span>
           </div>
 
@@ -137,7 +134,7 @@ export function Dashboard({
 
           <div className="summary-metric-box">
             <span className="summary-label">PROVENANCE CHECKS</span>
-            <span className="summary-number font-mono" style={{ color: '#60a5fa' }}>{verifications.length}</span>
+            <span className="summary-number font-mono" style={{ color: '#60a5fa' }}>{totalVerifications}</span>
             <span className="summary-subtext">{verificationSuccessCount} verified / {verificationFailureCount} alerts</span>
           </div>
 

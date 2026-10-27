@@ -65,16 +65,24 @@ export function App() {
     }
   }, []);
 
-  // Fetch analytics records (up to 100 recent audit events)
+  // Fetch analytics records (comprehensive audit events for dashboard analytics)
   const loadAnalytics = useCallback(async () => {
     setIsLoadingAnalytics(true);
     setAnalyticsError(null);
     try {
-      const data = await api.getAuditEvents(100, 0, null);
+      const data = typeof api.getAllAuditEvents === 'function'
+        ? await api.getAllAuditEvents(500)
+        : await api.getAuditEvents(100, 0, null);
       setAnalyticsEvents(data?.events || []);
       setAnalyticsTotal(data?.total || 0);
     } catch (err) {
-      setAnalyticsError(err.message || 'Failed to load analytics data');
+      try {
+        const fallbackData = await api.getAuditEvents(100, 0, null);
+        setAnalyticsEvents(fallbackData?.events || []);
+        setAnalyticsTotal(fallbackData?.total || 0);
+      } catch (fallbackErr) {
+        setAnalyticsError(err.message || fallbackErr.message || 'Failed to load analytics data');
+      }
     } finally {
       setIsLoadingAnalytics(false);
     }

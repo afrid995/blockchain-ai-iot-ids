@@ -29,7 +29,10 @@ export function AnalyticsSection({
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <span className="badge badge-unverified" data-testid="analytics-provenance-badge">
+          <span
+            className={`badge ${events.length >= totalEventsCount && totalEventsCount > 0 ? 'badge-verified' : 'badge-unverified'}`}
+            data-testid="analytics-provenance-badge"
+          >
             {events.length} of {totalEventsCount} Events Loaded
           </span>
           {onRefresh && (
@@ -154,7 +157,7 @@ export function AnalyticsSection({
               <div
                 className="stacked-bar"
                 role="img"
-                aria-label={`Prediction ratio: ${predictions.attackPercentage}% Attack, ${predictions.benignPercentage}% Benign`}
+                aria-label={`Prediction ratio: ${predictions.attackPercentage}% Attack, ${predictions.benignPercentage}% Benign${predictions.otherCount > 0 ? `, ${predictions.otherPercentage}% Other` : ''}`}
               >
                 <div
                   className="bar-segment attack-bg"
@@ -166,6 +169,13 @@ export function AnalyticsSection({
                   style={{ width: `${predictions.benignPercentage}%` }}
                   title={`Benign: ${predictions.benignCount} (${predictions.benignPercentage}%)`}
                 />
+                {predictions.otherCount > 0 && (
+                  <div
+                    className="bar-segment"
+                    style={{ width: `${predictions.otherPercentage}%`, backgroundColor: '#64748b' }}
+                    title={`Other / Unspecified: ${predictions.otherCount} (${predictions.otherPercentage}%)`}
+                  />
+                )}
               </div>
 
               {/* Legend & Breakdown */}
@@ -200,10 +210,33 @@ export function AnalyticsSection({
                     </div>
                     <div className="breakdown-value">
                       <span>{predictions.otherCount}</span>
+                      <span className="text-muted">({predictions.otherPercentage}%)</span>
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Stage 2 Multiclass Categories Breakdown */}
+              {predictions.categories && Object.keys(predictions.categories).length > 0 && (
+                <div className="stage2-categories-breakdown" style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color, #334155)' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Stage 2 Attack Categories Identified
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {Object.entries(predictions.categories)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([category, count]) => (
+                        <span
+                          key={category}
+                          className="badge badge-warning"
+                          style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                        >
+                          <strong>{category}</strong>: {count}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="empty-chart-notice" data-testid="empty-prediction-chart">
