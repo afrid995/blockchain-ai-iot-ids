@@ -654,7 +654,7 @@ export function IntrusionDetection({
                           const bytes = (f.sbytes || 0) + (f.dbytes || 0);
                           return (
                             <option key={key} value={key}>
-                              {key} — {proto} · {pkts} pkts · {bytes} B · {dur}
+                              {key}
                             </option>
                           );
                         })}

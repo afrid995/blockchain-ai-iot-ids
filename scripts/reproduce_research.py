@@ -337,6 +337,8 @@ def verify_stage_d() -> Dict[str, Any]:
         assert resp_verify["verified"] is True
         assert resp_verify["status"] == "VERIFIED"
 
+        # In Phase 7D.5+, the lifecycle is decoupled: verify first, then explicitly load
+        test_client.post("/model/load?target=stage1")
         st_post = test_client.get("/model/status").json()
         print(f"    - Model Loaded State:  {st_post['is_loaded']}")
         assert st_post["is_loaded"] is True

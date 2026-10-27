@@ -255,7 +255,7 @@ cd blockchain-ai-iot-ids
 
 ### Step 2: Python Virtual Environment & Dependencies
 
-Create and activate an isolated Python virtual environment:
+Create and activate an isolated project-local Python virtual environment at `.venv/`:
 
 - **Windows PowerShell:**
   ```powershell
@@ -273,11 +273,25 @@ Create and activate an isolated Python virtual environment:
   source .venv/bin/activate
   ```
 
-Install all required Python dependencies:
+Upgrade packaging tools inside `.venv`:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install --upgrade pip setuptools wheel
 ```
+
+Install all project dependencies into `.venv`:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Verify that the active Python environment and pip resolve to the project-local `.venv`:
+
+```bash
+python --version
+python -m pip --version
+```
+*Expected Output:* Confirms Python 3.10+ (tested on 3.12.4) and pip path pointing inside `.venv`. Ensure `.venv` remains activated before running backend Python commands, test suites, or launching Uvicorn.
 
 ### Step 3: Start the Local Blockchain (Ganache)
 
