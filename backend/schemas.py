@@ -196,3 +196,58 @@ class SecurityEventsListResponse(BaseModel):
     limit: int
     offset: int
     events: List[SecurityEventSchema]
+
+
+class DatasetFlowSummary(BaseModel):
+    """Compact summary of network flow characteristics."""
+    protocol: str
+    service: str
+    state: str
+    duration: float
+    spkts: int
+    dpkts: int
+    total_pkts: int
+    sbytes: int
+    dbytes: int
+    total_bytes: int
+    rate: float
+    sttl: int
+    dttl: int
+
+
+class DatasetGroundTruth(BaseModel):
+    """Ground-truth evaluation annotation quarantined from model input."""
+    label: int
+    attack_cat: str
+
+
+class DatasetRecordItem(BaseModel):
+    """Authentic UNSW-NB15 dataset flow record with summary, 42 features, and ground truth."""
+    index: int = Field(..., description="1-based record index within the testing dataset")
+    id: int = Field(..., description="Original dataset row ID")
+    summary: DatasetFlowSummary
+    features: Dict[str, Any] = Field(..., description="Exact 42 model input features")
+    ground_truth: DatasetGroundTruth = Field(..., description="Evaluation-only ground-truth label and attack category")
+
+
+class DatasetInfoResponse(BaseModel):
+    """Metadata and statistics for the authentic UNSW-NB15 testing dataset."""
+    dataset_name: str
+    dataset_type: str
+    source: str
+    sha256: str
+    total_records: int
+    benign_records: int
+    attack_records: int
+    total_features: int
+    filter_options: Dict[str, List[str]]
+
+
+class DatasetPaginatedResponse(BaseModel):
+    """Paginated response containing authentic UNSW-NB15 testing records."""
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    records: List[DatasetRecordItem]
+

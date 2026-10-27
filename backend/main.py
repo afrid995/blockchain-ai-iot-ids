@@ -21,6 +21,9 @@ from fastapi.responses import JSONResponse
 
 from backend.config import settings
 from backend.schemas import (
+    DatasetInfoResponse,
+    DatasetPaginatedResponse,
+    DatasetRecordItem,
     HealthResponse,
     HierarchicalPredictionResponse,
     ModelReplacementResetResponse,
@@ -35,6 +38,7 @@ from backend.schemas import (
     SecurityTestScenarioRequest,
 )
 from backend.services.audit_service import AuditService
+from backend.services.dataset_service import DatasetService
 from backend.services.hierarchical_service import HierarchicalService
 from backend.services.model_service import ModelService
 from backend.services.prediction_service import ModelNotReadyError, PredictionService
@@ -98,6 +102,11 @@ def create_app(
         blockchain_client=effective_client,
     )
 
+    dataset_service = DatasetService(
+        dataset_path=settings.TESTING_DATASET_PATH,
+        expected_sha256=settings.EXPECTED_TEST_DATASET_SHA256,
+    )
+
     should_auto_verify = (
         auto_verify if auto_verify is not None else settings.AUTO_VERIFY_ON_STARTUP
     )
@@ -143,6 +152,7 @@ def create_app(
     app.state.stage2_model_service = stage2_model_service
     app.state.prediction_service = prediction_service
     app.state.hierarchical_service = hierarchical_service
+    app.state.dataset_service = dataset_service
     app.state.blockchain_client = effective_client
 
     # CORS configuration
@@ -742,6 +752,90 @@ def create_app(
                 detail=f"Security event with ID '{event_id}' not found.",
             )
         return SecurityEventSchema(**event)
+
+    @app.get("/dataset/info", response_model=DatasetInfoResponse, tags=["Dataset Explorer"])
+    async def get_dataset_info():
+        """Retrieve authentic UNSW-NB15 testing dataset metadata, record count, and filter options."""
+        try:
+            return dataset_service.get_info()
+        except FileNotFoundError as e:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e),
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error accessing dataset info: {e}",
+            )
+
+    @app.get("/dataset/records", response_model=DatasetPaginatedResponse, tags=["Dataset Explorer"])
+    async def get_dataset_records(
+        page: int = Query(default=1, ge=1, description="1-based page number"),
+        page_size: int = Query(default=25, ge=1, le=100, description="Records per page (1-100)"),
+        proto: Optional[str] = Query(default=None, description="Filter by protocol (e.g. tcp, udp)"),
+        service: Optional[str] = Query(default=None, description="Filter by service (e.g. http, dns)"),
+        state: Optional[str] = Query(default=None, description="Filter by transaction state (e.g. FIN, INT)"),
+        search: Optional[str] = Query(default=None, description="Search by record ID, index, or keyword"),
+    ):
+        """Retrieve paginated flow records from the authentic UNSW-NB15 testing dataset.
+
+        Does NOT support filtering by attack category to ensure ground-truth isolation before inference.
+        """
+        try:
+            return dataset_service.get_records(
+                page=page,
+                page_size=page_size,
+                proto=proto,
+                service=service,
+                state=state,
+                search=search,
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e),
+            )
+        except FileNotFoundError as e:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e),
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error reading dataset records: {e}",
+            )
+
+    @app.get("/dataset/records/{record_index}", response_model=DatasetRecordItem, tags=["Dataset Explorer"])
+    async def get_dataset_record(record_index: int):
+        """Retrieve a specific authentic UNSW-NB15 record by its 1-based index."""
+        try:
+            record = dataset_service.get_record_by_index(record_index)
+            if record is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Record at index {record_index} not found in testing dataset.",
+                )
+            return record
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error retrieving dataset record {record_index}: {e}",
+            )
+
+    @app.get("/dataset/random", response_model=DatasetRecordItem, tags=["Dataset Explorer"])
+    async def get_random_dataset_record():
+        """Retrieve a random record from the authentic UNSW-NB15 testing dataset."""
+        try:
+            return dataset_service.get_random_record()
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error sampling random record: {e}",
+            )
 
     return app
 

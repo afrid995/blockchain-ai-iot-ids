@@ -19,6 +19,15 @@ class Settings:
         # File and directory roots
         self.PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+        # Dataset configuration (Authentic UNSW-NB15 Testing Set)
+        self.TESTING_DATASET_PATH = Path(
+            os.getenv(
+                "TESTING_DATASET_PATH",
+                self.PROJECT_ROOT / "data" / "raw" / "UNSW_NB15_testing-set.csv",
+            )
+        )
+        self.EXPECTED_TEST_DATASET_SHA256 = "bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa"
+
         # Model configuration
         self.MODEL_PATH = Path(
             os.getenv("MODEL_PATH", self.PROJECT_ROOT / "ml" / "artifacts" / "ids_model.joblib")

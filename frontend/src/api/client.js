@@ -93,6 +93,19 @@ export const api = {
     return request(`/audit/events${query}`);
   },
   getAuditEvent: (eventId) => request(`/audit/events/${encodeURIComponent(eventId)}`),
+  getDatasetInfo: () => request('/dataset/info'),
+  getDatasetRecords: ({ page = 1, pageSize = 25, proto = '', service = '', state = '', search = '' } = {}) => {
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('page_size', pageSize);
+    if (proto) params.set('proto', proto);
+    if (service) params.set('service', service);
+    if (state) params.set('state', state);
+    if (search) params.set('search', search);
+    return request(`/dataset/records?${params.toString()}`);
+  },
+  getDatasetRecord: (index) => request(`/dataset/records/${encodeURIComponent(index)}`),
+  getRandomDatasetRecord: () => request('/dataset/random'),
 };
 
 export { ApiError, BASE_URL };

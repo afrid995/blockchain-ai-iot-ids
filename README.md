@@ -87,8 +87,9 @@ Consistent with decentralized systems literature (e.g., *BASIS Schema, Kaushik e
 - **Security Event Audit Logging (Phases 4 & 7B):** Local append-oriented SQLite audit store recording lifecycle and prediction events without persisting raw 42-feature network payloads.
 - **Ephemeral Model Replacement Security Simulator (Phase 7B.5):** Controlled security testing suite creating ephemeral in-memory candidate mutations to demonstrate deterministic `HASH_MISMATCH` detection and fail-closed load gating without modifying canonical artifacts.
 - **Explicit Verification & Load Lifecycle (Phase 7D.5–7D.7):** Decoupled two-step lifecycle requiring explicit pre-load verification (`✓ VERIFY AUTHORIZED MODEL`) followed by explicit loading (`📥 LOAD MODEL`), resetting to `UNVERIFIED / UNLOADED` on browser application reloads.
+- **Authentic Network Traffic Dataset Workbench (Phase 7D.8):** Direct browser access to the authentic UNSW-NB15 testing partition (`UNSW_NB15_testing-set.csv`, 175,341 records: 56,000 Benign, 119,341 Attack). Features paginated flow table, protocol/service/state pre-inference filtering, random authentic flow sampling, full 42-feature vector inspection, quarantined ground truth (revealed strictly post-inference), and transparent evaluation scope distinction.
 - **React Frontend Operations Console (Phases 5–7D):** Modern cyber-defense operations console featuring an Intrusion Detection Workbench with UNSW-NB15 network traffic flow selector, Model Integrity Verification, Security Advisory, and Audit Logs.
-- **Automated Test Suite:** Comprehensive test suite with **200 automated tests passing** (117 backend pytest tests + 83 frontend vitest component and workflow tests).
+- **Automated Test Suite:** Comprehensive test suite with **218 automated tests passing** (129 backend pytest tests + 89 frontend vitest component and workflow tests).
 
 ---
 
@@ -143,6 +144,7 @@ major_project/
 │   │   │   ├── App.test.jsx                 # Component tests (10 tests)
 │   │   │   ├── analytics.test.js            # Frontend metrics tests (16 tests)
 │   │   │   ├── architecture_workflow.test.jsx # Operations console tests (20 tests)
+│   │   │   ├── dataset_workbench.test.jsx   # Authentic dataset workbench tests (6 tests)
 │   │   │   └── solution_workflow.test.jsx   # Solution lifecycle tests (37 tests)
 │   │   ├── App.jsx                          # Dashboard container
 │   │   ├── index.css                        # Cyber-defense UI stylesheet
@@ -157,6 +159,7 @@ major_project/
 │   └── services/
 │       ├── __init__.py
 │       ├── audit_service.py                 # Local SQLite append audit store
+│       ├── dataset_service.py               # Authentic UNSW-NB15 pagination & filtering engine
 │       ├── hierarchical_service.py          # Stage 1 + Stage 2 routing engine
 │       ├── model_replacement_simulator.py   # Ephemeral security attack testing service
 │       ├── model_service.py                 # Fail-closed model gatekeeper & lifecycle state
@@ -211,6 +214,7 @@ major_project/
 │   ├── test_provenance.py                   # Provenance & cryptographic tests (10 tests)
 │   ├── test_blockchain.py                   # Smart contract & Web3 integration tests (12 tests)
 │   ├── test_backend.py                      # FastAPI & security gate tests (24 tests)
+│   ├── test_dataset_service.py              # Authentic UNSW-NB15 dataset service tests (12 tests)
 │   ├── test_multiclass_classifier.py        # Stage 2 attack classifier tests (10 tests)
 │   ├── test_stage2_provenance.py            # Stage 2 blockchain provenance tests (10 tests)
 │   ├── test_hierarchical_ids.py             # Hierarchical classification tests (10 tests)
@@ -391,17 +395,27 @@ Click: [📥 LOAD MODEL]
 
 ## 9. Normal User Workflow: Intrusion Detection Workbench
 
-Once the model is `LOADED / ACTIVE`, you can perform intrusion detection evaluations:
+Once the model is `LOADED / ACTIVE`, you can perform intrusion detection evaluations using authentic benchmark traffic:
 
 1. In the frontend navigation header, select **Intrusion Detection Workbench**.
-2. **Select Network Flow Record:** Choose an authentic UNSW-NB15 network-flow record from the selector.
-   - The UI displays the raw network-flow features: connection duration, protocol (`proto`), service (`service`), state (`state`), source/destination packet counts (`spkts`, `dpkts`), byte rates, and TTL values.
-   - Ground-truth attack categories are intentionally hidden prior to classification to reflect realistic IDS operations.
-3. **Run Hierarchical Detection:** Click **Analyze Traffic Flow**.
-4. **Inspect Hierarchical Output:**
+2. **Authentic Dataset Context:** The workbench displays the active dataset context (`UNSW_NB15_testing-set.csv` containing **175,341 authentic records**: 56,000 Benign, 119,341 Attack, SHA-256: `bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa`).
+   - A clear **Evaluation Scope Notice** clarifies that the interactive workbench analyzes individual authentic flows, while scientific evaluation was conducted over the complete 175,341-flow benchmark partition.
+3. **Browse, Filter, and Select Flow Records:**
+   - **Paginated Traffic Browser:** Page through all 175,341 records (10, 25, or 50 records per page) with direct page jumping across 7,014 pages.
+   - **Realistic Pre-Inference Filtering:** Filter records by network protocol (`proto`: tcp, udp, arp, etc.), network service (`service`: http, dns, smtp, etc.), and connection state (`state`: FIN, CON, INT, etc.), or search by Flow / Record ID.
+   - **No Attack Category Leakage:** Ground-truth attack categories (e.g. DoS, Fuzzers, Generic) are strictly excluded from pre-inference selection filters to reflect authentic zero-knowledge IDS deployment.
+   - **Random Flow Sampler:** Click **Pick Random Flow** to select an arbitrary flow across the entire 175,341-record distribution.
+   - **Benchmark Flow Presets:** Quick-select canonical benchmark flows (`Flow 0001` - `Flow 0006`) for rapid verification.
+4. **Inspect Flow Features:**
+   - Inspect the primary connection telemetry: duration, protocol, service, state, source/destination packet counts, byte rates, and TTL.
+   - Expand the collapsible **Full 42-Feature Model Input Vector** to view all raw network and derived features formatted alongside their preprocessing labels.
+5. **Run Hierarchical Detection:** Click **Analyze Traffic Flow** (`POST /predict/hierarchical`).
+   - Steady-state inference executes strictly off-chain with **zero per-flow blockchain queries**.
+6. **Inspect Hierarchical Output & Quarantined Ground Truth:**
    - **Stage 1 (Binary Classification):** Determines whether the flow is `Normal (Benign)` or `Attack (Malicious)`.
-   - **Stage 2 (Multi-Class Classification):** If Stage 1 detects an Attack, the flow is routed to Stage 2 (`iot-ids-attack-classifier`) to determine the specific attack category (e.g., `Exploits`, `DoS`, `Generic`, `Fuzzers`, `Reconnaissance`). If Stage 1 classifies the flow as Normal, Stage 2 is bypassed.
+   - **Stage 2 (Multi-Class Classification):** If Stage 1 detects an Attack, the flow is routed to Stage 2 (`iot-ids-attack-classifier`) to identify the specific attack type (e.g., `Exploits`, `DoS`, `Generic`, `Fuzzers`, `Reconnaissance`). If Stage 1 classifies the flow as Normal, Stage 2 is bypassed.
    - **Security Advisory:** Recommends defensive mitigation procedures (e.g., rate-limiting, firewall rule adjustment, port isolation). All recommendations are advisory-only (human-in-the-loop, zero autonomous remediation).
+   - **Quarantined Ground-Truth Comparison:** Reveals the authentic benchmark ground truth (`label` and `attack_cat`) strictly *after* inference, providing immediate empirical verification of model classification accuracy.
    - **Audit Trail:** An operational audit entry is logged to the local SQLite database recording the event, timestamp, and model hash, without persisting raw network feature payloads.
 
 ---
@@ -436,21 +450,21 @@ The application contains a built-in **ephemeral model replacement attack simulat
 
 The repository maintains an extensive test suite verifying ML pipelines, smart contracts, backend APIs, and frontend user workflows.
 
-### Run All Backend Tests (117 Tests)
+### Run All Backend Tests (129 Tests)
 
 The backend test suite executes on an in-process EVM provider (`EthereumTesterProvider`) and does not require Ganache to be running:
 
 ```bash
 pytest -q
 ```
-*Expected Result:* 117 tests passing across ML pipeline, smart contracts, provenance, fail-closed security gates, hierarchical routing, and simulator endpoints.
+*Expected Result:* 129 tests passing across ML pipeline, smart contracts, provenance, fail-closed security gates, hierarchical routing, model simulator, and authentic dataset pagination endpoints.
 
-### Run Frontend Vitest Component & Workflow Tests (83 Tests)
+### Run Frontend Vitest Component & Workflow Tests (89 Tests)
 
 ```bash
 npm --prefix frontend run test
 ```
-*Expected Result:* 83 tests passing across 4 test suites (`App.test.jsx`, `analytics.test.js`, `architecture_workflow.test.jsx`, `solution_workflow.test.jsx`).
+*Expected Result:* 89 tests passing across 5 test suites (`App.test.jsx`, `analytics.test.js`, `architecture_workflow.test.jsx`, `solution_workflow.test.jsx`, `dataset_workbench.test.jsx`).
 
 ### Frontend Production Build Verification
 

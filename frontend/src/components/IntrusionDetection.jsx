@@ -1,5 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { api } from '../api/client';
 import flowPresetsData from '../utils/flowPresets.json';
+
+const DEFAULT_DATASET_INFO = {
+  dataset_name: 'UNSW-NB15 Testing Set',
+  dataset_type: 'Network-flow intrusion benchmark',
+  source: 'Local project dataset (data/raw/UNSW_NB15_testing-set.csv)',
+  sha256: 'bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa',
+  total_records: 175341,
+  benign_records: 56000,
+  attack_records: 119341,
+  total_features: 42,
+  filter_options: {
+    protocols: ['tcp', 'udp', 'unas', 'arp', 'ospf', 'sctp'],
+    services: ['-', 'http', 'dns', 'ftp', 'smtp', 'ssh', 'ftp-data'],
+    states: ['FIN', 'INT', 'CON', 'REQ', 'RST'],
+  },
+};
 
 export function IntrusionDetection({
   isModelLoaded,
@@ -9,19 +26,157 @@ export function IntrusionDetection({
   predictionError,
   modelStatus,
 }) {
+  // Preset flow selection for quick verification & backward compatibility
   const [selectedPreset, setSelectedPreset] = useState('Flow 0001');
+
+  // Dataset information and server-paginated records state
+  const [datasetInfo, setDatasetInfo] = useState(DEFAULT_DATASET_INFO);
+  const [datasetRecords, setDatasetRecords] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(175341);
+  const [totalPages, setTotalPages] = useState(7014);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [isLoadingRecords, setIsLoadingRecords] = useState(false);
+  const [datasetError, setDatasetError] = useState(null);
+
+  // Filters state (strictly no attack category filter allowed before inference)
+  const [filterProto, setFilterProto] = useState('');
+  const [filterService, setFilterService] = useState('');
+  const [filterState, setFilterState] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pageJumpInput, setPageJumpInput] = useState('1');
+
+  // Active flow and feature vector state
+  const [activeFlowData, setActiveFlowData] = useState(flowPresetsData['Flow 0001']);
+  const [showAllFeatures, setShowAllFeatures] = useState(false);
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [customJson, setCustomJson] = useState('');
   const [jsonError, setJsonError] = useState(null);
   const [endpointMode, setEndpointMode] = useState('hierarchical'); // 'hierarchical' | 'legacy'
 
-  const activeFlowData = flowPresetsData[selectedPreset] || flowPresetsData['Flow 0001'] || Object.values(flowPresetsData)[0];
+  // Fetch dataset info on initial mount
+  useEffect(() => {
+    let isMounted = true;
+    const loadInfo = async () => {
+      try {
+        if (api && api.getDatasetInfo) {
+          const info = await api.getDatasetInfo();
+          if (isMounted && info && info.total_records) {
+            setDatasetInfo(info);
+            setTotalRecords(info.total_records);
+          }
+        }
+      } catch {
+        // Fallback info preserved
+      }
+    };
+    loadInfo();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Fetch paginated dataset records from authentic UNSW-NB15
+  const fetchRecords = useCallback(
+    async (pageToLoad, sizeToLoad, proto, service, state, search) => {
+      setIsLoadingRecords(true);
+      setDatasetError(null);
+      try {
+        if (api && api.getDatasetRecords) {
+          const res = await api.getDatasetRecords({
+            page: pageToLoad,
+            pageSize: sizeToLoad,
+            proto: proto || '',
+            service: service || '',
+            state: state || '',
+            search: search || '',
+          });
+
+          if (res && res.records && res.records.length > 0) {
+            setDatasetRecords(res.records);
+            setTotalRecords(res.total);
+            setTotalPages(res.total_pages || Math.max(1, Math.ceil(res.total / sizeToLoad)));
+            setCurrentPage(res.page);
+            setPageJumpInput(String(res.page));
+            return;
+          }
+        }
+      } catch (err) {
+        setDatasetError(`Dataset Query Alert: ${err.message}`);
+      } finally {
+        setIsLoadingRecords(false);
+      }
+    },
+    []
+  );
+
+  // Load records on page, pageSize, or filter changes
+  useEffect(() => {
+    fetchRecords(currentPage, pageSize, filterProto, filterService, filterState, searchQuery);
+  }, [currentPage, pageSize, filterProto, filterService, filterState, searchQuery, fetchRecords]);
+
+  // Handle Preset selection change
+  const handlePresetSelect = (presetKey) => {
+    setSelectedPreset(presetKey);
+    const flow = flowPresetsData[presetKey];
+    if (flow) {
+      setActiveFlowData(flow);
+    }
+  };
+
+  // Handle table row click from authentic dataset
+  const handleDatasetRowClick = (rec) => {
+    setSelectedPreset(`Record #${String(rec.index || rec.id).padStart(6, '0')}`);
+    setActiveFlowData({
+      flow_id: `Record #${rec.index || rec.id}`,
+      dataset_id: rec.id || rec.index,
+      summary: rec.summary,
+      features: rec.features,
+      ground_truth: rec.ground_truth,
+    });
+  };
+
+  // Quick Random Flow Selector from authentic dataset
+  const handlePickRandomFlow = async () => {
+    try {
+      if (api && api.getRandomDatasetRecord) {
+        const randRec = await api.getRandomDatasetRecord();
+        if (randRec && randRec.features) {
+          handleDatasetRowClick(randRec);
+          return;
+        }
+      }
+    } catch {
+      // Fallback: pick random preset
+      const keys = Object.keys(flowPresetsData);
+      const randKey = keys[Math.floor(Math.random() * keys.length)];
+      handlePresetSelect(randKey);
+    }
+  };
+
+  const handleResetFilters = () => {
+    setFilterProto('');
+    setFilterService('');
+    setFilterState('');
+    setSearchQuery('');
+    setCurrentPage(1);
+  };
+
+  const handlePageJump = () => {
+    const target = parseInt(pageJumpInput, 10);
+    if (!Number.isNaN(target) && target >= 1 && target <= totalPages) {
+      setCurrentPage(target);
+    } else {
+      setPageJumpInput(String(currentPage));
+    }
+  };
+
   const activeFeatures = activeFlowData?.features || {};
 
   const formatDuration = (dur) => {
     if (dur === undefined || dur === null) return 'N/A';
     const num = Number(dur);
-    if (num < 0.0001) return '0.0000s (<10µs)';
+    if (num < 0.0001) return `${num.toFixed(6)}s (<10µs)`;
     return `${num.toFixed(4)}s`;
   };
 
@@ -35,11 +190,6 @@ export function IntrusionDetection({
     if (dur === undefined || dur === null || Number(dur) < 0.001) return 'N/A';
     const totalBytes = Number(sbytes || 0) + Number(dbytes || 0);
     return `${(totalBytes / Number(dur)).toFixed(1)} B/s`;
-  };
-
-  const handlePresetChange = (e) => {
-    setSelectedPreset(e.target.value);
-    setJsonError(null);
   };
 
   const handleFormSubmit = async (e) => {
@@ -61,19 +211,69 @@ export function IntrusionDetection({
     }
   };
 
+  // Determine current dropdown value
+  const currentDropdownValue = flowPresetsData[selectedPreset]
+    ? selectedPreset
+    : String(activeFlowData.dataset_id || selectedPreset);
+
   return (
     <div className="intrusion-detection-page" data-testid="prediction-card">
       {/* Section Header */}
       <div className="console-section-header">
         <div>
-          <h2 className="console-title">Network-Flow Intrusion Detection</h2>
+          <h2 className="console-title">Authentic Network Traffic Workbench</h2>
           <p className="console-subtitle">
-            Off-chain hierarchical intrusion classification and deterministic response advisory engine.
+            Explore authentic UNSW-NB15 testing records (N = 175,341) and execute verification-gated hierarchical intrusion classification.
           </p>
         </div>
         <div className="header-status-indicator">
-          <span className={`badge ${isModelLoaded ? 'badge-success' : 'badge-danger'}`} data-testid="detection-engine-state">
+          <span
+            className={`badge ${isModelLoaded ? 'badge-success' : 'badge-danger'}`}
+            data-testid="detection-engine-state"
+          >
             {isModelLoaded ? '● ENGINE READY' : '🔒 ENGINE LOCKED'}
+          </span>
+        </div>
+      </div>
+
+      {/* Dataset Information & Scope Panel */}
+      <div className="dataset-info-banner" data-testid="dataset-info-panel">
+        <div className="dataset-meta-grid">
+          <div className="dataset-meta-item">
+            <span className="meta-label">DATASET</span>
+            <strong className="meta-val">{datasetInfo.dataset_name}</strong>
+          </div>
+          <div className="dataset-meta-item">
+            <span className="meta-label">RECORDS AVAILABLE</span>
+            <strong className="meta-val font-mono" data-testid="dataset-total-records">
+              {totalRecords.toLocaleString('en-US')}
+            </strong>
+          </div>
+          <div className="dataset-meta-item">
+            <span className="meta-label">DATASET TYPE</span>
+            <strong className="meta-val">{datasetInfo.dataset_type}</strong>
+          </div>
+          <div className="dataset-meta-item">
+            <span className="meta-label">BENCHMARK SPLIT</span>
+            <strong className="meta-val font-mono">
+              Benign: {datasetInfo.benign_records ? datasetInfo.benign_records.toLocaleString('en-US') : '56,000'} | Attack: {datasetInfo.attack_records ? datasetInfo.attack_records.toLocaleString('en-US') : '119,341'}
+            </strong>
+          </div>
+          <div className="dataset-meta-item full-width">
+            <span className="meta-label">CANONICAL SHA-256 DIGEST</span>
+            <span className="meta-val font-mono font-xs text-muted">
+              {datasetInfo.sha256}
+            </span>
+          </div>
+        </div>
+
+        {/* Evaluation Scope Notice */}
+        <div className="dataset-eval-scope-box" data-testid="eval-scope-notice">
+          <strong>EVALUATION SCOPE:</strong>
+          <span style={{ marginLeft: '0.4rem' }}>
+            Interactive analysis uses individual authentic UNSW-NB15 testing records selected from the 175,341-record testing dataset.
+            Research evaluation was performed over the complete 175,341-record testing set (N = 175,341).
+            The interactive workbench is a demonstration interface; it does not replace the full experimental evaluation.
           </span>
         </div>
       </div>
@@ -85,9 +285,16 @@ export function IntrusionDetection({
             <span style={{ fontSize: '1.4rem' }}>🔒</span>
             <div>
               <strong>MODEL NOT AUTHORIZED:</strong> Network-flow analysis unavailable.
-              Verify and load the authorized model first.
+              Verify and load the authorized model first. Dataset browsing remains accessible below.
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Dataset Query Error Alert */}
+      {datasetError && (
+        <div className="alert-box warning" style={{ marginBottom: '1rem' }}>
+          {datasetError}
         </div>
       )}
 
@@ -98,13 +305,13 @@ export function IntrusionDetection({
         </div>
       )}
 
-      {/* Main Grid: Input on Left, Results on Right */}
+      {/* Main Grid: Input & Dataset Explorer on Left, Results on Right */}
       <div className="console-grid-2col">
-        {/* Left Column: Flow Ingestion & Configuration */}
+        {/* Left Column: Authentic Dataset Explorer & Selected Flow */}
         <div className="console-card">
           <div className="card-header">
             <h3 className="card-title">Network-Flow Input Record (Network Traffic)</h3>
-            <span className="badge badge-secondary">UNSW-NB15 Flow Features</span>
+            <span className="badge badge-secondary">175,341 Authentic Records</span>
           </div>
 
           <form onSubmit={handleFormSubmit}>
@@ -144,12 +351,12 @@ export function IntrusionDetection({
                 <div className="form-group" style={{ marginBottom: '0.75rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                     <label className="form-label" style={{ margin: 0, fontWeight: 'bold' }}>
-                      NETWORK TRAFFIC
+                      NETWORK TRAFFIC RECORD SELECTOR
                     </label>
                     <span className="font-xs text-muted">Authentic UNSW-NB15 Records</span>
                   </div>
 
-                  {/* Flow Quick-Selection Pills */}
+                  {/* Flow Quick-Selection Pills for Benchmark Presets */}
                   <div className="traffic-selector-bar" role="tablist" aria-label="Select Network Traffic Record">
                     {Object.keys(flowPresetsData).map((key) => {
                       const flow = flowPresetsData[key];
@@ -160,7 +367,7 @@ export function IntrusionDetection({
                           key={key}
                           type="button"
                           className={`traffic-flow-btn ${isSelected ? 'active' : ''}`}
-                          onClick={() => setSelectedPreset(key)}
+                          onClick={() => handlePresetSelect(key)}
                           data-testid={`flow-btn-${key}`}
                           aria-selected={isSelected}
                           role="tab"
@@ -171,12 +378,105 @@ export function IntrusionDetection({
                     })}
                   </div>
 
+                  {/* Search & Flow Filtering Toolbar (No Attack Categories Allowed) */}
+                  <div className="traffic-filter-toolbar" data-testid="traffic-filters">
+                    <div className="filter-item">
+                      <label className="filter-label">Protocol:</label>
+                      <select
+                        className="form-control font-xs"
+                        value={filterProto}
+                        onChange={(e) => {
+                          setFilterProto(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        data-testid="filter-proto-select"
+                      >
+                        <option value="">All Protocols</option>
+                        {(datasetInfo.filter_options?.protocols || ['tcp', 'udp', 'arp']).slice(0, 30).map((p) => (
+                          <option key={p} value={p}>{p.toUpperCase()}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="filter-item">
+                      <label className="filter-label">Service:</label>
+                      <select
+                        className="form-control font-xs"
+                        value={filterService}
+                        onChange={(e) => {
+                          setFilterService(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        data-testid="filter-service-select"
+                      >
+                        <option value="">All Services</option>
+                        {(datasetInfo.filter_options?.services || ['-', 'http', 'dns', 'ftp']).map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="filter-item">
+                      <label className="filter-label">State:</label>
+                      <select
+                        className="form-control font-xs"
+                        value={filterState}
+                        onChange={(e) => {
+                          setFilterState(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        data-testid="filter-state-select"
+                      >
+                        <option value="">All States</option>
+                        {(datasetInfo.filter_options?.states || ['FIN', 'INT', 'CON']).map((st) => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="filter-item search-grow">
+                      <label className="filter-label">Search Record / Flow ID:</label>
+                      <input
+                        type="text"
+                        className="form-control font-xs"
+                        placeholder="e.g. 1, 47912, or proto..."
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        data-testid="search-input"
+                      />
+                    </div>
+
+                    <div className="filter-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary font-xs"
+                        onClick={handlePickRandomFlow}
+                        title="Sample a random flow from the authentic 175,341-record testing set"
+                        data-testid="btn-random-flow"
+                      >
+                        🎲 Pick Random Flow
+                      </button>
+                      {(filterProto || filterService || filterState || searchQuery) && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary font-xs"
+                          onClick={handleResetFilters}
+                        >
+                          Reset Filters
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Flow Records Table View */}
                   <div className="traffic-table-container">
                     <table className="traffic-table" data-testid="traffic-records-table">
                       <thead>
                         <tr>
-                          <th>Flow ID</th>
+                          <th>Record #</th>
                           <th>Protocol</th>
                           <th>Service</th>
                           <th>State</th>
@@ -186,37 +486,141 @@ export function IntrusionDetection({
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.keys(flowPresetsData).map((key) => {
-                          const flow = flowPresetsData[key];
-                          const s = flow.summary || {};
-                          const f = flow.features || {};
-                          const proto = (s.protocol || f.proto || '').toUpperCase();
-                          const service = s.service || f.service || '-';
-                          const state = s.state || f.state || '-';
-                          const dur = s.duration ?? f.dur ?? 0;
-                          const pkts = (f.spkts || 0) + (f.dpkts || 0);
-                          const bytes = (f.sbytes || 0) + (f.dbytes || 0);
-                          const isSelected = selectedPreset === key;
+                        {isLoadingRecords ? (
+                          <tr>
+                            <td colSpan={7} style={{ textAlign: 'center', padding: '1.25rem' }}>
+                              <span className="spinner" /> Loading authentic UNSW-NB15 records...
+                            </td>
+                          </tr>
+                        ) : datasetRecords.length > 0 ? (
+                          datasetRecords.map((rec) => {
+                            const s = rec.summary || {};
+                            const proto = (s.protocol || '').toUpperCase();
+                            const isSelected = activeFlowData?.dataset_id === rec.id;
+                            return (
+                              <tr
+                                key={rec.index || rec.id}
+                                className={isSelected ? 'selected' : ''}
+                                onClick={() => handleDatasetRowClick(rec)}
+                                data-testid={`traffic-row-${rec.index || rec.id}`}
+                              >
+                                <td className="font-mono">
+                                  <strong>#{String(rec.index || rec.id).padStart(6, '0')}</strong>
+                                </td>
+                                <td className="font-mono">{proto}</td>
+                                <td className="font-mono">{s.service || '-'}</td>
+                                <td className="font-mono">{s.state || '-'}</td>
+                                <td className="font-mono">{formatDuration(s.duration)}</td>
+                                <td className="font-mono">{(s.total_pkts || 0).toLocaleString()}</td>
+                                <td className="font-mono">{(s.total_bytes || 0).toLocaleString()}</td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          // Fallback table rendering from flowPresetsData
+                          Object.keys(flowPresetsData).map((key) => {
+                            const flow = flowPresetsData[key];
+                            const s = flow.summary || {};
+                            const f = flow.features || {};
+                            const proto = (s.protocol || f.proto || '').toUpperCase();
+                            const service = s.service || f.service || '-';
+                            const state = s.state || f.state || '-';
+                            const dur = s.duration ?? f.dur ?? 0;
+                            const pkts = (f.spkts || 0) + (f.dpkts || 0);
+                            const bytes = (f.sbytes || 0) + (f.dbytes || 0);
+                            const isSelected = selectedPreset === key;
 
-                          return (
-                            <tr
-                              key={key}
-                              className={isSelected ? 'selected' : ''}
-                              onClick={() => setSelectedPreset(key)}
-                              data-testid={`traffic-row-${key}`}
-                            >
-                              <td className="font-mono"><strong>{key}</strong></td>
-                              <td className="font-mono">{proto}</td>
-                              <td className="font-mono">{service}</td>
-                              <td className="font-mono">{state}</td>
-                              <td className="font-mono">{formatDuration(dur)}</td>
-                              <td className="font-mono">{pkts.toLocaleString()}</td>
-                              <td className="font-mono">{bytes.toLocaleString()}</td>
-                            </tr>
-                          );
-                        })}
+                            return (
+                              <tr
+                                key={key}
+                                className={isSelected ? 'selected' : ''}
+                                onClick={() => handlePresetSelect(key)}
+                                data-testid={`traffic-row-${key}`}
+                              >
+                                <td className="font-mono"><strong>{key}</strong></td>
+                                <td className="font-mono">{proto}</td>
+                                <td className="font-mono">{service}</td>
+                                <td className="font-mono">{state}</td>
+                                <td className="font-mono">{formatDuration(dur)}</td>
+                                <td className="font-mono">{pkts.toLocaleString()}</td>
+                                <td className="font-mono">{bytes.toLocaleString()}</td>
+                              </tr>
+                            );
+                          })
+                        )}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Dataset Pagination Bar */}
+                  <div className="dataset-pagination-bar" data-testid="dataset-pagination">
+                    <div className="pagination-info font-xs text-muted">
+                      Page <strong>{currentPage}</strong> of <strong data-testid="pagination-total-pages">{totalPages.toLocaleString('en-US')}</strong> (<span data-testid="pagination-total-records">{totalRecords.toLocaleString('en-US')}</span> records)
+                    </div>
+
+                    <div className="pagination-controls">
+                      <button
+                        type="button"
+                        className="btn btn-secondary font-xs"
+                        disabled={currentPage <= 1 || isLoadingRecords}
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        data-testid="pagination-prev-btn"
+                      >
+                        ◀ Previous
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-secondary font-xs"
+                        disabled={currentPage >= totalPages || isLoadingRecords}
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        data-testid="pagination-next-btn"
+                      >
+                        Next ▶
+                      </button>
+                    </div>
+
+                    <div className="pagination-jump">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <label className="font-xs text-muted" htmlFor="page-jump-input">Go to page:</label>
+                        <input
+                          id="page-jump-input"
+                          type="number"
+                          min="1"
+                          max={totalPages}
+                          className="form-control font-xs"
+                          style={{ width: '65px', padding: '0.2rem 0.4rem' }}
+                          value={pageJumpInput}
+                          onChange={(e) => setPageJumpInput(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-secondary font-xs"
+                          style={{ padding: '0.2rem 0.5rem' }}
+                          onClick={handlePageJump}
+                        >
+                          Go
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: '0.5rem' }}>
+                        <label className="font-xs text-muted" htmlFor="page-size-select">Size:</label>
+                        <select
+                          id="page-size-select"
+                          className="form-control font-xs"
+                          style={{ width: '60px', padding: '0.2rem' }}
+                          value={pageSize}
+                          onChange={(e) => {
+                            setPageSize(Number(e.target.value));
+                            setCurrentPage(1);
+                          }}
+                        >
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Accessible Dropdown for Flow Selection */}
@@ -227,79 +631,145 @@ export function IntrusionDetection({
                     <select
                       id="preset-select"
                       className="form-control font-mono font-xs"
-                      value={selectedPreset}
-                      onChange={handlePresetChange}
+                      value={currentDropdownValue}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (flowPresetsData[val]) {
+                          handlePresetSelect(val);
+                        } else {
+                          const found = datasetRecords.find((r) => String(r.id || r.index) === val);
+                          if (found) handleDatasetRowClick(found);
+                        }
+                      }}
                       data-testid="preset-dropdown"
                     >
-                      {Object.keys(flowPresetsData).map((key) => {
-                        const flow = flowPresetsData[key];
-                        const s = flow.summary || {};
-                        const f = flow.features || {};
-                        const proto = (s.protocol || f.proto || '').toUpperCase();
-                        const dur = formatDuration(s.duration ?? f.dur ?? 0);
-                        const pkts = (f.spkts || 0) + (f.dpkts || 0);
-                        const bytes = (f.sbytes || 0) + (f.dbytes || 0);
-                        return (
-                          <option key={key} value={key}>
-                            {key} — {proto} · {pkts} pkts · {bytes} B · {dur}
-                          </option>
-                        );
-                      })}
+                      <optgroup label="Benchmark Flow Presets">
+                        {Object.keys(flowPresetsData).map((key) => {
+                          const flow = flowPresetsData[key];
+                          const s = flow.summary || {};
+                          const f = flow.features || {};
+                          const proto = (s.protocol || f.proto || '').toUpperCase();
+                          const dur = formatDuration(s.duration ?? f.dur ?? 0);
+                          const pkts = (f.spkts || 0) + (f.dpkts || 0);
+                          const bytes = (f.sbytes || 0) + (f.dbytes || 0);
+                          return (
+                            <option key={key} value={key}>
+                              {key} — {proto} · {pkts} pkts · {bytes} B · {dur}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                      {datasetRecords.length > 0 && (
+                        <optgroup label="Authentic Dataset Page Records">
+                          {datasetRecords.map((rec) => {
+                            const s = rec.summary || {};
+                            const proto = (s.protocol || '').toUpperCase();
+                            const dur = formatDuration(s.duration);
+                            return (
+                              <option key={`rec-${rec.id || rec.index}`} value={String(rec.id || rec.index)}>
+                                Record #{String(rec.index || rec.id).padStart(6, '0')} — {proto} · {s.total_pkts} pkts · {s.total_bytes} B · {dur}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      )}
                     </select>
                   </div>
                 </div>
 
                 {/* Selected Flow Detail Card */}
-                <div className="flow-spec-card" data-testid="selected-flow-details">
-                  <div className="flow-spec-header">
-                    <span>SELECTED NETWORK FLOW</span>
-                    <span className="font-mono font-xs text-secondary">
-                      {selectedPreset} (UNSW-NB15 Record #{String(activeFlowData.dataset_id || 1).padStart(6, '0')})
-                    </span>
+                {activeFlowData && (
+                  <div className="flow-spec-card" data-testid="selected-flow-details">
+                    <div className="flow-spec-header">
+                      <span>SELECTED NETWORK FLOW</span>
+                      <span className="font-mono font-xs text-secondary">
+                        {selectedPreset} (UNSW-NB15 Record #{String(activeFlowData.dataset_id || 1).padStart(6, '0')})
+                      </span>
+                    </div>
+                    <div className="flow-spec-grid">
+                      <div className="spec-item">
+                        <span className="spec-label">Protocol:</span>
+                        <span className="spec-val font-mono">{String(activeFlowData.summary?.protocol || activeFeatures.proto).toUpperCase()}</span>
+                      </div>
+                      <div className="spec-item">
+                        <span className="spec-label">Service:</span>
+                        <span className="spec-val font-mono">{activeFlowData.summary?.service || activeFeatures.service || '-'}</span>
+                      </div>
+                      <div className="spec-item">
+                        <span className="spec-label">Transaction State:</span>
+                        <span className="spec-val font-mono">{activeFlowData.summary?.state || activeFeatures.state || '-'}</span>
+                      </div>
+                      <div className="spec-item">
+                        <span className="spec-label">Duration:</span>
+                        <span className="spec-val font-mono">{formatDuration(activeFlowData.summary?.duration ?? activeFeatures.dur)}</span>
+                      </div>
+                      <div className="spec-item">
+                        <span className="spec-label">Packets:</span>
+                        <span className="spec-val font-mono">
+                          {activeFeatures.spkts || 0} src / {activeFeatures.dpkts || 0} dst ({((activeFeatures.spkts || 0) + (activeFeatures.dpkts || 0))} total)
+                        </span>
+                      </div>
+                      <div className="spec-item">
+                        <span className="spec-label">Transaction Bytes:</span>
+                        <span className="spec-val font-mono">
+                          {(activeFeatures.sbytes || 0).toLocaleString()} src / {(activeFeatures.dbytes || 0).toLocaleString()} dst
+                        </span>
+                      </div>
+                      <div className="spec-item">
+                        <span className="spec-label">Packet Rate:</span>
+                        <span className="spec-val font-mono" data-testid="selected-flow-packet-rate">
+                          {formatRate(activeFeatures.rate, activeFlowData.summary?.duration ?? activeFeatures.dur)}
+                        </span>
+                      </div>
+                      <div className="spec-item">
+                        <span className="spec-label">Byte Rate:</span>
+                        <span className="spec-val font-mono" data-testid="selected-flow-byte-rate">
+                          {formatByteRate(activeFeatures.sbytes, activeFeatures.dbytes, activeFlowData.summary?.duration ?? activeFeatures.dur)}
+                        </span>
+                      </div>
+                      <div className="spec-item">
+                        <span className="spec-label">TTL (Time-to-Live):</span>
+                        <span className="spec-val font-mono">{activeFeatures.sttl || 0} src / {activeFeatures.dttl || 0} dst</span>
+                      </div>
+                      <div className="spec-item">
+                        <span className="spec-label">Same-Service Conns:</span>
+                        <span className="spec-val font-mono">{activeFeatures.ct_srv_src ?? 'N/A'} (ct_srv_src)</span>
+                      </div>
+                    </div>
+
+                    {/* Collapsible 42 Features Vector Inspection */}
+                    <div style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span className="font-xs text-muted" style={{ fontWeight: 'bold' }}>
+                          FLOW FEATURES (42 model input features):
+                        </span>
+                        <button
+                          type="button"
+                          className="btn-link font-xs"
+                          onClick={() => setShowAllFeatures(!showAllFeatures)}
+                          style={{ color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        >
+                          {showAllFeatures ? 'Hide All 42 Features ▲' : 'Inspect All 42 Features ▼'}
+                        </button>
+                      </div>
+
+                      <p className="font-xs text-muted" style={{ margin: '0.2rem 0 0.4rem 0' }}>
+                        Raw dataset feature values passed to hierarchical model. Preprocessing applies leak-free scaling and encoding internally.
+                      </p>
+
+                      {showAllFeatures && (
+                        <div className="feature-vector-grid font-mono font-xs" data-testid="all-42-features-grid">
+                          {Object.keys(activeFeatures).map((featKey) => (
+                            <div key={featKey} className="feature-kv-pill">
+                              <span className="feat-key">{featKey}:</span>
+                              <span className="feat-val">{String(activeFeatures[featKey])}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flow-spec-grid">
-                    <div className="spec-item">
-                      <span className="spec-label">Protocol:</span>
-                      <span className="spec-val font-mono">{String(activeFlowData.summary?.protocol || activeFeatures.proto).toUpperCase()}</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Service:</span>
-                      <span className="spec-val font-mono">{activeFlowData.summary?.service || activeFeatures.service || '-'}</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Transaction State:</span>
-                      <span className="spec-val font-mono">{activeFlowData.summary?.state || activeFeatures.state || '-'}</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Duration:</span>
-                      <span className="spec-val font-mono">{formatDuration(activeFlowData.summary?.duration ?? activeFeatures.dur)}</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Packets:</span>
-                      <span className="spec-val font-mono">{activeFeatures.spkts} src / {activeFeatures.dpkts} dst</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Transaction Bytes:</span>
-                      <span className="spec-val font-mono">{(activeFeatures.sbytes || 0).toLocaleString()} src / {(activeFeatures.dbytes || 0).toLocaleString()} dst</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Packet Rate:</span>
-                      <span className="spec-val font-mono" data-testid="selected-flow-packet-rate">{formatRate(activeFeatures.rate, activeFeatures.dur)}</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Byte Rate:</span>
-                      <span className="spec-val font-mono" data-testid="selected-flow-byte-rate">{formatByteRate(activeFeatures.sbytes, activeFeatures.dbytes, activeFeatures.dur)}</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">TTL (Time-to-Live):</span>
-                      <span className="spec-val font-mono">{activeFeatures.sttl} src / {activeFeatures.dttl} dst</span>
-                    </div>
-                    <div className="spec-item">
-                      <span className="spec-label">Same-Service Conns:</span>
-                      <span className="spec-val font-mono">{activeFeatures.ct_srv_src} (ct_srv_src)</span>
-                    </div>
-                  </div>
-                </div>
+                )}
               </>
             ) : (
               <div className="form-group">
@@ -475,7 +945,7 @@ export function IntrusionDetection({
                 </div>
               ) : (
                 <div className="stage2-bypassed-card" style={{ marginTop: '1rem' }} data-testid="stage2-bypassed">
-                  <span>ℹ️ <strong>Stage 2 Multiclass Classifier: Bypassed</strong> (Stage 2: BYPASSED — Stage1 classified this flow as Benign). Normal traffic does not invoke attack categorization.</span>
+                  <span>ℹ️ <strong>Stage 2 Multiclass Classifier: Bypassed</strong> (Stage 2: BYPASSED — Stage 1 classified this flow as Benign). Normal traffic does not invoke attack categorization.</span>
                 </div>
               )}
 
@@ -539,12 +1009,15 @@ export function IntrusionDetection({
                 </div>
               )}
 
-              {/* Ground Truth: Research Evaluation Only */}
+              {/* Ground Truth: Post-Inference Evaluation Only */}
               <div className="eval-ground-truth-box" data-testid="ground-truth-eval-box">
                 <span className="text-muted" style={{ fontWeight: 'bold' }}>GROUND TRUTH — EVALUATION ONLY: </span>
                 <span className="font-mono font-xs text-secondary" style={{ marginLeft: '0.4rem' }}>
                   {activeFlowData.ground_truth?.attack_cat || 'Normal'} (Label {activeFlowData.ground_truth?.label ?? 0})
                 </span>
+                <p className="font-xs text-muted" style={{ margin: '0.25rem 0 0 0' }}>
+                  This ground-truth label originates from the authentic UNSW-NB15 benchmark testing dataset. It is strictly quarantined from model input features and shown solely for post-inference evaluation.
+                </p>
               </div>
             </div>
           )}
