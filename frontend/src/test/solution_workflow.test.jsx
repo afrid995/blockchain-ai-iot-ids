@@ -173,6 +173,45 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
     ],
   };
 
+  const mockDatasetInfo = {
+    dataset_name: 'UNSW-NB15 Testing Set',
+    dataset_type: 'Network-flow intrusion benchmark',
+    source: 'Local project dataset (data/raw/UNSW_NB15_testing-set.csv)',
+    sha256: 'bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa',
+    total_records: 175341,
+    benign_records: 56000,
+    attack_records: 119341,
+    total_features: 42,
+    filter_options: {
+      protocols: ['tcp', 'udp', 'unas', 'arp'],
+      services: ['-', 'http', 'dns', 'ftp'],
+      states: ['FIN', 'INT', 'CON'],
+    },
+  };
+
+  const mockDatasetRecords = {
+    total: 175341,
+    page: 1,
+    page_size: 25,
+    total_pages: 7014,
+    records: [
+      {
+        index: 1,
+        id: 1,
+        summary: { protocol: 'tcp', service: '-', state: 'FIN', duration: 0.121478, total_pkts: 10, total_bytes: 430 },
+        features: { dur: 0.121478, proto: 'tcp', service: '-', state: 'FIN', spkts: 6, dpkts: 4, sbytes: 258, dbytes: 172 },
+        ground_truth: { label: 0, attack_cat: 'Normal' },
+      },
+      {
+        index: 2,
+        id: 2,
+        summary: { protocol: 'udp', service: 'dns', state: 'INT', duration: 0.000009, total_pkts: 2, total_bytes: 114 },
+        features: { dur: 0.000009, proto: 'udp', service: 'dns', state: 'INT', spkts: 2, dpkts: 0, sbytes: 114, dbytes: 0 },
+        ground_truth: { label: 0, attack_cat: 'Normal' },
+      },
+    ],
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -185,6 +224,9 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
     });
     vi.spyOn(api, 'verifyModel').mockResolvedValue(mockVerifyResponse);
     vi.spyOn(api, 'getAuditEvents').mockResolvedValue(mockAuditData);
+    vi.spyOn(api, 'getDatasetInfo').mockResolvedValue(mockDatasetInfo);
+    vi.spyOn(api, 'getDatasetRecords').mockResolvedValue(mockDatasetRecords);
+    vi.spyOn(api, 'getRandomDatasetRecord').mockResolvedValue(mockDatasetRecords.records[1]);
   };
 
   // =========================================================================
@@ -371,7 +413,7 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
   // 3. AUTHORITATIVE INTRUSION DETECTION / NETWORK TRAFFIC WORKBENCH TESTS
   // =========================================================================
 
-  it('11. Intrusion Detection workspace authoritatively contains Network Traffic Workbench', async () => {
+  it('11. Intrusion Detection workspace authoritatively contains Network Traffic Workbench and omits hardcoded shortcut flows', async () => {
     setupDefaultMocks();
     render(<App />);
 
@@ -382,12 +424,23 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
       expect(screen.getByTestId('preset-dropdown')).toBeInTheDocument();
       expect(screen.getByTestId('predict-btn')).toBeInTheDocument();
       expect(screen.getByText(/Network-Flow Input Record \(Network Traffic\)/i)).toBeInTheDocument();
-      expect(screen.getByText('Flow 0001')).toBeInTheDocument();
-      expect(screen.getByText('Flow 0002')).toBeInTheDocument();
+      // Flow 0001 through Flow 0006 are absent
+      expect(screen.queryByText('Flow 0001')).not.toBeInTheDocument();
+      expect(screen.queryByText('Flow 0002')).not.toBeInTheDocument();
+      expect(screen.queryByText('Flow 0003')).not.toBeInTheDocument();
+      expect(screen.queryByText('Flow 0004')).not.toBeInTheDocument();
+      expect(screen.queryByText('Flow 0005')).not.toBeInTheDocument();
+      expect(screen.queryByText('Flow 0006')).not.toBeInTheDocument();
+      expect(screen.queryByText(/NETWORK TRAFFIC RECORD SELECTOR/i)).not.toBeInTheDocument();
+      expect(screen.queryByTestId('flow-btn-Flow 0001')).not.toBeInTheDocument();
+      // Authentic dataset workbench elements remain present
+      expect(screen.getByTestId('dataset-pagination')).toBeInTheDocument();
+      expect(screen.getByTestId('traffic-filters')).toBeInTheDocument();
+      expect(screen.getByTestId('btn-random-flow')).toBeInTheDocument();
     });
   });
 
-  it('12. Intrusion Detection allows selecting Flow 0001 through Flow 0006 and updates preview', async () => {
+  it('12. Intrusion Detection selects authentic dataset records and updates preview without hardcoded presets', async () => {
     setupDefaultMocks();
     render(<App />);
 
@@ -395,29 +448,30 @@ describe('Phase 7D.4 Deduplicated Frontend Architecture & Solution Workflow Test
 
     await waitFor(() => {
       expect(screen.getByTestId('preset-dropdown')).toBeInTheDocument();
+      expect(screen.getByTestId('selected-flow-details')).toBeInTheDocument();
     });
 
     const select = screen.getByTestId('preset-dropdown');
 
-    // 1. Verify category names are not selectable options
+    // 1. Verify Flow 0001 - Flow 0006 and attack categories are absent from options
     const optionValues = Array.from(select.querySelectorAll('option')).map((o) => o.value);
+    expect(optionValues).not.toContain('Flow 0001');
+    expect(optionValues).not.toContain('Flow 0002');
+    expect(optionValues).not.toContain('Flow 0003');
+    expect(optionValues).not.toContain('Flow 0004');
+    expect(optionValues).not.toContain('Flow 0005');
+    expect(optionValues).not.toContain('Flow 0006');
     expect(optionValues).not.toContain('Normal');
     expect(optionValues).not.toContain('DoS');
-    expect(optionValues).not.toContain('Generic');
-    expect(optionValues).toContain('Flow 0001');
-    expect(optionValues).toContain('Flow 0002');
 
-    // 2. Select Flow 0002 (zero-duration flow) -> displays N/A for rate
-    fireEvent.change(select, { target: { value: 'Flow 0002' } });
-    expect(select.value).toBe('Flow 0002');
-    expect(screen.getByTestId('selected-flow-packet-rate')).toHaveTextContent('N/A');
-    expect(screen.getByTestId('selected-flow-byte-rate')).toHaveTextContent('N/A');
-
-    // 3. Select Flow 0001
-    fireEvent.change(select, { target: { value: 'Flow 0001' } });
-    expect(select.value).toBe('Flow 0001');
-    expect(screen.getByTestId('selected-flow-details')).toHaveTextContent(/Flow 0001/i);
+    // 2. Initial selection is authentic Record #1
+    expect(screen.getByTestId('selected-flow-details')).toHaveTextContent(/Record #000001/i);
     expect(screen.getByTestId('selected-flow-details')).toHaveTextContent(/TCP/i);
+
+    // 3. Select Record #2 via dropdown
+    fireEvent.change(select, { target: { value: '2' } });
+    expect(screen.getByTestId('selected-flow-details')).toHaveTextContent(/Record #000002/i);
+    expect(screen.getByTestId('selected-flow-details')).toHaveTextContent(/UDP/i);
   });
 
   it('13. Intrusion Detection performs hierarchical inference and displays advisory', async () => {

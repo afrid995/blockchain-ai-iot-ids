@@ -429,4 +429,43 @@ describe('Phase 7D.8 Authentic Network Traffic Dataset Workbench Tests', () => {
       expect(gtBox).toHaveTextContent(/Normal/i); // From selected initial record
     });
   });
+
+  it('7. Phase 7D.10 verifies Flow 0001 through Flow 0006 shortcut buttons are completely absent from the workbench', async () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId('tab-detection'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('prediction-card')).toBeInTheDocument();
+      expect(screen.getByTestId('dataset-pagination')).toBeInTheDocument();
+    });
+
+    // Verify all hardcoded flow shortcuts and headings are absent
+    expect(screen.queryByText('Flow 0001')).not.toBeInTheDocument();
+    expect(screen.queryByText('Flow 0002')).not.toBeInTheDocument();
+    expect(screen.queryByText('Flow 0003')).not.toBeInTheDocument();
+    expect(screen.queryByText('Flow 0004')).not.toBeInTheDocument();
+    expect(screen.queryByText('Flow 0005')).not.toBeInTheDocument();
+    expect(screen.queryByText('Flow 0006')).not.toBeInTheDocument();
+    expect(screen.queryByText(/NETWORK TRAFFIC RECORD SELECTOR/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('flow-btn-Flow 0001')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('flow-btn-Flow 0002')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('flow-btn-Flow 0003')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('flow-btn-Flow 0004')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('flow-btn-Flow 0005')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('flow-btn-Flow 0006')).not.toBeInTheDocument();
+
+    // Verify authentic dataset workbench remains fully functional
+    expect(screen.getByTestId('dataset-info-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('traffic-filters')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-random-flow')).toBeInTheDocument();
+    expect(screen.getByTestId('dataset-pagination')).toBeInTheDocument();
+    expect(screen.getByTestId('predict-btn')).toBeInTheDocument();
+    expect(screen.getByTestId('traffic-row-1')).toBeInTheDocument();
+
+    // Selecting a table row populates the inference workflow
+    fireEvent.click(screen.getByTestId('traffic-row-2'));
+    expect(screen.getByTestId('selected-flow-details')).toHaveTextContent(/Record #000002/i);
+    expect(screen.getByTestId('selected-flow-details')).toHaveTextContent(/UDP/i);
+  });
 });

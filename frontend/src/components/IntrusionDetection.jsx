@@ -1,6 +1,74 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
-import flowPresetsData from '../utils/flowPresets.json';
+
+const DEFAULT_INITIAL_RECORD = {
+  flow_id: 'Record #000001',
+  dataset_id: 1,
+  summary: {
+    protocol: 'tcp',
+    service: '-',
+    state: 'FIN',
+    duration: 0.121478,
+    spkts: 6,
+    dpkts: 4,
+    total_pkts: 10,
+    sbytes: 258,
+    dbytes: 172,
+    total_bytes: 430,
+    source_ttl: 252,
+    dest_ttl: 254,
+    packet_rate: 74.08749,
+    byte_rate: 3539.7356,
+  },
+  features: {
+    dur: 0.121478,
+    proto: 'tcp',
+    service: '-',
+    state: 'FIN',
+    spkts: 6,
+    dpkts: 4,
+    sbytes: 258,
+    dbytes: 172,
+    rate: 74.08749,
+    sttl: 252,
+    dttl: 254,
+    sload: 14158.94238,
+    dload: 8495.365234,
+    sloss: 0,
+    dloss: 0,
+    sinpkt: 24.2956,
+    dinpkt: 8.375,
+    sjit: 30.177547,
+    djit: 11.830604,
+    swin: 255,
+    stcpb: 621772692,
+    dtcpb: 2202533631,
+    dwin: 255,
+    tcprtt: 0.0,
+    synack: 0.0,
+    ackdat: 0.0,
+    smean: 43,
+    dmean: 43,
+    trans_depth: 0,
+    response_body_len: 0,
+    ct_srv_src: 1,
+    ct_state_ttl: 0,
+    ct_dst_ltm: 1,
+    ct_src_dport_ltm: 1,
+    ct_dst_sport_ltm: 1,
+    ct_dst_src_ltm: 1,
+    is_ftp_login: 0,
+    ct_ftp_cmd: 0,
+    ct_flw_http_mthd: 0,
+    ct_src_ltm: 1,
+    ct_srv_dst: 1,
+    is_sm_ips_ports: 0,
+  },
+  ground_truth: {
+    label: 0,
+    attack_cat: 'Normal',
+  },
+};
 
 const DEFAULT_DATASET_INFO = {
   dataset_name: 'UNSW-NB15 Testing Set',
@@ -26,8 +94,8 @@ export function IntrusionDetection({
   predictionError,
   modelStatus,
 }) {
-  // Preset flow selection for quick verification & backward compatibility
-  const [selectedPreset, setSelectedPreset] = useState('Flow 0001');
+  // Active record selection label for authentic UNSW-NB15 records
+  const [selectedPreset, setSelectedPreset] = useState('Record #000001');
 
   // Dataset information and server-paginated records state
   const [datasetInfo, setDatasetInfo] = useState(DEFAULT_DATASET_INFO);
@@ -47,7 +115,7 @@ export function IntrusionDetection({
   const [pageJumpInput, setPageJumpInput] = useState('1');
 
   // Active flow and feature vector state
-  const [activeFlowData, setActiveFlowData] = useState(flowPresetsData['Flow 0001']);
+  const [activeFlowData, setActiveFlowData] = useState(DEFAULT_INITIAL_RECORD);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [customJson, setCustomJson] = useState('');
@@ -115,21 +183,13 @@ export function IntrusionDetection({
     fetchRecords(currentPage, pageSize, filterProto, filterService, filterState, searchQuery);
   }, [currentPage, pageSize, filterProto, filterService, filterState, searchQuery, fetchRecords]);
 
-  // Handle Preset selection change
-  const handlePresetSelect = (presetKey) => {
-    setSelectedPreset(presetKey);
-    const flow = flowPresetsData[presetKey];
-    if (flow) {
-      setActiveFlowData(flow);
-    }
-  };
-
   // Handle table row click from authentic dataset
   const handleDatasetRowClick = (rec) => {
-    setSelectedPreset(`Record #${String(rec.index || rec.id).padStart(6, '0')}`);
+    const recId = rec.id || rec.index || 1;
+    setSelectedPreset(`Record #${String(recId).padStart(6, '0')}`);
     setActiveFlowData({
-      flow_id: `Record #${rec.index || rec.id}`,
-      dataset_id: rec.id || rec.index,
+      flow_id: `Record #${recId}`,
+      dataset_id: recId,
       summary: rec.summary,
       features: rec.features,
       ground_truth: rec.ground_truth,
@@ -147,10 +207,11 @@ export function IntrusionDetection({
         }
       }
     } catch {
-      // Fallback: pick random preset
-      const keys = Object.keys(flowPresetsData);
-      const randKey = keys[Math.floor(Math.random() * keys.length)];
-      handlePresetSelect(randKey);
+      // Fallback: pick random record from loaded page
+      if (datasetRecords && datasetRecords.length > 0) {
+        const randRec = datasetRecords[Math.floor(Math.random() * datasetRecords.length)];
+        handleDatasetRowClick(randRec);
+      }
     }
   };
 
@@ -212,9 +273,7 @@ export function IntrusionDetection({
   };
 
   // Determine current dropdown value
-  const currentDropdownValue = flowPresetsData[selectedPreset]
-    ? selectedPreset
-    : String(activeFlowData.dataset_id || selectedPreset);
+  const currentDropdownValue = String(activeFlowData?.dataset_id || activeFlowData?.index || activeFlowData?.id || '');
 
   return (
     <div className="intrusion-detection-page" data-testid="prediction-card">
@@ -349,35 +408,6 @@ export function IntrusionDetection({
             {!isCustomMode ? (
               <>
                 <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                    <label className="form-label" style={{ margin: 0, fontWeight: 'bold' }}>
-                      NETWORK TRAFFIC RECORD SELECTOR
-                    </label>
-                    <span className="font-xs text-muted">Authentic UNSW-NB15 Records</span>
-                  </div>
-
-                  {/* Flow Quick-Selection Pills for Benchmark Presets */}
-                  <div className="traffic-selector-bar" role="tablist" aria-label="Select Network Traffic Record">
-                    {Object.keys(flowPresetsData).map((key) => {
-                      const flow = flowPresetsData[key];
-                      const proto = (flow.summary?.protocol || flow.features?.proto || '').toUpperCase();
-                      const isSelected = selectedPreset === key;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          className={`traffic-flow-btn ${isSelected ? 'active' : ''}`}
-                          onClick={() => handlePresetSelect(key)}
-                          data-testid={`flow-btn-${key}`}
-                          aria-selected={isSelected}
-                          role="tab"
-                        >
-                          {key} ({proto})
-                        </button>
-                      );
-                    })}
-                  </div>
-
                   {/* Search & Flow Filtering Toolbar (No Attack Categories Allowed) */}
                   <div className="traffic-filter-toolbar" data-testid="traffic-filters">
                     <div className="filter-item">
@@ -517,36 +547,11 @@ export function IntrusionDetection({
                             );
                           })
                         ) : (
-                          // Fallback table rendering from flowPresetsData
-                          Object.keys(flowPresetsData).map((key) => {
-                            const flow = flowPresetsData[key];
-                            const s = flow.summary || {};
-                            const f = flow.features || {};
-                            const proto = (s.protocol || f.proto || '').toUpperCase();
-                            const service = s.service || f.service || '-';
-                            const state = s.state || f.state || '-';
-                            const dur = s.duration ?? f.dur ?? 0;
-                            const pkts = (f.spkts || 0) + (f.dpkts || 0);
-                            const bytes = (f.sbytes || 0) + (f.dbytes || 0);
-                            const isSelected = selectedPreset === key;
-
-                            return (
-                              <tr
-                                key={key}
-                                className={isSelected ? 'selected' : ''}
-                                onClick={() => handlePresetSelect(key)}
-                                data-testid={`traffic-row-${key}`}
-                              >
-                                <td className="font-mono"><strong>{key}</strong></td>
-                                <td className="font-mono">{proto}</td>
-                                <td className="font-mono">{service}</td>
-                                <td className="font-mono">{state}</td>
-                                <td className="font-mono">{formatDuration(dur)}</td>
-                                <td className="font-mono">{pkts.toLocaleString()}</td>
-                                <td className="font-mono">{bytes.toLocaleString()}</td>
-                              </tr>
-                            );
-                          })
+                          <tr>
+                            <td colSpan="7" style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)' }}>
+                              {isLoadingRecords ? 'Loading authentic UNSW-NB15 records...' : datasetError || 'No records found matching filters.'}
+                            </td>
+                          </tr>
                         )}
                       </tbody>
                     </table>
@@ -634,44 +639,26 @@ export function IntrusionDetection({
                       value={currentDropdownValue}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (flowPresetsData[val]) {
-                          handlePresetSelect(val);
-                        } else {
-                          const found = datasetRecords.find((r) => String(r.id || r.index) === val);
-                          if (found) handleDatasetRowClick(found);
-                        }
+                        const found = datasetRecords.find((r) => String(r.id || r.index) === val);
+                        if (found) handleDatasetRowClick(found);
                       }}
                       data-testid="preset-dropdown"
                     >
-                      <optgroup label="Benchmark Flow Presets">
-                        {Object.keys(flowPresetsData).map((key) => {
-                          const flow = flowPresetsData[key];
-                          const s = flow.summary || {};
-                          const f = flow.features || {};
-                          const proto = (s.protocol || f.proto || '').toUpperCase();
-                          const dur = formatDuration(s.duration ?? f.dur ?? 0);
-                          const pkts = (f.spkts || 0) + (f.dpkts || 0);
-                          const bytes = (f.sbytes || 0) + (f.dbytes || 0);
+                      {datasetRecords.length === 0 ? (
+                        <option value={currentDropdownValue}>
+                          {selectedPreset} — {String(activeFlowData?.summary?.protocol || activeFeatures.proto).toUpperCase()} · {(activeFeatures.spkts || 0) + (activeFeatures.dpkts || 0)} pkts
+                        </option>
+                      ) : (
+                        datasetRecords.map((rec) => {
+                          const s = rec.summary || {};
+                          const proto = (s.protocol || '').toUpperCase();
+                          const dur = formatDuration(s.duration);
                           return (
-                            <option key={key} value={key}>
-                              {key}
+                            <option key={`rec-${rec.id || rec.index}`} value={String(rec.id || rec.index)}>
+                              Record #{String(rec.index || rec.id).padStart(6, '0')} — {proto} · {s.total_pkts} pkts · {s.total_bytes} B · {dur}
                             </option>
                           );
-                        })}
-                      </optgroup>
-                      {datasetRecords.length > 0 && (
-                        <optgroup label="Authentic Dataset Page Records">
-                          {datasetRecords.map((rec) => {
-                            const s = rec.summary || {};
-                            const proto = (s.protocol || '').toUpperCase();
-                            const dur = formatDuration(s.duration);
-                            return (
-                              <option key={`rec-${rec.id || rec.index}`} value={String(rec.id || rec.index)}>
-                                Record #{String(rec.index || rec.id).padStart(6, '0')} — {proto} · {s.total_pkts} pkts · {s.total_bytes} B · {dur}
-                              </option>
-                            );
-                          })}
-                        </optgroup>
+                        })
                       )}
                     </select>
                   </div>
